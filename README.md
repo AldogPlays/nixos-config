@@ -11,7 +11,6 @@ modules/nixos/                reusable OS, hardware, and desktop modules
 home/jeffreyc/                Home Manager modules
 dotfiles/hypr/                versioned Hyprland configuration
 docs/audit.md                 bootstrap hardware/configuration audit
-.github/workflows/check.yml   GitHub Actions flake validation
 ```
 
 ## First activation
