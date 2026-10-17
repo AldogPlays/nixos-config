@@ -19,8 +19,8 @@ docs/audit.md                 bootstrap hardware/configuration audit
 
 The fixed Catppuccin Latte theme is documented in
 [theme/README.md](theme/README.md). Hyprland borders, Alacritty, Rofi, Waybar,
-SwayNC, and Dolphin/KDE Qt colors consume the shared palette. Other applications
-remain separate follow-up work.
+SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4 colors, SDDM and hyprlock consume the
+shared palette. App-specific styling remains separate follow-up work.
 
 ## Desktop controls
 
@@ -80,6 +80,30 @@ points rather than pixels, without changing display scaling. Web content and
 applications with their own font settings are not forcibly overridden.
 The contrasting Catppuccin Mocha Dark cursor is configured for Hyprland, GTK,
 Qt/KDE and X11 in `home/jeffreyc/desktop.nix`; the rest of the theme stays Latte.
+
+## GTK, login and lock screens
+
+GTK3 uses `adw-gtk3` for widget structure with generated Latte named colors;
+GTK4/libadwaita keeps its native layout with generated color variables. Both
+adapters live in `home/jeffreyc/desktop.nix`. The light appearance preference is
+also declared through the existing GTK/Home Manager integration. No GNOME session,
+theme daemon or independent Catppuccin palette is installed. Legacy GTK2 colors,
+sandboxed apps without access to host configuration, and apps overriding their
+own styling are not covered by these adapters. Reopen apps that cache styling.
+
+SDDM remains the login manager. `modules/nixos/hyprland.nix` configures the pinned
+minimal `where-is-my-sddm-theme` layout using our shared colors, font and cursor.
+The username and session are visible; type your password and press Enter.
+F1 shows its keyboard help, F2 cycles users and F3 cycles sessions. Its power
+shortcuts are F10 suspend, F11 power off and F12 reboot. The new greeter takes
+effect when SDDM next starts, normally on your next boot; do not restart the
+display manager mid-session just to preview it.
+
+Meta+L runs hyprlock with an opaque Latte background, username and thin-bordered
+password field. The generated config is in `~/.config/hypr/hyprlock.conf`;
+NixOS declares its PAM service for normal password authentication. No auto-lock
+timer, idle daemon or authentication grace period is added. Test unlocking at a
+convenient time; configuration checks do not prove a successful password unlock.
 
 ## Dolphin
 

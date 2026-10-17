@@ -1,7 +1,8 @@
 # Shared theme foundation
 
 Status: native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
-SwayNC, and Dolphin/KDE Qt colors. This is not yet a claim that the entire desktop is themed.
+SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4, SDDM and hyprlock. This is not yet a claim
+that the entire desktop is themed.
 
 This is a fixed Catppuccin Latte theme. The palette is plain Nix data with no
 additional flake inputs, selectors, generated runtime state, or background
@@ -14,7 +15,7 @@ services. App adapters may install their native styling plugins.
   The upstream project uses the [MIT license](https://github.com/catppuccin/palette/blob/v1.8.0/LICENSE).
   Values are stored locally and versioned in Git; builds do not fetch a palette.
 - `default.nix` is the public entry point. It exports `name`, `variant`,
-  `appearance`, `palette`, `roles`, and `typography`. Every color is an opaque lowercase
+  `appearance`, `palette`, `roles`, `typography`, and `cursor`. Every color is an opaque lowercase
   `#rrggbb` string.
 - `roles` assigns colors to purposes. These assignments are our starting choices,
   not an official Catppuccin application theme. Adjust a shared role here instead
@@ -83,6 +84,9 @@ links document research, not an instruction to fetch themes during activation.
 | SwayNC | `desktop.nix`: GTK4 custom properties from the pinned 0.12.6 package's default stylesheet, plus targeted title/DND/action styling. The [reference port](https://github.com/catppuccin/swaync/tree/f09852bfa35d50e763ae967c26dbe524b9e9f305) informs state coverage, not a copied replacement stylesheet. [Upstream project](https://github.com/ErikReider/SwayNotificationCenter) documents native styling. Default structural CSS remains loaded by SwayNC. |
 | Hyprland | `desktop.nix` renders role colors into the Lua source's explicit placeholders, using the pinned 0.55.4 parser/API and the [Lua reference port](https://github.com/catppuccin/hyprland/tree/9f03f26fc10a00e00ec6b2ac2a41e44d16297548) for color-format guidance. Placeholders must not be substituted with a generic variable expander: audio bindings contain unrelated `@DEFAULT_AUDIO_SINK@` tokens. |
 | Dolphin/KDE Qt | `desktop.nix` generates KDE RGB color groups in `kdeglobals` and `color-schemes/JeffreyLatte.colors`. Group coverage was researched from the [KDE reference port](https://github.com/catppuccin/kde/tree/6606b5179cfc1e9ba5c3b6b70e15c468e2dddca2); behavior/terminal keys were checked against pinned Dolphin 26.04.3/KIO 6.26.0 sources and the [Dolphin handbook](https://docs.kde.org/trunk_kf6/en/dolphin/dolphin/configuring-dolphin.html). Selection uses our readable shared selection/text roles rather than the port's separate accent/white palette choice. The Qt platform plugin and Breeze widget style are native rendering dependencies, not a second Latte palette. |
+| GTK3/GTK4 | `desktop.nix` translates one semantic color map into GTK named colors and GTK4 CSS variables. Pinned [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) provides GTK3 structure; GTK4/libadwaita retains its native layout. [Libadwaita's CSS-variable documentation](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/css-variables.html) and the pinned adw-gtk3 CSS determine coverage. The [archived Catppuccin GTK port](https://github.com/catppuccin/gtk) was researched but is not installed or vendored. |
+| SDDM | `modules/nixos/hyprland.nix` uses the pinned [where-is-my-sddm-theme](https://github.com/stepanzubkov/where-is-my-sddm-theme/tree/v1.12.0) layout and native settings, with fail-fast substitutions for hardcoded selection/failure colors and a static thin error outline. [SDDM's theming API](https://github.com/sddm/sddm/wiki/Theming) and the [Catppuccin reference port](https://github.com/catppuccin/sddm) informed research; the latter is not a build dependency. |
+| Hyprlock | Home Manager generates native settings from roles and typography, checked against pinned 0.9.5 source, [upstream documentation](https://wiki.hypr.land/Hypr-Ecosystem/hyprlock/) and the [Catppuccin reference](https://github.com/catppuccin/hyprlock). No copied palette, wallpaper reader, command-driven clock or refresh service is needed. PAM is declared separately in the NixOS desktop module. |
 
 Bar backgrounds and window opacity are opaque; shadows remain disabled. This
 prevents the wallpaper from tinting the generated colors. Existing geometry and
@@ -93,8 +97,8 @@ primary text on the selection background is about 5.17:1, rather than the
 starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
 
-Not integrated yet: GTK application chrome, Qt clients that ignore the KDE palette, LibreWolf,
-SDDM, hyprlock, Hyprspace-specific appearance, Snap, app-specific TUI themes, and
+Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette, LibreWolf,
+Hyprspace-specific appearance, Snap, app-specific TUI themes, and
 wpaperd's wallpaper image. Terminal apps inherit Alacritty's ANSI palette where
 they use terminal colors; apps emitting their own truecolor values need separate
 research. Do not call those apps fully themed just because their terminal is.
@@ -103,9 +107,10 @@ Gwenview and Ark reuse the KDE adapter. The cursor is an explicit packaged-asset
 exception: [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark
 from the pinned nixpkgs package, selected for contrast on the light desktop.
 The same package contains native Hyprcursor and Xcursor assets; Home Manager
-also sets GTK/X11 defaults and KDE's `kcminputrc`. No application Mocha palette
-or runtime theme coordinator is introduced. GTK font/cursor configuration does
-not imply that GTK application colors have been integrated.
+also sets GTK/X11 defaults and KDE's `kcminputrc`. `cursor` supplies its shared
+name/size to both the user session and greeter. No application Mocha palette
+or runtime theme coordinator is introduced. Sandboxed applications that cannot
+read host settings and apps with their own CSS may not follow the GTK adapter.
 
 Activation uses the normal NixOS/Home Manager switch. Alacritty normally reloads
 its config; Rofi uses it on the next invocation; Waybar and SwayNC are managed by

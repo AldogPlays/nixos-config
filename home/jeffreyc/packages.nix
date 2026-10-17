@@ -38,7 +38,6 @@ in
 
     # Hyprland utilities used by the declarative keybindings/session
     brightnessctl
-    hyprlock
     hyprpolkitagent
     playerctl
     wl-clipboard

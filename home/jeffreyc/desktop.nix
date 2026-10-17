@@ -11,6 +11,72 @@ let
   inherit (theme) roles palette typography;
   fontSize = toString typography.size;
   kdeFont = "${typography.family},${fontSize},-1,5,50,0,0,0,0,0";
+  # Native Adwaita/adw-gtk3 semantic colors; both GTK generations consume these.
+  gtkColors = {
+    accent_color = roles.accent;
+    accent_bg_color = roles.accent;
+    accent_fg_color = roles.background;
+    destructive_color = roles.error;
+    destructive_bg_color = roles.error;
+    destructive_fg_color = roles.background;
+    success_color = roles.success;
+    success_bg_color = roles.success;
+    success_fg_color = roles.background;
+    warning_color = roles.foreground;
+    warning_bg_color = roles.warning;
+    warning_fg_color = roles.foreground;
+    error_color = roles.error;
+    error_bg_color = roles.error;
+    error_fg_color = roles.background;
+    window_bg_color = roles.background;
+    window_fg_color = roles.foreground;
+    view_bg_color = roles.background;
+    view_fg_color = roles.foreground;
+    headerbar_bg_color = roles.backgroundAlt;
+    headerbar_fg_color = roles.foreground;
+    headerbar_backdrop_color = roles.backgroundAlt;
+    headerbar_border_color = roles.border;
+    headerbar_shade_color = "transparent";
+    headerbar_darker_shade_color = "transparent";
+    sidebar_bg_color = roles.backgroundAlt;
+    sidebar_fg_color = roles.foreground;
+    sidebar_backdrop_color = roles.backgroundAlt;
+    sidebar_border_color = roles.border;
+    sidebar_shade_color = "transparent";
+    secondary_sidebar_bg_color = roles.backgroundAlt;
+    secondary_sidebar_fg_color = roles.foreground;
+    secondary_sidebar_backdrop_color = roles.backgroundAlt;
+    secondary_sidebar_border_color = roles.border;
+    secondary_sidebar_shade_color = "transparent";
+    card_bg_color = roles.surface;
+    card_fg_color = roles.foreground;
+    card_shade_color = "transparent";
+    dialog_bg_color = roles.background;
+    dialog_fg_color = roles.foreground;
+    popover_bg_color = roles.backgroundAlt;
+    popover_fg_color = roles.foreground;
+    popover_shade_color = "transparent";
+    thumbnail_bg_color = roles.surface;
+    thumbnail_fg_color = roles.foreground;
+    shade_color = "transparent";
+    scrollbar_outline_color = roles.background;
+    borders = roles.border;
+    theme_bg_color = roles.background;
+    theme_fg_color = roles.foreground;
+    theme_base_color = roles.background;
+    theme_text_color = roles.foreground;
+    theme_selected_bg_color = roles.selection;
+    theme_selected_fg_color = roles.foreground;
+    theme_unfocused_bg_color = roles.background;
+    theme_unfocused_fg_color = roles.foreground;
+    theme_unfocused_base_color = roles.background;
+    theme_unfocused_text_color = roles.foreground;
+    theme_unfocused_selected_bg_color = roles.selection;
+    theme_unfocused_selected_fg_color = roles.foreground;
+  };
+  gtkNamedColors = lib.concatStringsSep "\n" (
+    lib.mapAttrsToList (name: value: "@define-color ${name} ${value};") gtkColors
+  );
   hex = lib.removePrefix "#";
   rgb =
     color:
@@ -85,6 +151,26 @@ in
 {
   gtk = {
     enable = true;
+    colorScheme = "light";
+    gtk3 = {
+      theme = {
+        name = "adw-gtk3";
+        package = pkgs.adw-gtk3;
+      };
+      extraCss = gtkNamedColors;
+    };
+    # Keep GTK4/libadwaita's native layout; override colors, not a GTK3 stylesheet.
+    gtk4.extraCss = gtkNamedColors + ''
+      :root {
+        ${lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (
+            name: value: "--${lib.replaceStrings [ "_" ] [ "-" ] name}: ${value};"
+          ) gtkColors
+        )}
+        --border-color: ${roles.border};
+        --window-radius: 4px;
+      }
+    '';
     font = {
       name = typography.family;
       size = typography.size;
@@ -92,11 +178,63 @@ in
   };
   home.pointerCursor = {
     package = pkgs.catppuccin-cursors.mochaDark;
-    name = "catppuccin-mocha-dark-cursors";
-    size = 24;
+    inherit (theme.cursor) name size;
     gtk.enable = true;
     x11.enable = true;
     hyprcursor.enable = true;
+  };
+
+  programs.hyprlock = {
+    enable = true;
+    settings = {
+      general = {
+        hide_cursor = true;
+        ignore_empty_input = true;
+      };
+      animations.enabled = false;
+      background = [
+        {
+          monitor = "";
+          color = "rgb(${hex roles.background})";
+        }
+      ];
+      label = [
+        {
+          monitor = "";
+          text = "$USER";
+          color = "rgb(${hex roles.foreground})";
+          font_family = typography.family;
+          font_size = typography.size;
+          position = "0, 50";
+          halign = "center";
+          valign = "center";
+        }
+      ];
+      input-field = [
+        {
+          monitor = "";
+          size = "280, 40";
+          position = "0, 0";
+          halign = "center";
+          valign = "center";
+          outline_thickness = 1;
+          rounding = 4;
+          inner_color = "rgb(${hex roles.backgroundAlt})";
+          outer_color = "rgb(${hex roles.borderFocused})";
+          font_color = "rgb(${hex roles.foreground})";
+          check_color = "rgb(${hex roles.accent})";
+          fail_color = "rgb(${hex roles.error})";
+          capslock_color = "rgb(${hex roles.warning})";
+          swap_font_color = false;
+          font_family = typography.family;
+          placeholder_text = "Password";
+          fail_text = "Authentication failed";
+          fade_on_empty = false;
+          dots_center = true;
+          shadow_passes = 0;
+        }
+      ];
+    };
   };
   xdg.configFile."kcminputrc".source = (pkgs.formats.ini { }).generate "kcminputrc" {
     Mouse = {

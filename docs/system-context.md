@@ -46,10 +46,10 @@ to keep every bootstrap component.
 | Role | Component | Configuration |
 | --- | --- | --- |
 | Compositor and session | Hyprland, UWSM, XWayland | `modules/nixos/hyprland.nix`; `dotfiles/hypr/hyprland.lua` |
-| Login greeter | SDDM with Wayland enabled | `modules/nixos/hyprland.nix` |
+| Login greeter | SDDM with Wayland enabled, minimal themed layout | `modules/nixos/hyprland.nix` |
 | Bar and notifications | Waybar, SwayNotificationCenter | `home/jeffreyc/desktop.nix`; Super+N toggles the notification center |
 | Launcher | Rofi (native Wayland), Super+A | `home/jeffreyc/programs.nix`; Hyprland bindings |
-| Lock screen | hyprlock, Super+L | Package and binding only; no custom theme or idle-lock service |
+| Lock screen | hyprlock, Super+L | Home Manager theme, NixOS PAM service; no idle-lock service |
 | Terminal and files | Alacritty, Super+T; Dolphin, Super+E | Home Manager programs/packages; Hyprland bindings |
 | Browser | LibreWolf | Home Manager packages and session variables |
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
@@ -145,6 +145,23 @@ pairing as the compositor. Review that compatibility pin during Hyprland upgrade
 - The cursor intentionally uses packaged Catppuccin Mocha Dark assets for
   contrast on Latte. Home Manager configures Hyprcursor, Xcursor, GTK and KDE;
   this is an asset exception, not a second application palette or theme switcher.
+- Generic GTK3 styling uses pinned `adw-gtk3` as widget structure, with generated
+  semantic colors from the shared theme. GTK4/libadwaita uses named colors and
+  modern CSS variables without replacing its native layout. Light appearance is
+  declared through Home Manager's GTK/dconf integration. Legacy GTK2 colors and
+  apps isolated from or overriding the host stylesheet are not claimed covered.
+- SDDM uses pinned `where-is-my-sddm-theme` as a minimal layout, configured from
+  shared colors, typography and cursor settings. Small fail-fast substitutions
+  cover its otherwise hardcoded selection/error colors and pulsing error border.
+  The theme's QML dependencies are passed through SDDM's `extraPackages`; no
+  display-manager replacement or new session service is introduced. Activation
+  leaves the running display manager alone; the new configuration takes effect
+  when SDDM next starts, normally on the next boot.
+- Hyprlock has a generated minimal Latte config and a normal NixOS PAM entry.
+  Configure PAM directly rather than enabling the NixOS hyprlock module, which
+  implicitly enables hypridle in this pinned release. No idle daemon, auto-lock
+  timer, grace period or authentication bypass is requested. Parser checks and
+  login-screen test mode do not establish successful real authentication.
 - Native theme adapters consume the shared definitions for Hyprland borders,
   Alacritty, Rofi, Waybar, SwayNC, and Dolphin/KDE Qt colors. Keep app-specific syntax in the existing
   modules; do not install independent Catppuccin palettes. Bar and window colors

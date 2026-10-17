@@ -15,6 +15,12 @@ in
     size = 11;
   };
 
+  # Packaged asset exception: a dark pointer for contrast on the light desktop.
+  cursor = {
+    name = "catppuccin-mocha-dark-cursors";
+    size = 24;
+  };
+
   # Personal role choices live here; preserve the official palette above.
   roles = {
     background = palette.base;
