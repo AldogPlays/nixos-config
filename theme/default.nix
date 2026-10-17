@@ -15,11 +15,11 @@ in
     backgroundAlt = palette.mantle;
     surface = palette.surface0;
     foreground = palette.text;
-    foregroundMuted = palette.subtext0;
+    foregroundMuted = palette.subtext1;
     accent = palette.blue;
     border = palette.surface1;
     borderFocused = palette.blue;
-    selection = palette.surface2;
+    selection = palette.surface0;
     success = palette.green;
     warning = palette.yellow;
     error = palette.red;

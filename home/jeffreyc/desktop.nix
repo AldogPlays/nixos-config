@@ -7,6 +7,18 @@
 }:
 
 let
+  theme = import ../../theme;
+  inherit (theme) roles;
+  hex = lib.removePrefix "#";
+  rgb =
+    color:
+    lib.concatMapStringsSep ", "
+      (offset: toString (lib.fromHexString (builtins.substring offset 2 (hex color))))
+      [
+        0
+        2
+        4
+      ];
   # Keep nixpkgs' Hyprland/compiler pairing, with upstream's compatible Lua source.
   hyprspace = pkgs.hyprlandPlugins.hyprspace.overrideAttrs (_: {
     src = inputs.hyprspace-src;
@@ -14,11 +26,17 @@ let
   });
 in
 {
-  # Render only the pinned plugin path; colors are not connected to theme/ yet.
+  # Translate canonical colors only at the application's format boundary.
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
-    builtins.replaceStrings [ "@HYPRSPACE_PLUGIN@" ] [ "${hyprspace}/lib/libhyprspace.so" ] (
-      builtins.readFile ../../dotfiles/hypr/hyprland.lua
-    )
+    builtins.replaceStrings
+      [ "@HYPRSPACE_PLUGIN@" "@THEME_ACTIVE_BORDER@" "@THEME_INACTIVE_BORDER@" "@THEME_SHADOW@" ]
+      [
+        "${hyprspace}/lib/libhyprspace.so"
+        (hex roles.borderFocused)
+        (hex roles.border)
+        (hex roles.backgroundAlt)
+      ]
+      (builtins.readFile ../../dotfiles/hypr/hyprland.lua)
   );
 
   programs.waybar = {
@@ -102,9 +120,15 @@ in
         font-family: "Monaspace Neon", "Symbols Nerd Font";
         font-size: 11px;
       }
-      window#waybar { background: rgba(20, 22, 30, 0.92); color: #d8dee9; }
-      #workspaces button { padding: 0 5px; color: #7f849c; }
-      #workspaces button.active { color: #89b4fa; }
+      window#waybar { background: ${roles.background}; color: ${roles.foreground}; }
+      #workspaces button { padding: 0 5px; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
+      #workspaces button:hover { background: ${roles.surface}; color: ${roles.foreground}; }
+      #workspaces button.active { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
+      #workspaces button.urgent { color: ${roles.error}; }
+      tooltip { background: ${roles.backgroundAlt}; border: 1px solid ${roles.border}; }
+      tooltip label { color: ${roles.foreground}; }
+      #battery.warning { color: ${roles.foreground}; border-bottom: 1px solid ${roles.warning}; }
+      #battery.critical, #network.disconnected { color: ${roles.error}; }
       #clock, #network, #bluetooth, #pulseaudio, #battery, #custom-notifications, #tray { padding: 0 5px; }
     '';
   };
@@ -122,8 +146,33 @@ in
       ];
     };
     style = ''
+      /* SwayNC 0.12 uses GTK4 custom properties; its default CSS supplies layout. */
+      :root {
+        --cc-bg: ${roles.backgroundAlt};
+        --noti-border-color: ${roles.border};
+        --noti-bg: ${rgb roles.background};
+        --noti-bg-alpha: 1;
+        --noti-bg-darker: ${roles.backgroundAlt};
+        --noti-bg-hover: ${roles.surface};
+        --noti-bg-focus: ${roles.selection};
+        --noti-close-bg: ${roles.surface};
+        --noti-close-bg-hover: ${roles.selection};
+        --text-color: ${roles.foreground};
+        --text-color-disabled: ${roles.foregroundMuted};
+        --bg-selected: ${roles.accent};
+        --border-radius: 4px;
+        --notification-shadow: none;
+      }
       * { font-family: "Monaspace Neon", "Symbols Nerd Font"; }
-      .notification { border-radius: 4px; box-shadow: none; }
+      .notification-row .notification-background .notification.critical { border-color: ${roles.error}; }
+      .control-center { border: 1px solid ${roles.border}; }
+      .widget-title > button, .notification-action, .widget-dnd switch {
+        background: ${roles.surface}; color: ${roles.foreground};
+        border: 1px solid ${roles.border}; box-shadow: none;
+      }
+      .widget-title > button:hover, .notification-action:hover { background: ${roles.selection}; }
+      .widget-dnd switch:checked { background: ${roles.accent}; }
+      .widget-dnd switch slider { background: ${roles.background}; box-shadow: none; }
     '';
   };
 

@@ -27,6 +27,9 @@
   networking.networkmanager.enable = true;
   networking.firewall.enable = true;
 
+  # Client daemon and CLI only; authentication stays outside the Nix store.
+  services.tailscale.enable = true;
+
   time.timeZone = "America/Los_Angeles";
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {

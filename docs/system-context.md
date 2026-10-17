@@ -68,6 +68,10 @@ power-profiles-daemon, and UPower. The TUI controls are launched on demand; the
 network/Bluetooth/audio backend services remain enabled. nm-applet, Blueman,
 and pavucontrol are no longer declared as front ends.
 
+Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
+and CLI, with interactive authentication kept outside the repository and store.
+No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
+
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Snap's source is locked as a non-flake input and built locally with xmake, with
 Nix paths substituted for upstream's distribution-specific protocol paths. Its
@@ -87,9 +91,11 @@ pairing as the compositor. Review that compatibility pin during Hyprland upgrade
 - The theme direction is fixed Catppuccin Latte, with locally versioned official
   palette values and shared semantic roles. No switching, refresh coordinator,
   or theme daemon is wanted. See `theme/README.md` for the data contract.
-- Theme groundwork is intentionally disconnected from applications. The desktop
-  component migration is requested separately from color integration. Future
-  adapters should consume the shared theme definitions when that work is requested.
+- Native theme adapters consume the shared definitions for Hyprland borders,
+  Alacritty, Rofi, Waybar, and SwayNC. Keep app-specific syntax in the existing
+  modules; do not install independent Catppuccin palettes. Bar and window colors
+  are opaque to avoid wallpaper-dependent shifts. See `theme/README.md` for
+  researched integration details and the remaining unthemed components.
 - GitHub Actions workflows were deliberately removed. Validation stays local
   unless CI is requested. Repository visibility and remote settings need direct
   verification when relevant.

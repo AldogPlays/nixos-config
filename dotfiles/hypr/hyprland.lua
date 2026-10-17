@@ -1,5 +1,5 @@
 -- Managed by Home Manager from this repository.
--- Home Manager substitutes the plugin path from the same nixpkgs as Hyprland.
+-- Home Manager substitutes the pinned plugin path and shared theme colors.
 hl.plugin.load("@HYPRSPACE_PLUGIN@")
 
 hl.monitor({
@@ -23,8 +23,8 @@ hl.config({
         gaps_out = 4,
         border_size = 1,
         col = {
-            active_border = { colors = { "rgba(89b4faff)", "rgba(a6e3a1ff)" }, angle = 45 },
-            inactive_border = "rgba(585b70aa)",
+            active_border = "rgb(@THEME_ACTIVE_BORDER@)",
+            inactive_border = "rgb(@THEME_INACTIVE_BORDER@)",
         },
         resize_on_border = true,
         allow_tearing = false,
@@ -34,12 +34,12 @@ hl.config({
         rounding = 4,
         rounding_power = 2,
         active_opacity = 1.0,
-        inactive_opacity = 0.96,
+        inactive_opacity = 1.0,
         shadow = {
             enabled = false,
             range = 4,
             render_power = 3,
-            color = 0xee1a1a1a,
+            color = "rgb(@THEME_SHADOW@)",
         },
         blur = {
             enabled = true,
