@@ -60,7 +60,7 @@ to keep every bootstrap component.
 | Screenshots and clipboard | yumedots/snap, wl-clipboard | Print opens Snap; `packages/snap.nix`; no clipboard-history manager |
 | Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
-| Wallpaper | wpaperd | Home Manager session service; packaged NixOS dark-gray placeholder |
+| Wallpaper | wpaperd | Existing session service; random images from XDG Pictures/Wallpapers |
 | Workspace overview | Hyprspace | Same pinned nixpkgs/Hyprland build; rendered Lua plugin path; Super+Tab |
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
@@ -71,6 +71,40 @@ and pavucontrol are no longer declared as front ends.
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.
 No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
+
+Desktop integration lives in `home/jeffreyc/default.nix`: managed XDG user
+directories (including existing Projects), explicit MIME defaults for
+LibreWolf/Dolphin and the `codex://` handler, and `xdg-terminal-exec` selecting
+Alacritty. The terminal selector is an on-demand command, not a daemon. Standard
+folders and Pictures/Screenshots/Wallpapers are created without moving existing
+data. MIME configuration that predates Home Manager is backed up rather than
+discarded. Dedicated image/media/mail/office/GUI editor application choices are
+still pending; do not install a bundle to fill those roles.
+
+Dolphin uses native KDE colors generated from the shared Latte palette in
+`home/jeffreyc/desktop.nix`, plus the Qt6 KDE platform plugin, Breeze widget style,
+and Breeze icons. Package selections override Home Manager's larger KDE defaults
+so this does not add System Settings or a Plasma session. Qt environment settings
+also affect other Qt clients. `kdeglobals` and the generated color-scheme file
+are managed; `dolphinrc`, Places bookmarks, and per-folder state are preserved.
+KDE's terminal settings point to Alacritty for external terminal launches.
+The embedded Konsole panel, extra indexer, and optional video/PDF thumbnailers
+are not installed. KIO/KIO extras and icon assets already occur in Dolphin's
+dependency closure; avoid redundantly adding a KDE bundle for those functions.
+
+Ark is the archive viewer and supplies Dolphin's native extraction/compression
+service menus. Archive MIME defaults are derived from its desktop entry rather
+than maintained as a separate MIME list. Its native libzip/libarchive plugins
+handle common ZIP/tar formats; the maintained upstream 7-Zip package backs the
+7z plugin. Pinned Ark 26.04.3 invokes `7z`, while nixpkgs `_7zz` installs `7zz`,
+so `home/jeffreyc/packages.nix` adds a compatibility symlink to that same binary.
+Do not replace it with an obsolete p7zip package or install an entire KDE bundle.
+Ark follows the shared Qt/KDE theme and starts on demand, without a new daemon.
+
+wpaperd shuffles the user's wallpaper directory recursively every 15 minutes,
+using its existing session unit and no extra scheduler. Activation creates the
+wallpaper directory but does not populate it with placeholder images. The image
+collection is intentionally outside the repository and Nix store.
 
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Snap's source is locked as a non-flake input and built locally with xmake, with
@@ -88,11 +122,15 @@ pairing as the compositor. Review that compatibility pin during Hyprland upgrade
   Home Manager desktop configurations.
 - The touchpad should remain usable during typing and use non-natural scrolling.
   Both `disable_while_typing` and `natural_scroll` are false in the Lua source.
+- Windows explicitly marked modal float through a single Hyprland rule. Normal
+  application windows stay tiled; there are no title-based popup heuristics or
+  Bitwarden-specific exceptions. Unmarked extension windows may need separate
+  inspection if this baseline does not catch them.
 - The theme direction is fixed Catppuccin Latte, with locally versioned official
   palette values and shared semantic roles. No switching, refresh coordinator,
   or theme daemon is wanted. See `theme/README.md` for the data contract.
 - Native theme adapters consume the shared definitions for Hyprland borders,
-  Alacritty, Rofi, Waybar, and SwayNC. Keep app-specific syntax in the existing
+  Alacritty, Rofi, Waybar, SwayNC, and Dolphin/KDE Qt colors. Keep app-specific syntax in the existing
   modules; do not install independent Catppuccin palettes. Bar and window colors
   are opaque to avoid wallpaper-dependent shifts. See `theme/README.md` for
   researched integration details and the remaining unthemed components.

@@ -8,7 +8,7 @@
 
 let
   theme = import ../../theme;
-  inherit (theme) roles;
+  inherit (theme) roles palette;
   hex = lib.removePrefix "#";
   rgb =
     color:
@@ -19,6 +19,61 @@ let
         2
         4
       ];
+  # KDE uses comma-separated RGB values, not the canonical #rrggbb notation.
+  kdeForegrounds = {
+    DecorationFocus = rgb roles.borderFocused;
+    DecorationHover = rgb roles.border;
+    ForegroundNormal = rgb roles.foreground;
+    ForegroundInactive = rgb roles.foregroundMuted;
+    ForegroundActive = rgb roles.accent;
+    ForegroundLink = rgb roles.accent;
+    ForegroundVisited = rgb palette.mauve;
+    ForegroundNegative = rgb roles.error;
+    ForegroundNeutral = rgb roles.foregroundMuted;
+    ForegroundPositive = rgb roles.success;
+  };
+  kdeScheme =
+    lib.mapAttrs
+      (
+        _: background:
+        kdeForegrounds
+        // {
+          BackgroundNormal = rgb background;
+          BackgroundAlternate = rgb roles.backgroundAlt;
+        }
+      )
+      {
+        "Colors:View" = roles.background;
+        "Colors:Window" = roles.backgroundAlt;
+        "Colors:Button" = roles.surface;
+        "Colors:Tooltip" = roles.background;
+        "Colors:Complementary" = roles.backgroundAlt;
+        "Colors:Header" = roles.backgroundAlt;
+      }
+    // {
+      "Colors:Selection" =
+        kdeForegrounds
+        // (lib.genAttrs [
+          "ForegroundNormal"
+          "ForegroundInactive"
+          "ForegroundActive"
+          "ForegroundLink"
+          "ForegroundVisited"
+          "ForegroundNegative"
+          "ForegroundNeutral"
+          "ForegroundPositive"
+        ] (_: rgb roles.foreground))
+        // {
+          BackgroundNormal = rgb roles.selection;
+          BackgroundAlternate = rgb roles.selection;
+        };
+      "ColorEffects:Inactive".Enable = false;
+      General = {
+        Name = "Jeffrey Latte";
+        ColorScheme = "JeffreyLatte";
+        shadeSortColumn = false;
+      };
+    };
   # Keep nixpkgs' Hyprland/compiler pairing, with upstream's compatible Lua source.
   hyprspace = pkgs.hyprlandPlugins.hyprspace.overrideAttrs (_: {
     src = inputs.hyprspace-src;
@@ -26,6 +81,38 @@ let
   });
 in
 {
+  qt = {
+    enable = true;
+    platformTheme = {
+      name = "kde";
+      # Avoid the module's larger KDE default package set (including System Settings).
+      package = pkgs.kdePackages.plasma-integration;
+    };
+    style = {
+      name = "Breeze";
+      package = pkgs.kdePackages.breeze;
+    };
+  };
+  # Expose the icon theme already in Dolphin's closure to the user's Qt apps.
+  home.packages = [ pkgs.kdePackages.breeze-icons ];
+  xdg.dataFile."color-schemes/JeffreyLatte.colors".source =
+    (pkgs.formats.ini { }).generate "JeffreyLatte.colors"
+      kdeScheme;
+  xdg.configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" (
+    kdeScheme
+    // {
+      General = kdeScheme.General // {
+        font = "Monaspace Neon,11,-1,5,50,0,0,0,0,0";
+        fixed = "Monaspace Neon,11,-1,5,50,0,0,0,0,0";
+        TerminalApplication = "alacritty";
+        TerminalService = "Alacritty.desktop";
+        BrowserApplication = "librewolf.desktop";
+      };
+      Icons.Theme = "breeze";
+      KDE.widgetStyle = "Breeze";
+    }
+  );
+
   # Translate canonical colors only at the application's format boundary.
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
     builtins.replaceStrings
@@ -179,8 +266,10 @@ in
   services.wpaperd = {
     enable = true;
     settings.default = {
-      # Reproducible placeholder until a personal wallpaper is selected.
-      path = pkgs.nixos-artwork.wallpapers.simple-dark-gray.gnomeFilePath;
+      path = "${config.xdg.userDirs.pictures}/Wallpapers";
+      sorting = "random";
+      duration = "15m";
+      recursive = true;
       mode = "center";
       transition-time = 0;
     };

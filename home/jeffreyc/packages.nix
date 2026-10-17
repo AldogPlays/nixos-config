@@ -5,10 +5,23 @@
   ...
 }:
 
+let
+  # Ark 26.04 invokes `7z`; the maintained upstream package installs `7zz`.
+  sevenZip = pkgs.symlinkJoin {
+    name = "7zip-${pkgs._7zz.version}";
+    paths = [ pkgs._7zz ];
+    postBuild = ''
+      ln -s ${pkgs._7zz}/bin/7zz "$out/bin/7z"
+    '';
+  };
+in
 {
   home.packages = with pkgs; [
     # Desktop applications
     kdePackages.dolphin
+    # Dolphin's native Extract/Compress actions; 7zz backs its 7-Zip plugin.
+    kdePackages.ark
+    sevenZip
     librewolf
     # Official desktop client, including graphical Codex, from the pinned input.
     pkgsUnstable.chatgpt

@@ -1,10 +1,11 @@
 # Shared theme foundation
 
-Status: first native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
-and SwayNC. This is not yet a claim that the entire desktop is themed.
+Status: native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
+SwayNC, and Dolphin/KDE Qt colors. This is not yet a claim that the entire desktop is themed.
 
-This is a fixed Catppuccin Latte theme. It is plain Nix data with no additional
-packages, flake inputs, selectors, generated runtime state, or background services.
+This is a fixed Catppuccin Latte theme. The palette is plain Nix data with no
+additional flake inputs, selectors, generated runtime state, or background
+services. App adapters may install their native styling plugins.
 
 ## Source of truth
 
@@ -79,6 +80,7 @@ links document research, not an instruction to fetch themes during activation.
 | Waybar | `desktop.nix`: native GTK3 CSS; [upstream styling manual](https://github.com/Alexays/Waybar/blob/master/man/waybar-styles.5.scd.in) and [reference port](https://github.com/catppuccin/waybar/tree/ee8ed32b4f63e9c417249c109818dcc05a2e25da). Colors are interpolated directly, without importing a second palette file. |
 | SwayNC | `desktop.nix`: GTK4 custom properties from the pinned 0.12.6 package's default stylesheet, plus targeted title/DND/action styling. The [reference port](https://github.com/catppuccin/swaync/tree/f09852bfa35d50e763ae967c26dbe524b9e9f305) informs state coverage, not a copied replacement stylesheet. [Upstream project](https://github.com/ErikReider/SwayNotificationCenter) documents native styling. Default structural CSS remains loaded by SwayNC. |
 | Hyprland | `desktop.nix` renders role colors into the Lua source's explicit placeholders, using the pinned 0.55.4 parser/API and the [Lua reference port](https://github.com/catppuccin/hyprland/tree/9f03f26fc10a00e00ec6b2ac2a41e44d16297548) for color-format guidance. Placeholders must not be substituted with a generic variable expander: audio bindings contain unrelated `@DEFAULT_AUDIO_SINK@` tokens. |
+| Dolphin/KDE Qt | `desktop.nix` generates KDE RGB color groups in `kdeglobals` and `color-schemes/JeffreyLatte.colors`. Group coverage was researched from the [KDE reference port](https://github.com/catppuccin/kde/tree/6606b5179cfc1e9ba5c3b6b70e15c468e2dddca2); behavior/terminal keys were checked against pinned Dolphin 26.04.3/KIO 6.26.0 sources and the [Dolphin handbook](https://docs.kde.org/trunk_kf6/en/dolphin/dolphin/configuring-dolphin.html). Selection uses our readable shared selection/text roles rather than the port's separate accent/white palette choice. The Qt platform plugin and Breeze widget style are native rendering dependencies, not a second Latte palette. |
 
 Bar backgrounds and window opacity are opaque; shadows remain disabled. This
 prevents the wallpaper from tinting the generated colors. Existing geometry and
@@ -89,7 +91,7 @@ primary text on the selection background is about 5.17:1, rather than the
 starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
 
-Not integrated yet: GTK/Qt application chrome (including Dolphin), LibreWolf,
+Not integrated yet: GTK application chrome, Qt clients that ignore the KDE palette, LibreWolf,
 SDDM, hyprlock, Hyprspace-specific appearance, Snap, app-specific TUI themes, and
 wpaperd's wallpaper image. Terminal apps inherit Alacritty's ANSI palette where
 they use terminal colors; apps emitting their own truecolor values need separate

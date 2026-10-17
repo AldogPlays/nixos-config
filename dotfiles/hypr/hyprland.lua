@@ -139,6 +139,12 @@ hl.window_rule({
 })
 
 hl.window_rule({
+    name = "float-modal-dialogs",
+    match = { modal = true },
+    float = true,
+})
+
+hl.window_rule({
     name = "fix-xwayland-drags",
     match = {
         class = "^$",

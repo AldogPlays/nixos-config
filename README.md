@@ -18,8 +18,9 @@ docs/audit.md                 bootstrap hardware/configuration audit
 ```
 
 The fixed Catppuccin Latte theme is documented in
-[theme/README.md](theme/README.md). Hyprland borders, Alacritty, Rofi, Waybar, and
-SwayNC consume the shared colors. Other applications remain separate follow-up work.
+[theme/README.md](theme/README.md). Hyprland borders, Alacritty, Rofi, Waybar,
+SwayNC, and Dolphin/KDE Qt colors consume the shared palette. Other applications
+remain separate follow-up work.
 
 ## Desktop controls
 
@@ -48,10 +49,58 @@ Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
 window's width/height; Right/Down grows it. Tiled resizing respects the layout.
 Other existing controls remain unchanged.
 
-wpaperd starts with the graphical session and uses a packaged dark-gray NixOS
-wallpaper as a placeholder. Change `services.wpaperd.settings.default.path` in
-`home/jeffreyc/desktop.nix` to select a different persistent wallpaper. Snap and
-wlctl are pinned in `flake.lock`; Snap's local build is in `packages/snap.nix`.
+wpaperd starts with the graphical session and shuffles images from
+`~/Pictures/Wallpapers` (including subfolders) every 15 minutes, without a fade.
+Add your images there; `wpaperctl next` advances manually. No placeholder images
+are added during activation. Wallpaper images are personal data, not Git files.
+Snap and wlctl are pinned in `flake.lock`; Snap's local build is in `packages/snap.nix`.
+
+## Desktop integration
+
+Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
+`Pictures`, `Public`, `Templates`, `Videos`, and `Projects`, plus writable
+`Pictures/Screenshots` and `Pictures/Wallpapers` subfolders. Snap uses the XDG
+Pictures directory and saves under `Screenshots` by default.
+
+Native desktop defaults in `home/jeffreyc/default.nix` select LibreWolf for web
+links, HTML, and PDFs; Dolphin for folders; and Alacritty through
+`xdg-terminal-exec` for compatible terminal-launching apps. `codex://` links
+remain assigned to ChatGPT/Codex. Keep changes declarative rather than editing
+the managed `mimeapps.list` in a GUI. Existing unmanaged files are preserved with
+Home Manager's backup suffix during the first activation.
+
+The existing GTK/Hyprland portals, polkit agent, and UDisks2 provide file dialogs,
+screen sharing, authentication prompts, and removable-drive support. No desktop
+bundle or automounter is added. Dedicated image, media, mail, office, and GUI editor
+application choices remain open; they are not silently filled by extra packages.
+
+## Dolphin
+
+`home/jeffreyc/desktop.nix` generates `kdeglobals` and the `JeffreyLatte.colors`
+scheme from `theme/`. The KDE Qt platform plugin and Breeze widget style supply
+native controls; Breeze icons are exposed from Dolphin's existing dependencies.
+This does not install a Plasma session, System Settings, Konsole, or an indexer.
+It also sets the platform/style for other Qt applications, not just Dolphin.
+
+Open Terminal (Shift+F4) uses Alacritty at the viewed location. Dolphin's F4
+embedded terminal requires Konsole's separate component and is intentionally not
+added. Existing Dolphin preferences, view history, and Places bookmarks remain
+writable and unmanaged; selected default apps and theme colors are declarative.
+KIO already supplies file/trash support and extras; preview availability varies by
+format. Optional video/PDF thumbnail packages are not added automatically.
+
+Ark supplies native **Extract** and **Compress** context-menu actions and is the
+default archive viewer. Use **Extract here** or **Extract to…** to unpack files;
+select files/folders and use **Compress to…** to create an archive. These are
+Ark's upstream service menus, not custom shell actions. Ark shares the KDE Latte
+theme. The maintained 7-Zip backend provides both `7zz` and the `7z` name required
+by this pinned Ark version. ZIP and tar formats use Ark's native libraries;
+7z uses the external backend. No archive daemon is added. Archives from untrusted
+sources should be extracted into a fresh destination, not over important files.
+
+After activation, use a newly started Dolphin process for the new Qt environment.
+Existing windows are not force-closed. A fresh login also picks up the declarative
+Qt session settings.
 
 ## First activation
 
