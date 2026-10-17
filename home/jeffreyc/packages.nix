@@ -22,6 +22,11 @@ in
     # Dolphin's native Extract/Compress actions; 7zz backs its 7-Zip plugin.
     kdePackages.ark
     sevenZip
+    kdePackages.gwenview
+    # Qt image readers (including HEIC/HEIF, AVIF, JXL and RAW), plus KIO previews.
+    kdePackages.kimageformats
+    kdePackages.kdegraphics-thumbnailers
+    kdePackages.ffmpegthumbs
     librewolf
     # Official desktop client, including graphical Codex, from the pinned input.
     pkgsUnstable.chatgpt

@@ -14,7 +14,7 @@ services. App adapters may install their native styling plugins.
   The upstream project uses the [MIT license](https://github.com/catppuccin/palette/blob/v1.8.0/LICENSE).
   Values are stored locally and versioned in Git; builds do not fetch a palette.
 - `default.nix` is the public entry point. It exports `name`, `variant`,
-  `appearance`, `palette`, and `roles`. Every color is an opaque lowercase
+  `appearance`, `palette`, `roles`, and `typography`. Every color is an opaque lowercase
   `#rrggbb` string.
 - `roles` assigns colors to purposes. These assignments are our starting choices,
   not an official Catppuccin application theme. Adjust a shared role here instead
@@ -62,8 +62,10 @@ set of Latte values. Document unavoidable exceptions, including packaged assets
 that cannot consume individual colors. Check readability for each actual use;
 membership in the palette alone does not establish sufficient text contrast.
 
-Fonts, spacing, borders, and rounding remain in their existing configurations
-until there is a concrete reason to share them. This foundation defines colors.
+`typography` holds the shared UI font family and point size. Alacritty, Rofi,
+Waybar, SwayNC, GTK defaults and KDE UI font roles translate these into native
+settings; CSS uses `pt` rather than `px`. Website fonts and independent app
+overrides are not forced. Spacing, borders and rounding remain app-specific.
 Integrations follow normal rebuild and app reload/restart behavior.
 No runtime refresh or switching mechanism is planned.
 
@@ -84,7 +86,7 @@ links document research, not an instruction to fetch themes during activation.
 
 Bar backgrounds and window opacity are opaque; shadows remain disabled. This
 prevents the wallpaper from tinting the generated colors. Existing geometry and
-fonts stay in their existing modules. Some ANSI colors are intentionally faint
+spacing stays in the existing modules. Some ANSI colors are intentionally faint
 for terminal compatibility, not intended as default body-text colors.
 The shared secondary-text and selection roles use `subtext1` and `surface0`:
 primary text on the selection background is about 5.17:1, rather than the
@@ -96,6 +98,14 @@ SDDM, hyprlock, Hyprspace-specific appearance, Snap, app-specific TUI themes, an
 wpaperd's wallpaper image. Terminal apps inherit Alacritty's ANSI palette where
 they use terminal colors; apps emitting their own truecolor values need separate
 research. Do not call those apps fully themed just because their terminal is.
+
+Gwenview and Ark reuse the KDE adapter. The cursor is an explicit packaged-asset
+exception: [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark
+from the pinned nixpkgs package, selected for contrast on the light desktop.
+The same package contains native Hyprcursor and Xcursor assets; Home Manager
+also sets GTK/X11 defaults and KDE's `kcminputrc`. No application Mocha palette
+or runtime theme coordinator is introduced. GTK font/cursor configuration does
+not imply that GTK application colors have been integrated.
 
 Activation uses the normal NixOS/Home Manager switch. Alacritty normally reloads
 its config; Rofi uses it on the next invocation; Waybar and SwayNC are managed by

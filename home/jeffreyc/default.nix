@@ -32,8 +32,11 @@
     };
     mimeApps = {
       enable = true;
-      # Derive archive associations from Ark's installed desktop entry.
-      defaultApplicationPackages = [ pkgs.kdePackages.ark ];
+      # Native archive/image associations, rather than a second handwritten MIME list.
+      defaultApplicationPackages = [
+        pkgs.kdePackages.ark
+        pkgs.kdePackages.gwenview
+      ];
       defaultApplications = {
         "x-scheme-handler/http" = [ "librewolf.desktop" ];
         "x-scheme-handler/https" = [ "librewolf.desktop" ];

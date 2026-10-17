@@ -2,7 +2,7 @@
 
 let
   theme = import ../../theme;
-  inherit (theme) palette roles;
+  inherit (theme) palette roles typography;
   ansi = {
     black = palette.surface1;
     red = palette.red;
@@ -43,7 +43,7 @@ in
 
   programs.rofi = {
     enable = true;
-    font = "Monaspace Neon 11";
+    font = "${typography.family} ${toString typography.size}";
     terminal = "alacritty";
     modes = [
       "drun"
@@ -153,8 +153,8 @@ in
         ];
       };
       font = {
-        normal.family = "Monaspace Neon";
-        size = 11;
+        normal.family = typography.family;
+        size = typography.size;
       };
       window.padding = {
         x = 4;

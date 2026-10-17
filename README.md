@@ -71,8 +71,15 @@ Home Manager's backup suffix during the first activation.
 
 The existing GTK/Hyprland portals, polkit agent, and UDisks2 provide file dialogs,
 screen sharing, authentication prompts, and removable-drive support. No desktop
-bundle or automounter is added. Dedicated image, media, mail, office, and GUI editor
-application choices remain open; they are not silently filled by extra packages.
+bundle or automounter is added. Media-player, mail, office, and general GUI editor
+choices remain open; they are not silently filled by extra packages.
+
+`theme/default.nix` defines the shared Monaspace Neon font and point size.
+Alacritty, Rofi, Waybar, SwayNC, GTK defaults and KDE UI fonts consume it. CSS uses
+points rather than pixels, without changing display scaling. Web content and
+applications with their own font settings are not forcibly overridden.
+The contrasting Catppuccin Mocha Dark cursor is configured for Hyprland, GTK,
+Qt/KDE and X11 in `home/jeffreyc/desktop.nix`; the rest of the theme stays Latte.
 
 ## Dolphin
 
@@ -86,8 +93,15 @@ Open Terminal (Shift+F4) uses Alacritty at the viewed location. Dolphin's F4
 embedded terminal requires Konsole's separate component and is intentionally not
 added. Existing Dolphin preferences, view history, and Places bookmarks remain
 writable and unmanaged; selected default apps and theme colors are declarative.
-KIO already supplies file/trash support and extras; preview availability varies by
-format. Optional video/PDF thumbnail packages are not added automatically.
+KIO supplies file/trash support and extras. Qt's `kimageformats` adds HEIC/HEIF,
+AVIF, JPEG XL, RAW and other image readers; `kdegraphics-thumbnailers` adds PDF/RAW
+previews, and `ffmpegthumbs` adds video previews. Toggle **Show Previews** with F12;
+individual types remain configurable in Dolphin's preview preferences. Existing
+per-folder view settings are preserved.
+
+Gwenview is the default image viewer and quick editor, using the same KDE Latte
+theme. It supports crop, resize, rotate, flip, annotation and basic adjustments;
+save a copy when preserving an original. It launches on demand, not as a daemon.
 
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;

@@ -9,6 +9,12 @@ in
 
   inherit palette;
 
+  # Point sizes throughout; CSS adapters use pt, not px.
+  typography = {
+    family = "Monaspace Neon";
+    size = 11;
+  };
+
   # Personal role choices live here; preserve the official palette above.
   roles = {
     background = palette.base;

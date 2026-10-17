@@ -14,8 +14,10 @@ local fileManager = "dolphin"
 local menu = "rofi -show drun"
 local mainMod = "SUPER"
 
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "@CURSOR_THEME@")
+hl.env("HYPRCURSOR_THEME", "@CURSOR_THEME@")
+hl.env("XCURSOR_SIZE", "@CURSOR_SIZE@")
+hl.env("HYPRCURSOR_SIZE", "@CURSOR_SIZE@")
 
 hl.config({
     general = {

@@ -78,8 +78,9 @@ LibreWolf/Dolphin and the `codex://` handler, and `xdg-terminal-exec` selecting
 Alacritty. The terminal selector is an on-demand command, not a daemon. Standard
 folders and Pictures/Screenshots/Wallpapers are created without moving existing
 data. MIME configuration that predates Home Manager is backed up rather than
-discarded. Dedicated image/media/mail/office/GUI editor application choices are
-still pending; do not install a bundle to fill those roles.
+discarded. Gwenview supplies image viewing and quick editing. Dedicated media
+player/mail/office/general GUI editor choices remain pending; do not install a
+bundle to fill those roles.
 
 Dolphin uses native KDE colors generated from the shared Latte palette in
 `home/jeffreyc/desktop.nix`, plus the Qt6 KDE platform plugin, Breeze widget style,
@@ -88,9 +89,17 @@ so this does not add System Settings or a Plasma session. Qt environment setting
 also affect other Qt clients. `kdeglobals` and the generated color-scheme file
 are managed; `dolphinrc`, Places bookmarks, and per-folder state are preserved.
 KDE's terminal settings point to Alacritty for external terminal launches.
-The embedded Konsole panel, extra indexer, and optional video/PDF thumbnailers
-are not installed. KIO/KIO extras and icon assets already occur in Dolphin's
+The embedded Konsole panel and extra indexer are not installed.
+KIO/KIO extras and icon assets already occur in Dolphin's
 dependency closure; avoid redundantly adding a KDE bundle for those functions.
+
+Image support uses native Qt `kimageformats` readers, including HEIC/HEIF, AVIF,
+JPEG XL and RAW, plus KIO's `kdegraphics-thumbnailers` for PDF/RAW and
+`ffmpegthumbs` for video previews. Dolphin's default plugin discovery picks up
+the installed thumbnailers; existing preview and per-folder preferences are not
+overwritten. Gwenview is the image MIME default (folders stay assigned to Dolphin)
+and offers quick crop/resize/rotate/annotation/basic adjustments. It reuses the
+existing Qt/KDE theme and starts on demand, with no new service.
 
 Ark is the archive viewer and supplies Dolphin's native extraction/compression
 service menus. Archive MIME defaults are derived from its desktop entry rather
@@ -129,6 +138,13 @@ pairing as the compositor. Review that compatibility pin during Hyprland upgrade
 - The theme direction is fixed Catppuccin Latte, with locally versioned official
   palette values and shared semantic roles. No switching, refresh coordinator,
   or theme daemon is wanted. See `theme/README.md` for the data contract.
+- Fonts share the family and point size in `theme/default.nix` across terminal,
+  launcher, bar, notifications, GTK defaults and KDE UI roles. CSS uses `pt`, not
+  `px`, to avoid unit mismatches. Web content and app-specific overrides are not
+  forced. Display scaling remains unchanged.
+- The cursor intentionally uses packaged Catppuccin Mocha Dark assets for
+  contrast on Latte. Home Manager configures Hyprcursor, Xcursor, GTK and KDE;
+  this is an asset exception, not a second application palette or theme switcher.
 - Native theme adapters consume the shared definitions for Hyprland borders,
   Alacritty, Rofi, Waybar, SwayNC, and Dolphin/KDE Qt colors. Keep app-specific syntax in the existing
   modules; do not install independent Catppuccin palettes. Bar and window colors

@@ -8,7 +8,9 @@
 
 let
   theme = import ../../theme;
-  inherit (theme) roles palette;
+  inherit (theme) roles palette typography;
+  fontSize = toString typography.size;
+  kdeFont = "${typography.family},${fontSize},-1,5,50,0,0,0,0,0";
   hex = lib.removePrefix "#";
   rgb =
     color:
@@ -81,6 +83,27 @@ let
   });
 in
 {
+  gtk = {
+    enable = true;
+    font = {
+      name = typography.family;
+      size = typography.size;
+    };
+  };
+  home.pointerCursor = {
+    package = pkgs.catppuccin-cursors.mochaDark;
+    name = "catppuccin-mocha-dark-cursors";
+    size = 24;
+    gtk.enable = true;
+    x11.enable = true;
+    hyprcursor.enable = true;
+  };
+  xdg.configFile."kcminputrc".source = (pkgs.formats.ini { }).generate "kcminputrc" {
+    Mouse = {
+      cursorTheme = config.home.pointerCursor.name;
+      cursorSize = config.home.pointerCursor.size;
+    };
+  };
   qt = {
     enable = true;
     platformTheme = {
@@ -102,8 +125,12 @@ in
     kdeScheme
     // {
       General = kdeScheme.General // {
-        font = "Monaspace Neon,11,-1,5,50,0,0,0,0,0";
-        fixed = "Monaspace Neon,11,-1,5,50,0,0,0,0,0";
+        font = kdeFont;
+        fixed = kdeFont;
+        menuFont = kdeFont;
+        toolBarFont = kdeFont;
+        smallestReadableFont = kdeFont;
+        taskbarFont = kdeFont;
         TerminalApplication = "alacritty";
         TerminalService = "Alacritty.desktop";
         BrowserApplication = "librewolf.desktop";
@@ -116,12 +143,21 @@ in
   # Translate canonical colors only at the application's format boundary.
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
     builtins.replaceStrings
-      [ "@HYPRSPACE_PLUGIN@" "@THEME_ACTIVE_BORDER@" "@THEME_INACTIVE_BORDER@" "@THEME_SHADOW@" ]
+      [
+        "@HYPRSPACE_PLUGIN@"
+        "@THEME_ACTIVE_BORDER@"
+        "@THEME_INACTIVE_BORDER@"
+        "@THEME_SHADOW@"
+        "@CURSOR_THEME@"
+        "@CURSOR_SIZE@"
+      ]
       [
         "${hyprspace}/lib/libhyprspace.so"
         (hex roles.borderFocused)
         (hex roles.border)
         (hex roles.backgroundAlt)
+        config.home.pointerCursor.name
+        (toString config.home.pointerCursor.size)
       ]
       (builtins.readFile ../../dotfiles/hypr/hyprland.lua)
   );
@@ -204,8 +240,8 @@ in
       * {
         border: none;
         border-radius: 0;
-        font-family: "Monaspace Neon", "Symbols Nerd Font";
-        font-size: 11px;
+        font-family: "${typography.family}", "Symbols Nerd Font";
+        font-size: ${fontSize}pt;
       }
       window#waybar { background: ${roles.background}; color: ${roles.foreground}; }
       #workspaces button { padding: 0 5px; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
@@ -249,8 +285,11 @@ in
         --bg-selected: ${roles.accent};
         --border-radius: 4px;
         --notification-shadow: none;
+        --font-size-body: ${fontSize}pt;
+        --font-size-summary: ${fontSize}pt;
       }
-      * { font-family: "Monaspace Neon", "Symbols Nerd Font"; }
+      * { font-family: "${typography.family}", "Symbols Nerd Font"; font-size: ${fontSize}pt; }
+      .widget-title > label, .widget-dnd > label { font-size: ${fontSize}pt; }
       .notification-row .notification-background .notification.critical { border-color: ${roles.error}; }
       .control-center { border: 1px solid ${roles.border}; }
       .widget-title > button, .notification-action, .widget-dnd switch {
