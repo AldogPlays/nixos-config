@@ -15,7 +15,7 @@
     sessionVariables = {
       EDITOR = "nano";
       BROWSER = "librewolf";
-      TERMINAL = "kitty";
+      TERMINAL = "alacritty";
     };
   };
 

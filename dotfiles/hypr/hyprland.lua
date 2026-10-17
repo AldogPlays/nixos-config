@@ -1,15 +1,17 @@
 -- Managed by Home Manager from this repository.
+-- Home Manager substitutes the plugin path from the same nixpkgs as Hyprland.
+hl.plugin.load("@HYPRSPACE_PLUGIN@")
 
 hl.monitor({
     output = "",
     mode = "preferred",
     position = "auto",
-    scale = "auto",
+    scale = 1.5,
 })
 
-local terminal = "kitty"
+local terminal = "alacritty"
 local fileManager = "dolphin"
-local menu = "hyprlauncher"
+local menu = "rofi -show drun"
 local mainMod = "SUPER"
 
 hl.env("XCURSOR_SIZE", "24")
@@ -17,9 +19,9 @@ hl.env("HYPRCURSOR_SIZE", "24")
 
 hl.config({
     general = {
-        gaps_in = 5,
-        gaps_out = 14,
-        border_size = 2,
+        gaps_in = 2,
+        gaps_out = 4,
+        border_size = 1,
         col = {
             active_border = { colors = { "rgba(89b4faff)", "rgba(a6e3a1ff)" }, angle = 45 },
             inactive_border = "rgba(585b70aa)",
@@ -29,12 +31,12 @@ hl.config({
         layout = "dwindle",
     },
     decoration = {
-        rounding = 10,
+        rounding = 4,
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 0.96,
         shadow = {
-            enabled = true,
+            enabled = false,
             range = 4,
             render_power = 3,
             color = 0xee1a1a1a,
@@ -52,7 +54,10 @@ hl.config({
         kb_layout = "us",
         follow_mouse = 1,
         sensitivity = 0,
-        touchpad = { natural_scroll = true },
+        touchpad = {
+            natural_scroll = false,
+            disable_while_typing = false,
+        },
     },
     misc = {
         force_default_wallpaper = -1,
@@ -78,7 +83,14 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
-hl.bind("PRINT", hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy"))
+hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("alacritty --class wlctl -e wlctl"))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("alacritty --class bluetui -e bluetui"))
+hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd("alacritty --class wiremix -e wiremix"))
+hl.bind("PRINT", hl.dsp.exec_cmd("snap"))
+hl.bind(mainMod .. " + TAB", function()
+    hl.plugin.overview.toggle()
+end, { description = "Toggle Hyprspace overview" })
 
 hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
 hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))

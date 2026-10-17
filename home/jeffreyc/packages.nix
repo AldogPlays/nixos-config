@@ -1,22 +1,30 @@
-{ pkgs, pkgsUnstable, ... }:
+{
+  inputs,
+  pkgs,
+  pkgsUnstable,
+  ...
+}:
 
 {
   home.packages = with pkgs; [
     # Desktop applications
     kdePackages.dolphin
     librewolf
-    pavucontrol
+    # Official desktop client, including graphical Codex, from the pinned input.
+    pkgsUnstable.chatgpt
+
+    # On-demand TUI controls; NetworkManager, BlueZ, and PipeWire stay in place.
+    inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default
+    bluetui
+    wiremix
 
     # Hyprland utilities used by the declarative keybindings/session
     brightnessctl
-    grim
-    hyprlauncher
     hyprlock
     hyprpolkitagent
-    networkmanagerapplet
     playerctl
-    slurp
     wl-clipboard
+    (pkgs.callPackage ../../packages/snap.nix { src = inputs.snap-src; })
 
     # Command-line workflow
     fd

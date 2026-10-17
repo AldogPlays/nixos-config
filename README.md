@@ -5,13 +5,40 @@ Flake-based NixOS and Home Manager configuration for the `nixos` host (Lenovo Id
 ## Layout
 
 ```text
+AGENTS.md                     working directions for agents
 flake.nix                     pinned inputs and host output
 hosts/nixos/                  machine identity, disks, and boot hardware
 modules/nixos/                reusable OS, hardware, and desktop modules
 home/jeffreyc/                Home Manager modules
+packages/                     local Nix packages (Snap)
 dotfiles/hypr/                versioned Hyprland configuration
+theme/                        shared Latte color foundation (not integrated yet)
+docs/system-context.md        system inventory and configuration decisions
 docs/audit.md                 bootstrap hardware/configuration audit
 ```
+
+The fixed Catppuccin Latte theme foundation is documented in
+[theme/README.md](theme/README.md). Application integration is pending component
+research; the foundation currently has no effect on the desktop.
+
+## Desktop controls
+
+| Action | Shortcut or control |
+| --- | --- |
+| Terminal (Alacritty) | Super+Q |
+| App launcher (Rofi) | Super+R |
+| Notification center (SwayNC) | Super+N or click the bar's notification icon |
+| Do not disturb | Right-click the notification icon |
+| Wi-Fi (wlctl) | Super+Shift+N or click the bar's network module |
+| Bluetooth (Bluetui) | Super+Shift+B or click the bar's Bluetooth module |
+| Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
+| Screenshot (Snap) | Print; press again to dismiss the capture overlay |
+| Workspace overview (Hyprspace) | Super+Tab |
+
+wpaperd starts with the graphical session and uses a packaged dark-gray NixOS
+wallpaper as a placeholder. Change `services.wpaperd.settings.default.path` in
+`home/jeffreyc/desktop.nix` to select a different persistent wallpaper. Snap and
+wlctl are pinned in `flake.lock`; Snap's local build is in `packages/snap.nix`.
 
 ## First activation
 
@@ -39,13 +66,24 @@ git commit -m "chore: update flake inputs"
 
 Roll back from the boot menu or with `sudo nixos-rebuild switch --rollback` if a generation misbehaves.
 
-## GitHub setup
+## Graphical Codex
 
-Authenticate and create a private repository when ready:
+The official ChatGPT desktop app includes graphical Codex and is installed
+alongside the CLI. Open **ChatGPT** from Rofi or run `chatgpt`, then sign in with
+your ChatGPT account. Both clients are pinned through the unstable flake input.
+
+## GitHub
+
+The existing `origin` remote is
+[AldogPlays/nixos-config](https://github.com/AldogPlays/nixos-config).
+After reviewing and validating changes:
 
 ```bash
-gh auth login
-gh repo create nixos-config --private --source=. --remote=origin --push
+git add <files>
+git commit -m "Describe the configuration change"
+git push origin main
 ```
 
-Change `--private` only if every tracked file has been reviewed for host-specific or sensitive information. Disk UUIDs are identifiers rather than encryption secrets, but this repository intentionally documents the machine model and storage layout.
+Review files for host-specific or sensitive information before publishing them.
+Disk UUIDs are identifiers rather than encryption secrets, but this repository
+intentionally documents the machine model and storage layout.

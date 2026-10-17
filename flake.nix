@@ -11,6 +11,22 @@
       url = "github:nix-community/home-manager/release-26.05";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    wlctl = {
+      url = "github:aashish-thapa/wlctl/v0.1.10";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    snap-src = {
+      url = "github:yumedots/snap";
+      flake = false;
+    };
+
+    hyprspace-src = {
+      # Upstream's hyprpm compatibility pin for Hyprland 0.55.4, including Lua bindings.
+      url = "github:KZDKM/Hyprspace/3624878a7b6c00dfa77e351438fa209df99ad81d";
+      flake = false;
+    };
   };
 
   outputs =

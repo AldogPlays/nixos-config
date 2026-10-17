@@ -11,7 +11,6 @@
   };
 
   services = {
-    blueman.enable = true;
     fwupd.enable = true;
     power-profiles-daemon.enable = true;
     upower.enable = true;

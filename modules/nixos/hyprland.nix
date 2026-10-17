@@ -31,8 +31,14 @@
   };
 
   fonts.packages = with pkgs; [
-    nerd-fonts.jetbrains-mono
+    monaspace.static
+    nerd-fonts.symbols-only
     noto-fonts
     noto-fonts-color-emoji
+  ];
+
+  fonts.fontconfig.defaultFonts.monospace = [
+    "Monaspace Neon"
+    "Symbols Nerd Font Mono"
   ];
 }

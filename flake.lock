@@ -21,6 +21,23 @@
         "type": "github"
       }
     },
+    "hyprspace-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1783461049,
+        "narHash": "sha256-MLjX/A6pudwEl11LEesaAdOG8toqo1GHROLsoWKnT+o=",
+        "owner": "KZDKM",
+        "repo": "Hyprspace",
+        "rev": "3624878a7b6c00dfa77e351438fa209df99ad81d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "KZDKM",
+        "repo": "Hyprspace",
+        "rev": "3624878a7b6c00dfa77e351438fa209df99ad81d",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1792030654,
@@ -56,8 +73,48 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
+        "hyprspace-src": "hyprspace-src",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-unstable": "nixpkgs-unstable"
+        "nixpkgs-unstable": "nixpkgs-unstable",
+        "snap-src": "snap-src",
+        "wlctl": "wlctl"
+      }
+    },
+    "snap-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791774790,
+        "narHash": "sha256-SrTmmyPYhJjzwTydBXNxRxdWHzL8PbYlMR5qBBRqidw=",
+        "owner": "yumedots",
+        "repo": "snap",
+        "rev": "6986c58ca7056b7a712f053e6ef1a97af2728f84",
+        "type": "github"
+      },
+      "original": {
+        "owner": "yumedots",
+        "repo": "snap",
+        "type": "github"
+      }
+    },
+    "wlctl": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787245917,
+        "narHash": "sha256-ecjh4pYRLb0Ic/gWmfvEakzeQXhTfBe+zCFtqCsGeKw=",
+        "owner": "aashish-thapa",
+        "repo": "wlctl",
+        "rev": "d08033112918388fab1c44ac54fcf5b53cfcc504",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aashish-thapa",
+        "ref": "v0.1.10",
+        "repo": "wlctl",
+        "type": "github"
       }
     }
   },

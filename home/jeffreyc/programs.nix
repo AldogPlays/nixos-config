@@ -27,17 +27,28 @@
     gitCredentialHelper.enable = true;
   };
 
-  programs.kitty = {
+  programs.rofi = {
     enable = true;
-    font = {
-      name = "JetBrainsMono Nerd Font";
-      size = 11;
-    };
+    font = "Monaspace Neon 11";
+    terminal = "alacritty";
+    modes = [
+      "drun"
+      "run"
+    ];
+  };
+
+  programs.alacritty = {
+    enable = true;
     settings = {
-      confirm_os_window_close = 0;
-      enable_audio_bell = false;
-      scrollback_lines = 10000;
-      window_padding_width = 8;
+      font = {
+        normal.family = "Monaspace Neon";
+        size = 11;
+      };
+      window.padding = {
+        x = 4;
+        y = 4;
+      };
+      scrolling.history = 10000;
     };
   };
 }
