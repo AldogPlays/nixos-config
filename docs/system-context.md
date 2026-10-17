@@ -48,9 +48,9 @@ to keep every bootstrap component.
 | Compositor and session | Hyprland, UWSM, XWayland | `modules/nixos/hyprland.nix`; `dotfiles/hypr/hyprland.lua` |
 | Login greeter | SDDM with Wayland enabled | `modules/nixos/hyprland.nix` |
 | Bar and notifications | Waybar, SwayNotificationCenter | `home/jeffreyc/desktop.nix`; Super+N toggles the notification center |
-| Launcher | Rofi (native Wayland), Super+R | `home/jeffreyc/programs.nix`; Hyprland bindings |
+| Launcher | Rofi (native Wayland), Super+A | `home/jeffreyc/programs.nix`; Hyprland bindings |
 | Lock screen | hyprlock, Super+L | Package and binding only; no custom theme or idle-lock service |
-| Terminal and files | Alacritty, Super+Q; Dolphin, Super+E | Home Manager programs/packages; Hyprland bindings |
+| Terminal and files | Alacritty, Super+T; Dolphin, Super+E | Home Manager programs/packages; Hyprland bindings |
 | Browser | LibreWolf | Home Manager packages and session variables |
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
@@ -79,7 +79,7 @@ pairing as the compositor. Review that compatibility pin during Hyprland upgrade
 
 ## Customization decisions
 
-- The requested look uses 1.5 scaling, compact gaps, thin borders, restrained
+- The requested look uses 1.0 scaling, compact gaps, thin borders, restrained
   corners, and no window shadows. Exact geometry lives in the Hyprland and
   Home Manager desktop configurations.
 - The touchpad should remain usable during typing and use non-natural scrolling.

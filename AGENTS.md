@@ -120,6 +120,9 @@ successful flake evaluation, build, or runtime check.
 ## Handoff and upkeep
 
 - Explain what changed, why, what was checked, and any remaining limitation.
+- After making repository changes, ask Jeffrey whether to commit and push them
+  to GitHub, unless he has already requested a push for that work. Do not push
+  automatically without that authorization.
 - Commit, push, publish, or change remote settings when the user requests those
   actions; preserve the existing Git history and unrelated changes.
 - Change this guide when the directions for agents change. Do not append task

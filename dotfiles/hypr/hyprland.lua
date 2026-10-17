@@ -6,7 +6,7 @@ hl.monitor({
     output = "",
     mode = "preferred",
     position = "auto",
-    scale = 1.5,
+    scale = 1.0,
 })
 
 local terminal = "alacritty"
@@ -74,12 +74,13 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOut
 
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
-hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + C", hl.dsp.window.close())
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal))
+hl.bind(mainMod .. " + F", hl.dsp.exec_cmd("librewolf --new-window about:blank"))
+hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
+hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
@@ -92,10 +93,20 @@ hl.bind(mainMod .. " + TAB", function()
     hl.plugin.overview.toggle()
 end, { description = "Toggle Hyprspace overview" })
 
-hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
+hl.bind("ALT + Return", hl.dsp.window.fullscreen({ action = "toggle" }),
+    { description = "Alt+Enter: toggle fullscreen" })
+
+for _, direction in ipairs({
+    { key = "left", x = -20, y = 0 },
+    { key = "right", x = 20, y = 0 },
+    { key = "up", x = 0, y = -20 },
+    { key = "down", x = 0, y = 20 },
+}) do
+    hl.bind(mainMod .. " + " .. direction.key, hl.dsp.window.move({ direction = direction.key }))
+    hl.bind(mainMod .. " + SHIFT + " .. direction.key,
+        hl.dsp.window.resize({ x = direction.x, y = direction.y, relative = true }),
+        { repeating = true })
+end
 
 for i = 1, 10 do
     local key = i % 10

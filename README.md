@@ -25,8 +25,17 @@ research; the foundation currently has no effect on the desktop.
 
 | Action | Shortcut or control |
 | --- | --- |
-| Terminal (Alacritty) | Super+Q |
-| App launcher (Rofi) | Super+R |
+| Terminal (Alacritty) | Meta+T |
+| New LibreWolf window | Meta+F |
+| Close focused window | Meta+Q |
+| Toggle floating | Meta+W |
+| Toggle fullscreen | Alt+Enter |
+| Workspace 1–10 | Meta+1–9, Meta+0 for 10 |
+| Move window to workspace | Meta+Shift+1–9 or 0 |
+| Move focused window in layout | Meta+Arrow |
+| Resize focused window | Meta+Shift+Arrow; 20 px steps, hold to repeat |
+| File browser (Dolphin) | Meta+E |
+| App launcher (Rofi) | Meta+A |
 | Notification center (SwayNC) | Super+N or click the bar's notification icon |
 | Do not disturb | Right-click the notification icon |
 | Wi-Fi (wlctl) | Super+Shift+N or click the bar's network module |
@@ -34,6 +43,10 @@ research; the foundation currently has no effect on the desktop.
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
 | Screenshot (Snap) | Print; press again to dismiss the capture overlay |
 | Workspace overview (Hyprspace) | Super+Tab |
+
+Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
+window's width/height; Right/Down grows it. Tiled resizing respects the layout.
+Other existing controls remain unchanged.
 
 wpaperd starts with the graphical session and uses a packaged dark-gray NixOS
 wallpaper as a placeholder. Change `services.wpaperd.settings.default.path` in
