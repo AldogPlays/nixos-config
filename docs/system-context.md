@@ -27,6 +27,12 @@ The kernel selection is `pkgs.linuxPackages_latest` from the stable input. Recen
 hardware support is a consideration when reviewing that choice, but a specific
 requirement for this kernel has not been established.
 
+The systemd-boot menu is hidden for normal startup; hold Space during firmware
+startup to open it and select an earlier generation. A persistent EFI menu-timeout
+override takes precedence over the declared timeout, so clear an old override
+with `sudo bootctl set-timeout ''` after activating the configuration. This does
+not change disk-unlock or login authentication.
+
 Root is LUKS-encrypted Btrfs, mounted at the top level. `/home` and `/nix` are
 separate subvolumes sharing its capacity. `/boot` is a separate EFI partition;
 swap is a separate encrypted 8.8 GiB partition. There is no declared resume device,
@@ -146,6 +152,12 @@ helper for remembered assignments and display-sized copies. No extra background
 service is added; awww is no longer enabled. The collection and runtime cache
 stay outside Git and the Nix store; theme/lock screen stay independent. See
 [workspace wallpapers](wallpapers.md) for limits, validation, and recovery.
+Preparation shares identical source/size results within each update, and the
+renderer shares textures by prepared path. Superseded generated BMPs are removed
+only after successful loading, under the helper's nonblocking lock with a fresh
+manifest check. Diagnostics serialize on demand rather than during rendering.
+These internal optimizations preserve assignments, refresh timing, image quality
+and workspace animations.
 
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Snap's source is locked as a non-flake input and built locally with xmake, with

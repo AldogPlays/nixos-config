@@ -240,6 +240,10 @@ git commit -m "chore: update flake inputs"
 
 Roll back from the boot menu or with `sudo nixos-rebuild switch --rollback` if a generation misbehaves.
 
+The boot menu has no countdown. Hold Space during firmware startup to open it
+and select a recovery generation. If a timeout previously set in the boot menu
+persists after a rebuild, clear its EFI override with `sudo bootctl set-timeout ''`.
+
 ## Graphical Codex
 
 The official ChatGPT desktop app includes graphical Codex and is installed

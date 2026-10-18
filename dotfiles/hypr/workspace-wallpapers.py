@@ -130,6 +130,9 @@ def reconcile(directory, state_path, interval, run, now=None):
     outputs = monitors
     cache = state_path.parent / "workspace-wallpaper-images"
     cache.mkdir(mode=0o700, exist_ok=True)
+    # Share results across equal-sized outputs, repeated assignments and retries.
+    # Keep this per invocation so future updates still recheck source metadata.
+    prepared_images, rejected = {}, set()
     while True:
         prepared, failed = {}, set()
         for output in outputs:
@@ -140,9 +143,16 @@ def reconcile(directory, state_path, interval, run, now=None):
                 continue
             rendered = prepared[output["name"]] = {}
             for key, image in assignments.items():
+                if image in rejected:
+                    failed.add(image)
+                    continue
                 try:
-                    rendered[key] = prepare_image(image, size, cache)
+                    identity = (image, size)
+                    if identity not in prepared_images:
+                        prepared_images[identity] = prepare_image(image, size, cache)
+                    rendered[key] = prepared_images[identity]
                 except (OSError, ValueError, Image.DecompressionBombError):
+                    rejected.add(image)
                     failed.add(image)
         if not failed:
             break

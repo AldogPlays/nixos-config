@@ -2,6 +2,8 @@
 
 {
   boot.loader.systemd-boot.enable = true;
+  # Hold Space during firmware startup to open the generation/recovery menu.
+  boot.loader.timeout = 0;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxPackages_latest;
 

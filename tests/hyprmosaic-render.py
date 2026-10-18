@@ -1,5 +1,7 @@
 """Run only a disposable nested compositor; never load plugins into the host."""
 
+import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -100,7 +102,9 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
         for mon in monitors:
             images = prepared[mon["name"]] = {}
             for number in (1, 2, 3):
-                image = cache / f"test-{number}.bmp"
+                image = cache / (
+                    hashlib.sha256(f"test-{number}".encode()).hexdigest() + ".bmp"
+                )
                 Image.new(
                     "RGB",
                     (640, 400),
@@ -113,6 +117,26 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
             temporary.write_text(json.dumps({"prepared": value}))
             temporary.replace(session / "workspace-wallpapers.json")
 
+        def wait_loaded(previous):
+            for _ in range(100):
+                status = json.loads(ctl("hyprmosaic:status"))
+                if status["manifest_loads"] > previous:
+                    return status
+                time.sleep(0.03)
+            raise AssertionError(("Manifest did not load", status))
+
+        def update(value):
+            previous = json.loads(ctl("hyprmosaic:status"))["manifest_loads"]
+            publish(value)
+            return wait_loaded(previous)
+
+        def wait_removed(path):
+            for _ in range(100):
+                if not path.exists():
+                    return
+                time.sleep(0.03)
+            raise AssertionError(("Stale generated image retained", str(path)))
+
         publish(prepared)
         for _ in range(50):
             status = json.loads(ctl("hyprmosaic:status"))
@@ -120,7 +144,60 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
                 break
             time.sleep(0.1)
         assert status["resident_images"] == 3 * len(monitors), status
+        assert status["resident_textures"] == 3, status
+        assert status["texture_uploads"] == 3, status
         print("PASS: prepared images load through the atomic manifest")
+
+        stale = cache / ("a" * 64 + ".bmp")
+        Image.new("RGB", (640, 400), (1, 2, 3)).save(stale)
+        unrelated = cache / "personal.bmp"
+        unrelated.write_bytes(b"preserve unrelated files")
+        linked = cache / ("b" * 64 + ".bmp")
+        linked.symlink_to(unrelated)
+        shared = {
+            name: {**images, "4": images["1"]} for name, images in prepared.items()
+        }
+        before = status["manifest_loads"]
+        with (session / "workspace-wallpapers.lock").open("w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            publish(shared)
+            time.sleep(0.25)
+            assert json.loads(ctl("hyprmosaic:status"))["manifest_loads"] == before
+            assert stale.exists(), "Cleanup raced with a locked preparation"
+        status = wait_loaded(before)
+        assert status["resident_images"] == 4 * len(monitors)
+        assert status["resident_textures"] == 3 and status["texture_uploads"] == 3
+        wait_removed(stale)
+        assert unrelated.read_bytes() == b"preserve unrelated files"
+        assert linked.is_symlink()
+        print(
+            "PASS: shared textures, nonblocking preparation lock, and safe generated-cache cleanup"
+        )
+
+        moved = {
+            name: {"1": images["1"], "2": images["3"], "3": images["2"]}
+            for name, images in prepared.items()
+        }
+        status = update(moved)
+        assert status["texture_uploads"] == 3, status
+        status = update(prepared)
+        assert status["texture_uploads"] == 3, status
+        print("PASS: reassignment between workspaces reuses existing GPU uploads")
+
+        stale.write_bytes(unrelated.read_bytes())
+        incomplete = {
+            name: {**images, "1": str(cache / ("c" * 64 + ".bmp"))}
+            for name, images in prepared.items()
+        }
+        status = update(incomplete)
+        time.sleep(0.15)
+        assert stale.exists(), "Incomplete replacement must not authorize pruning"
+        status = update(prepared)
+        wait_removed(stale)
+        assert status["texture_uploads"] == 3
+        print(
+            "PASS: failed replacements preserve old textures and defer cleanup until recovery"
+        )
 
         def capture():
             screenshot = root / "frame.png"
@@ -201,6 +278,26 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
         )
         ctl("eval", "hl.dispatch(hl.dsp.focus({workspace=1}))")
         time.sleep(0.6)
+        original_path = Path(prepared[monitors[0]["name"]]["1"])
+        original_bytes = original_path.read_bytes()
+        replacement = cache / (hashlib.sha256(b"replacement").hexdigest() + ".bmp")
+        replacement.write_bytes(original_bytes)
+        changed = {
+            name: {**images, "1": str(replacement)} for name, images in prepared.items()
+        }
+        before_uploads = json.loads(ctl("hyprmosaic:status"))["texture_uploads"]
+        status = update(changed)
+        assert status["texture_uploads"] == before_uploads + 1, status
+        wait_removed(original_path)
+        assert replacement.exists()
+        check_pixels((91, 83, 67))
+        original_path.write_bytes(original_bytes)
+        status = update(prepared)
+        wait_removed(replacement)
+        check_pixels((91, 83, 67))
+        print(
+            "PASS: actual replaced files are reclaimed after upload with identical rendered pixels"
+        )
         assert not ctl("configerrors").strip()
         ctl("plugin", "unload", plugin)
         assert not json.loads(ctl("-j", "plugin", "list"))

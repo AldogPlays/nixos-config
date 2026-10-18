@@ -8,9 +8,13 @@
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <fcntl.h>
 #include <fstream>
 #include <map>
+#include <memory>
+#include <set>
 #include <stdexcept>
+#include <sys/file.h>
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <nlohmann/json.hpp>
@@ -27,8 +31,15 @@
 
 namespace {
 struct Wallpaper {
-    std::string path;
+    std::shared_ptr<const std::string> path;
     SP<Render::ITexture> texture;
+};
+struct Draw {
+    WORKSPACEID id;
+    Vector2D origin;
+    // Keep diagnostic paths alive across manifest changes, without copying
+    // strings every frame or retaining superseded GPU textures for status.
+    std::shared_ptr<const std::string> path;
 };
 using Wallpapers = std::map<std::string, std::map<WORKSPACEID, Wallpaper>>;
 Wallpapers walls;
@@ -38,10 +49,31 @@ int notifyFd = -1;
 wl_event_source* notifySource = nullptr;
 CHyprSignalListener renderListener, tickListener, workspaceListener;
 SP<SHyprCtlCommand> statusCommand;
-nlohmann::json lastDraws = nlohmann::json::object();
+std::map<std::string, std::vector<Draw>> lastDraws;
+nlohmann::json loadedPrepared;
+bool prunePending = false;
+size_t textureUploads = 0, manifestLoads = 0;
 std::vector<PHLWORKSPACE> held;
 UP<SEventLoopDoLaterLock> releaseLater;
+UP<SEventLoopDoLaterLock> pruneLater;
 cairo_user_data_key_t bmpPixelsKey;
+
+// Never wait for preparation on the compositor thread. Holding the helper's
+// lock also prevents it from pruning a BMP while we are decoding that file.
+struct CacheLock {
+    int fd = -1;
+    explicit CacheLock(const std::filesystem::path& path) {
+        fd = open(path.c_str(), O_RDONLY | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0600);
+        if (fd >= 0 && flock(fd, LOCK_EX | LOCK_NB) != 0) {
+            close(fd);
+            fd = -1;
+        }
+    }
+    ~CacheLock() { if (fd >= 0) close(fd); }
+    CacheLock(const CacheLock&) = delete;
+    CacheLock& operator=(const CacheLock&) = delete;
+    explicit operator bool() const { return fd >= 0; }
+};
 
 // A strip contains at most the visible pair plus one newly requested image.
 // Positions are in output widths, so adjacent tiles always share an edge.
@@ -87,34 +119,52 @@ void damageMonitors() {
         g_pHyprRenderer->damageMonitor(mon);
 }
 
+void scheduleCachePrune();
+
 void reloadImages() {
+    CacheLock lock(session / "workspace-wallpapers.lock");
+    if (!lock) return;
     dirty = false;
     std::ifstream input(session / "workspace-wallpapers.json");
     const auto state = nlohmann::json::parse(input, nullptr, false);
     if (state.is_discarded() || !state.is_object() || !state.contains("prepared") || !state["prepared"].is_object())
         return; // Incomplete/malformed state must not remove a working backdrop.
+    prunePending = false;
     Wallpapers next;
+    bool complete = true;
+    // Reuse across workspace/output changes and within this manifest. Entries
+    // not referenced by the new walls expire when this local map is destroyed.
+    std::map<std::string, Wallpaper> reusable;
+    for (const auto& [_, images] : walls)
+        for (const auto& [id, wall] : images) reusable.try_emplace(*wall.path, wall);
     for (const auto& [output, entries] : state["prepared"].items()) {
-        if (!entries.is_object()) continue;
+        if (!entries.is_object()) { complete = false; continue; }
         for (const auto& [key, value] : entries.items()) {
             WORKSPACEID id = 0;
             const auto [end, ec] = std::from_chars(key.data(), key.data() + key.size(), id);
-            if (ec != std::errc{} || end != key.data() + key.size() || id <= 0 || !value.is_string()) continue;
+            if (ec != std::errc{} || end != key.data() + key.size() || id <= 0 || !value.is_string()) {
+                complete = false;
+                continue;
+            }
             const std::filesystem::path path = value.get<std::string>();
             // Only read the helper's display-sized BMPs, never arbitrary originals.
-            if (path.parent_path() != session / "workspace-wallpaper-images" || path.extension() != ".bmp") continue;
+            if (path.parent_path() != session / "workspace-wallpaper-images" || path.extension() != ".bmp") {
+                complete = false;
+                continue;
+            }
             const auto oldOutput = walls.find(output);
             const Wallpaper* old = nullptr;
             if (oldOutput != walls.end()) {
                 const auto it = oldOutput->second.find(id);
                 if (it != oldOutput->second.end()) old = &it->second;
             }
-            if (old && old->path == path.string()) {
-                next[output][id] = *old;
+            if (const auto cached = reusable.find(path.string()); cached != reusable.end()) {
+                next[output][id] = cached->second;
                 continue;
             }
             Hyprgraphics::CImage image(path.string());
             if (!image.success()) {
+                complete = false;
                 if (old) next[output][id] = *old;
                 continue;
             }
@@ -125,6 +175,7 @@ void reloadImages() {
             // ownership before this temporary decode surface is destroyed.
             if (cairo_surface_set_user_data(surface->cairo(), &bmpPixelsKey, surface->data(), std::free) != CAIRO_STATUS_SUCCESS) {
                 std::free(surface->data());
+                complete = false;
                 if (old) next[output][id] = *old;
                 continue;
             }
@@ -134,13 +185,60 @@ void reloadImages() {
                 // must ignore it, or repeated blending accumulates to white.
                 texture->m_type = Render::TEXTURE_RGBX;
                 texture->m_opaque = true;
-                next[output][id] = {path.string(), texture};
+                Wallpaper wall{std::make_shared<const std::string>(path.string()), texture};
+                reusable.emplace(path.string(), wall);
+                next[output][id] = std::move(wall);
+                ++textureUploads;
             }
-            else if (old) next[output][id] = *old;
+            else {
+                complete = false;
+                if (old) next[output][id] = *old;
+            }
         }
     }
     // As with the previous renderer, an empty collection leaves existing images alone.
-    if (!next.empty()) walls = std::move(next);
+    if (!next.empty()) {
+        walls = std::move(next);
+        ++manifestLoads;
+        if (complete) {
+            loadedPrepared = state["prepared"];
+            prunePending = true;
+            scheduleCachePrune();
+        }
+    }
+}
+
+void pruneLoadedCache() {
+    CacheLock lock(session / "workspace-wallpapers.lock");
+    if (!lock) return;
+    prunePending = false;
+    std::ifstream input(session / "workspace-wallpapers.json");
+    const auto latest = nlohmann::json::parse(input, nullptr, false);
+    // A newer publication may already be waiting for its first render. Never
+    // remove files for that generation, even if the previous one loaded fully.
+    if (!latest.is_object() || !latest.contains("prepared") || latest["prepared"] != loadedPrepared) return;
+    std::set<std::filesystem::path> keep;
+    for (const auto& [_, images] : walls)
+        for (const auto& [id, wall] : images) keep.emplace(*wall.path);
+    std::error_code ec;
+    const auto cache = session / "workspace-wallpaper-images";
+    for (std::filesystem::directory_iterator it(cache, ec), end; !ec && it != end; it.increment(ec)) {
+        const auto name = it->path().filename().string();
+        if (name.size() != 68 || !name.ends_with(".bmp") ||
+            !std::all_of(name.begin(), name.end() - 4, [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); })) continue;
+        std::error_code fileError;
+        // Only generated regular BMPs; preserve symlinks and unrelated files.
+        if (std::filesystem::is_regular_file(it->symlink_status(fileError)) && !keep.contains(it->path()))
+            std::filesystem::remove(it->path(), fileError);
+    }
+}
+
+void scheduleCachePrune() {
+    if (pruneLater) return;
+    pruneLater = g_pEventLoopManager->doLaterLock([] {
+        pruneLater.reset();
+        if (prunePending) pruneLoadedCache();
+    });
 }
 
 int onNotify(int fd, uint32_t, void*) {
@@ -154,6 +252,9 @@ int onNotify(int fd, uint32_t, void*) {
             p += sizeof(inotify_event) + event->len;
         }
     }
+    // A helper closes its writable lock file after publication/pruning. That
+    // event retries deferred loads and cleanup without timers or idle polling.
+    if (prunePending) scheduleCachePrune();
     if (dirty) damageMonitors();
     return 0;
 }
@@ -186,7 +287,8 @@ void render() {
     if (!mon) return;
     const auto output = walls.find(mon->m_name);
     if (output == walls.end()) return;
-    lastDraws[mon->m_name] = nlohmann::json::array();
+    auto& draws = lastDraws[mon->m_name];
+    draws.clear();
     lastFrames[mon->m_name].clear();
     const Vector2D size = mon->m_transformedSize;
     const auto draw = [&](WORKSPACEID id, Vector2D origin, float alpha) {
@@ -202,7 +304,7 @@ void render() {
         data.a = alpha;
         g_pHyprRenderer->m_renderPass.add(makeUnique<CTexPassElement>(std::move(data)));
         lastFrames[mon->m_name].push_back({id, origin.x / size.x});
-        lastDraws[mon->m_name].push_back({{"workspace", id}, {"x", origin.x}, {"y", origin.y}, {"image", image->second.path}});
+        draws.push_back({id, origin, image->second.path});
     };
     if (const auto slide = slides.find(mon->m_name); slide != slides.end()) {
         const auto active = mon->m_activeWorkspace;
@@ -231,6 +333,7 @@ void cleanup() {
     tickListener.reset();
     workspaceListener.reset();
     releaseLater.reset();
+    pruneLater.reset();
     held.clear();
     if (notifySource) wl_event_source_remove(notifySource);
     notifySource = nullptr;
@@ -238,6 +341,9 @@ void cleanup() {
     notifyFd = -1;
     walls.clear();
     lastDraws.clear();
+    loadedPrepared = nullptr;
+    prunePending = false;
+    textureUploads = manifestLoads = 0;
     lastFrames.clear();
     slides.clear();
 }
@@ -271,8 +377,18 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     statusCommand = HyprlandAPI::registerHyprCtlCommand(handle, SHyprCtlCommand{"hyprmosaic:status", true,
         [](eHyprCtlOutputFormat, std::string) {
             size_t count = 0;
+            std::set<const Render::ITexture*> textures;
             for (const auto& [_, images] : walls) count += images.size();
-            return nlohmann::json({{"resident_images", count}, {"draws", lastDraws}}).dump();
+            for (const auto& [_, images] : walls)
+                for (const auto& [id, wall] : images) textures.insert(wall.texture.get());
+            auto draws = nlohmann::json::object();
+            for (const auto& [output, records] : lastDraws) {
+                auto& entries = draws[output] = nlohmann::json::array();
+                for (const auto& draw : records)
+                    entries.push_back({{"workspace", draw.id}, {"x", draw.origin.x}, {"y", draw.origin.y}, {"image", *draw.path}});
+            }
+            return nlohmann::json({{"resident_images", count}, {"resident_textures", textures.size()},
+                {"texture_uploads", textureUploads}, {"manifest_loads", manifestLoads}, {"draws", draws}}).dump();
         }});
     damageMonitors();
     return {"hyprmosaic", "Workspace-linked wallpapers (0.55.4 wallpaper-only backport)", "La5u; local adaptation", "1.0"};

@@ -69,10 +69,16 @@ queries Hyprland's physical output dimensions, not a wallpaper daemon. Once all
 images are ready it atomically publishes `workspace-wallpapers.json`; unchanged
 state is not rewritten. It never applies a potentially stale active-workspace
 snapshot: the plugin reads the actual workspace position when rendering.
+Within an update, preparation results are shared by source path and output
+dimensions, including repeated assignments, equal-sized outputs and retries
+after a failed source. Each later update rechecks source metadata normally;
+EXIF orientation, RGB conversion and Lanczos cover resizing are unchanged.
 
 The plugin watches the session directory using inotify, reads new manifests,
-and uploads changed prepared images on the next render. Unchanged textures are
-reused. Invalid state does not clear a working backdrop. There is no awww
+and uploads changed prepared images on the next render. Textures are reused by
+prepared-image path across workspaces and outputs, including within a new
+manifest. Unreferenced textures expire after replacement; there is no permanent
+GPU history cache. Invalid state does not clear a working backdrop. There is no awww
 service, native last-image cache, or parallel wallpaper renderer.
 
 ## Runtime state and memory
@@ -81,13 +87,20 @@ All generated data lives under
 `$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE`:
 
 - `workspace-wallpapers.json`: assignments and per-output prepared-image paths.
-- `workspace-wallpapers.lock`: serializes helper invocations.
+- `workspace-wallpapers.lock`: serializes preparation and renderer cache access.
+  The renderer takes this lock nonblockingly so preparation cannot stall frames.
 - `workspace-wallpaper-images/`: hash-named RGB BMPs, deduplicated by source
   path/size/mtime and output dimensions.
 
-The BMP cache retains current and previous selected sets, about 66–132 MiB for
-ten 1920×1200 images. Only hash-named generated BMPs are pruned. The plugin also
-keeps resident textures: ten 32-bit images at that size have about 88 MiB of
+The helper retains current and previous selected sets during publication. Once
+the renderer has loaded every replacement, it prunes superseded generated BMPs
+outside the render callback. Cleanup takes the same nonblocking lock and rechecks
+that the published manifest still matches the loaded one. A newer publication,
+an incomplete load or a sleeping renderer defers cleanup. Only hash-named regular
+BMP files are pruned; originals, unrelated names and symlinks are preserved.
+For ten 1920×1200 images, the BMP cache is about 66 MiB after successful loading,
+temporarily up to about 132 MiB for current/previous sets. The plugin also
+keeps resident textures: ten distinct 32-bit images at that size have about 88 MiB of
 pixel payload, excluding allocation overhead and transient decode storage.
 These are component estimates, not measured total process memory. More outputs
 or workspaces increase usage. Originals and unrelated files are never removed.
@@ -101,7 +114,9 @@ plugin against the pinned compositor. Isolated nested-compositor testing covers
 plugin load, atomic image loading, actual mid-tone screenshot pixels over a light
 fallback, repeated redraws, moving both wallpapers on an empty-workspace switch,
 rapid reversals and third-workspace interruptions (checking rendered scanlines
-for exposed fallback), and unload/reload. Run `tests/hyprmosaic-render.py` manually
+for exposed fallback), texture sharing/reassignment without new uploads,
+preparation-lock contention, failed replacement recovery, safe cache cleanup,
+and unload/reload. Run `tests/hyprmosaic-render.py` manually
 with a Pillow-enabled Python, passing the built plugin library and `grim` executable as its two
 arguments. It briefly opens a disposable nested compositor with isolated runtime
 and D-Bus paths; it never loads a test plugin into the host. This GPU/session test
@@ -121,8 +136,12 @@ hyprctl hyprmosaic:status
 hyprctl configerrors
 ```
 
-Status reports resident image count and the most recently drawn workspace IDs,
-positions, and prepared paths. It does not expose original photo contents.
+Status retains the resident assignment count and most recently drawn workspace
+IDs, positions and prepared paths. It also reports distinct resident textures,
+successful texture uploads and manifest loads for checking reuse. JSON is built
+only when status is requested; rendering records compact coordinates and shared
+path references without copying strings or retaining old GPU textures for status.
+Status does not expose original photo contents.
 To recover the previous renderer, use `sudo nixos-rebuild switch --rollback`
 and reload Hyprland's config if necessary. This is a generation rollback, not a
 request to log out or restart the compositor. Keep the repository consistent

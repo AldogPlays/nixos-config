@@ -27,7 +27,7 @@ in
     focusedOpacity = 0.95;
     blur = {
       size = 6;
-      passes = 2;
+      passes = 1;
       noise = 0.015;
       contrast = 1.0;
       brightness = 1.0;

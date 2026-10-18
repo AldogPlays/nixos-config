@@ -161,6 +161,59 @@ class WallpaperTests(unittest.TestCase):
         self.assertNotEqual(original["assignments"]["1"], updated["assignments"]["1"])
         self.assertEqual(original["assignments"]["2"], updated["assignments"]["2"])
 
+    def test_repeated_assignment_is_prepared_once_per_update(self):
+        for image in list(self.images.iterdir())[1:]:
+            image.unlink()
+        with mock.patch.object(
+            wallpapers, "prepare_image", wraps=wallpapers.prepare_image
+        ) as prepare:
+            state = self.reconcile()
+        self.assertEqual(prepare.call_count, 1)
+        self.assertEqual(len(set(state["prepared"]["eDP-1"].values())), 1)
+
+    def test_equal_sized_outputs_share_preparation(self):
+        self.monitors.append({"name": "DP-1", "activeWorkspace": {"id": 2}})
+        self.sizes["DP-1"] = self.sizes["eDP-1"]
+        with mock.patch.object(
+            wallpapers, "prepare_image", wraps=wallpapers.prepare_image
+        ) as prepare:
+            state = self.reconcile()
+        self.assertEqual(prepare.call_count, 10)
+        self.assertEqual(state["prepared"]["DP-1"], state["prepared"]["eDP-1"])
+
+    def test_failed_source_retry_keeps_successful_preparations(self):
+        prepare = wallpapers.prepare_image
+        attempts = {}
+        rejected = None
+
+        def fail_one_source(source, size, directory):
+            nonlocal rejected
+            identity = (source, size)
+            attempts[identity] = attempts.get(identity, 0) + 1
+            if rejected is None:
+                rejected = source
+            if source == rejected:
+                raise OSError("Unusable source")
+            return prepare(source, size, directory)
+
+        with mock.patch.object(
+            wallpapers, "prepare_image", side_effect=fail_one_source
+        ):
+            state = self.reconcile()
+        self.assertNotIn(rejected, state["assignments"].values())
+        self.assertEqual(len(attempts), 11)
+        self.assertTrue(all(count == 1 for count in attempts.values()))
+
+    def test_source_metadata_is_rechecked_on_next_update(self):
+        original = self.reconcile()
+        source = original["assignments"]["1"]
+        Image.new("RGB", (121, 81), (200, 100, 20)).save(source)
+        updated = self.reconcile(9100)
+        self.assertEqual(original["assignments"], updated["assignments"])
+        self.assertNotEqual(
+            original["prepared"]["eDP-1"]["1"], updated["prepared"]["eDP-1"]["1"]
+        )
+
     def test_preparation_never_applies_a_stale_workspace_snapshot(self):
         prepare = wallpapers.prepare_image
 
