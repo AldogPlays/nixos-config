@@ -10,10 +10,10 @@ flake.nix                     pinned inputs and host output
 hosts/nixos/                  machine identity, disks, and boot hardware
 modules/nixos/                reusable OS, hardware, and desktop modules
 home/jeffreyc/                Home Manager modules
-packages/                     local Nix packages (Snap)
+packages/                     local Nix packages (Snap, wallpaper-only hyprmosaic)
 dotfiles/hypr/                versioned Hyprland configuration
 theme/                        shared Latte palette, semantic roles, adapter contract
-tests/                        wallpaper policy and Lua fast-path regression tests
+tests/                        wallpaper policy and Lua scheduling regression tests
 docs/system-context.md        system inventory and configuration decisions
 docs/wallpapers.md            workspace wallpaper design, cache and troubleshooting
 docs/audit.md                 bootstrap hardware/configuration audit
@@ -64,10 +64,11 @@ Other existing controls remain unchanged.
 The cursor hides after five seconds without pointer activity and reappears on
 movement. This is Hyprland's native timeout, not a separate idle service.
 
-awww gives each workspace a remembered random image from `~/Pictures/Wallpapers`,
-including subfolders. Assignments refresh every quarter-hour, without fades or
-wallpaper-based theme changes. Display-sized copies are prepared ahead of time
-for quick switching; originals remain untouched and outside Git.
+hyprmosaic draws each workspace's remembered random image from
+`~/Pictures/Wallpapers`, including subfolders. Wallpapers slide with their
+workspaces instead of changing underneath them. Assignments refresh every
+quarter-hour, without wallpaper-based theme changes. Display-sized copies are
+prepared ahead of time; originals remain untouched and outside Git.
 See [workspace wallpapers](docs/wallpapers.md) for implementation, cache limits,
 supported formats, and troubleshooting.
 

@@ -83,12 +83,8 @@ hl.layer_rule({
     ignore_alpha = 0.2,
 })
 
--- Keep the wallpaper surface unanimated; awww swaps its image buffers in place.
-hl.layer_rule({
-    name = "instant-wallpaper",
-    match = { namespace = "^awww-daemon$" },
-    no_anim = true,
-})
+-- Version-matched wallpaper-only plugin; native workspace controls stay unchanged.
+hl.plugin.load("@HYPRMOSAIC_PLUGIN@")
 
 -- Focus-dependent glass applies to normal application windows, not just terminals.
 hl.window_rule({
@@ -213,77 +209,37 @@ for _, event in ipairs({ "layer.opened", "layer.closed" }) do
 end
 scheduleWaybarVisibility()
 
--- One renderer, no listener daemon. File discovery/IPC run outside the compositor.
+-- One renderer, no listener daemon. File preparation runs outside the compositor.
 local wallpaperUpdateQueued = false
-local wallpaperApplied = {}
-local wallpaperCache = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/hypr/"
-    .. (os.getenv("HYPRLAND_INSTANCE_SIGNATURE") or "") .. "/workspace-wallpapers/"
-local function shellQuote(value)
-    return "'" .. value:gsub("'", "'\\''") .. "'"
-end
-local function applyCachedWallpaper()
-    local epoch = math.floor(os.time() / @WALLPAPER_INTERVAL@)
-    local complete = true
-    for _, monitor in ipairs(hl.get_monitors()) do
-        local workspace = monitor.active_workspace
-        local outputKey = monitor.name:gsub(".", function(byte)
-            return string.format("%02x", string.byte(byte))
-        end)
-        local file = workspace and io.open(wallpaperCache .. outputKey .. "/" .. tostring(workspace.id), "r")
-        local savedEpoch, source, image
-        if file then
-            savedEpoch = tonumber(file:read("*l"))
-            source = file:read("*l")
-            image = file:read("*a")
-            file:close()
-        end
-        local readable = image and image ~= "" and io.open(image, "rb")
-        if readable then readable:close() end
-        local original = source and source ~= "" and io.open(source, "rb")
-        if original then original:close() end
-        if not readable or not original then
-            complete = false
-        else
-            -- While a new cycle is prepared, switch immediately using the previous
-            -- ready image rather than stalling on the multi-image preparation job.
-            if savedEpoch ~= epoch then complete = false end
-            if wallpaperApplied[monitor.name] ~= image then
-                -- No Python startup, original-image decoding/resizing, or status queries.
-                local command = "@WALLPAPER_AWWW@ img --transition-type none --resize no --outputs "
-                    .. shellQuote(monitor.name) .. " -- " .. shellQuote(image)
-                hl.dispatch(hl.dsp.exec_cmd(command))
-                wallpaperApplied[monitor.name] = image
-            end
-        end
-    end
-    return complete
-end
+local wallpaperKnown = {}
 local function scheduleWorkspaceWallpaper()
     if wallpaperUpdateQueued then return end
     wallpaperUpdateQueued = true
     hl.timer(function()
         wallpaperUpdateQueued = false
-        if not applyCachedWallpaper() then
-            hl.dispatch(hl.dsp.exec_cmd("@WORKSPACE_WALLPAPERS@"))
-        end
+        hl.dispatch(hl.dsp.exec_cmd("@WORKSPACE_WALLPAPERS@"))
     end, { timeout = 1, type = "oneshot" })
 end
-hl.on("workspace.active", scheduleWorkspaceWallpaper)
-local function reconcileWorkspaceWallpapers()
-    wallpaperApplied = {}
-    hl.dispatch(hl.dsp.exec_cmd("@WORKSPACE_WALLPAPERS@"))
-end
+-- Numbered workspaces are prepared up front. Only a newly seen extra ID needs
+-- reconciliation; normal switches and swipes do not launch a process.
+for number = 1, 10 do wallpaperKnown[number] = true end
+hl.on("workspace.active", function(workspace)
+    if workspace and workspace.id > 0 and not wallpaperKnown[workspace.id] then
+        wallpaperKnown[workspace.id] = true
+        scheduleWorkspaceWallpaper()
+    end
+end)
 for _, event in ipairs({
     "workspace.move_to_monitor", "monitor.added", "monitor.removed",
     "monitor.layout_changed", "config.reloaded",
 }) do
-    hl.on(event, reconcileWorkspaceWallpapers)
+    hl.on(event, scheduleWorkspaceWallpaper)
 end
 -- Align to quarter-hour boundaries so reloading config preserves the cycle.
 local function scheduleWallpaperRotation()
     local seconds = @WALLPAPER_INTERVAL@ - (os.time() % @WALLPAPER_INTERVAL@)
     hl.timer(function()
-        reconcileWorkspaceWallpapers()
+        scheduleWorkspaceWallpaper()
         scheduleWallpaperRotation()
     end, { timeout = seconds * 1000 + 100, type = "oneshot" })
 end
@@ -292,10 +248,12 @@ scheduleWorkspaceWallpaper()
 
 hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
 hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
+-- Wallpaper and windows now share this exact movement; no fade timing compensation.
+hl.curve("workspaceSmooth", { type = "bezier", points = { { 0.4, 0 }, { 0.2, 1 } } })
 hl.animation({ leaf = "global", enabled = true, speed = 8, bezier = "easeOutQuint" })
 hl.animation({ leaf = "windows", enabled = true, speed = 5, bezier = "easeOutQuint" })
 hl.animation({ leaf = "fade", enabled = true, speed = 4, bezier = "quick" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint" })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "workspaceSmooth" })
 
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 

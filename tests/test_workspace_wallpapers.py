@@ -32,39 +32,26 @@ class WallpaperTests(unittest.TestCase):
         self.state = self.root / "state.json"
         self.monitors = [{"name": "eDP-1", "activeWorkspace": {"id": 1}}]
         self.sizes = {"eDP-1": (80, 50)}
-        self.active = {}
-        self.changes = []
+        self.calls = []
 
     def fake_command(self, *args):
+        self.calls.append(args)
         if args == ("-j", "monitors"):
-            return json.dumps(self.monitors)
+            return json.dumps(
+                [
+                    {
+                        **monitor,
+                        "width": self.sizes.get(monitor["name"], (100, 60))[0],
+                        "height": self.sizes.get(monitor["name"], (100, 60))[1],
+                        "scale": 1,
+                        "transform": monitor.get("transform", 0),
+                    }
+                    for monitor in self.monitors
+                ]
+            )
         if args == ("-j", "workspaces"):
             return json.dumps([{"id": 1}])
-        if args == ("awww", "query", "--json"):
-            return json.dumps(
-                {
-                    "": [
-                        {
-                            "name": monitor["name"],
-                            "width": self.sizes.get(monitor["name"], (100, 60))[0],
-                            "height": self.sizes.get(monitor["name"], (100, 60))[1],
-                            "scale": 1,
-                            "displaying": {"image": self.active.get(monitor["name"])},
-                        }
-                        for monitor in self.monitors
-                    ]
-                }
-            )
-        self.assertEqual(
-            args[:7],
-            ("awww", "img", "--transition-type", "none", "--resize", "no", "--outputs"),
-        )
-        name, separator, image = args[7:]
-        self.assertEqual(separator, "--")
-        self.assertTrue(Path(image).is_file())
-        self.active[name] = image
-        self.changes.append((name, image))
-        return "ok"
+        self.fail(f"Unexpected command: {args}")
 
     def reconcile(self, now=9000):
         return wallpapers.reconcile(
@@ -76,13 +63,12 @@ class WallpaperTests(unittest.TestCase):
         self.assertEqual(len(set(original["assignments"].values())), 10)
         self.monitors[0]["activeWorkspace"]["id"] = 2
         self.reconcile(9100)
-        self.assertEqual(self.active["eDP-1"], original["prepared"]["eDP-1"]["2"])
+        self.assertEqual(json.loads(self.state.read_text()), original)
         self.monitors[0]["activeWorkspace"]["id"] = 1
         self.assertEqual(self.reconcile(9899), original)
-        self.assertEqual(self.active["eDP-1"], original["prepared"]["eDP-1"]["1"])
-        changes = len(self.changes)
+        modified = self.state.stat().st_mtime_ns
         self.reconcile(9899)
-        self.assertEqual(len(self.changes), changes)
+        self.assertEqual(self.state.stat().st_mtime_ns, modified)
 
     def test_rotation_changes_hidden_and_visible_assignments(self):
         original = self.reconcile()
@@ -90,30 +76,37 @@ class WallpaperTests(unittest.TestCase):
         self.assertEqual(len(set(updated["assignments"].values())), 10)
         for key, image in original["assignments"].items():
             self.assertNotEqual(image, updated["assignments"][key])
-        self.assertEqual(self.active["eDP-1"], updated["prepared"]["eDP-1"]["1"])
+        self.assertEqual(json.loads(self.state.read_text()), updated)
 
-    def test_backend_restart_restores_without_reshuffle(self):
+    def test_helper_restart_preserves_the_manifest(self):
         original = self.reconcile()
-        self.active.clear()
         self.assertEqual(self.reconcile(9100), original)
-        self.assertEqual(self.active["eDP-1"], original["prepared"]["eDP-1"]["1"])
+        self.assertEqual(json.loads(self.state.read_text()), original)
 
-    def test_fast_path_cache_is_plain_data_and_tracks_rotation(self):
+    def test_atomic_manifest_tracks_rotation_and_prepared_files(self):
         original = self.reconcile()
-        cache = self.state.with_suffix("") / "eDP-1".encode().hex()
-        for key, image in original["assignments"].items():
-            render = original["prepared"]["eDP-1"][key]
-            self.assertEqual((cache / key).read_text(), f"10\n{image}\n{render}")
+        self.assertEqual(json.loads(self.state.read_text()), original)
         updated = self.reconcile(9900)
-        for key, image in updated["assignments"].items():
-            render = updated["prepared"]["eDP-1"][key]
-            self.assertEqual((cache / key).read_text(), f"11\n{image}\n{render}")
+        self.assertEqual(updated["epoch"], 11)
+        self.assertEqual(json.loads(self.state.read_text()), updated)
+        self.assertFalse(self.state.with_suffix(".tmp").exists())
+        self.assertTrue(
+            all(Path(path).is_file() for path in updated["prepared"]["eDP-1"].values())
+        )
+        self.assertTrue(
+            all(
+                call in (("-j", "monitors"), ("-j", "workspaces"))
+                for call in self.calls
+            )
+        )
 
     def test_multiple_monitors_and_additional_workspace(self):
         self.monitors.append({"name": "DP-1", "activeWorkspace": {"id": 42}})
         state = self.reconcile()
-        self.assertEqual(self.active["DP-1"], state["prepared"]["DP-1"]["42"])
-        self.assertNotEqual(self.active["DP-1"], self.active["eDP-1"])
+        self.assertTrue(Path(state["prepared"]["DP-1"]["42"]).is_file())
+        self.assertNotEqual(
+            state["prepared"]["DP-1"]["42"], state["prepared"]["eDP-1"]["1"]
+        )
 
     def test_deleted_image_is_replaced_without_resetting_other_assignments(self):
         original = self.reconcile()
@@ -127,15 +120,14 @@ class WallpaperTests(unittest.TestCase):
         for image in self.images.iterdir():
             image.unlink()
         self.assertEqual(self.reconcile()["assignments"], {})
-        self.assertFalse(self.changes)
+        self.assertEqual(json.loads(self.state.read_text())["prepared"], {"eDP-1": {}})
 
-    def test_empty_collection_invalidates_existing_fast_path_cache(self):
+    def test_empty_collection_publishes_empty_assignments(self):
         self.reconcile()
         for image in self.images.iterdir():
             image.unlink()
         self.assertEqual(self.reconcile(9100)["assignments"], {})
-        for entry in (self.state.with_suffix("") / "eDP-1".encode().hex()).iterdir():
-            self.assertEqual(entry.read_text(), "10\n\n")
+        self.assertEqual(json.loads(self.state.read_text())["prepared"], {"eDP-1": {}})
 
     def test_prepared_images_are_sized_cached_and_bounded(self):
         original = self.reconcile()
@@ -169,7 +161,7 @@ class WallpaperTests(unittest.TestCase):
         self.assertNotEqual(original["assignments"]["1"], updated["assignments"]["1"])
         self.assertEqual(original["assignments"]["2"], updated["assignments"]["2"])
 
-    def test_switch_during_preparation_applies_latest_workspace(self):
+    def test_preparation_never_applies_a_stale_workspace_snapshot(self):
         prepare = wallpapers.prepare_image
 
         def switch_and_prepare(*args):
@@ -180,7 +172,22 @@ class WallpaperTests(unittest.TestCase):
             wallpapers, "prepare_image", side_effect=switch_and_prepare
         ):
             updated = self.reconcile()
-        self.assertEqual(self.active["eDP-1"], updated["prepared"]["eDP-1"]["2"])
+        self.assertTrue(Path(updated["prepared"]["eDP-1"]["2"]).is_file())
+        self.assertEqual(self.calls, [("-j", "monitors"), ("-j", "workspaces")])
+
+    def test_old_manifest_remains_published_until_preparation_finishes(self):
+        original = self.reconcile()
+        prepare = wallpapers.prepare_image
+
+        def inspect_and_prepare(*args):
+            self.assertEqual(json.loads(self.state.read_text()), original)
+            return prepare(*args)
+
+        with mock.patch.object(
+            wallpapers, "prepare_image", side_effect=inspect_and_prepare
+        ):
+            updated = self.reconcile(9900)
+        self.assertEqual(json.loads(self.state.read_text()), updated)
 
     def test_recursive_discovery_and_safe_names(self):
         folder = self.images / "nested"

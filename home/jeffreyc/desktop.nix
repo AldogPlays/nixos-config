@@ -10,11 +10,12 @@ let
   inherit (theme) roles palette typography;
   fontSize = toString typography.size;
   wallpaperInterval = 15 * 60;
+  hyprmosaic = pkgs.callPackage ../../packages/hyprmosaic { };
   wallpaperPython = pkgs.python3.withPackages (p: [ p.pillow ]);
   workspaceWallpapers = pkgs.writeShellScript "workspace-wallpapers" ''
     exec ${wallpaperPython}/bin/python3 ${../../dotfiles/hypr/workspace-wallpapers.py} \
       --directory ${lib.escapeShellArg "${config.xdg.userDirs.pictures}/Wallpapers"} \
-      --hyprctl ${pkgs.hyprland}/bin/hyprctl --awww ${pkgs.awww}/bin/awww \
+      --hyprctl ${pkgs.hyprland}/bin/hyprctl \
       --interval ${toString wallpaperInterval} "$@"
   '';
   kdeFont = "${typography.family},${fontSize},-1,5,50,0,0,0,0,0";
@@ -301,7 +302,7 @@ in
         "@WAYBAR_SYSTEMCTL@"
         "@WORKSPACE_WALLPAPERS@"
         "@WALLPAPER_INTERVAL@"
-        "@WALLPAPER_AWWW@"
+        "@HYPRMOSAIC_PLUGIN@"
         "@THEME_BACKGROUND@"
       ]
       [
@@ -321,7 +322,7 @@ in
         "${pkgs.systemd}/bin/systemctl"
         "${workspaceWallpapers}"
         (toString wallpaperInterval)
-        "${pkgs.awww}/bin/awww"
+        "${hyprmosaic}/lib/libhyprmosaic.so"
         (hex roles.background)
       ]
       (builtins.readFile ../../dotfiles/hypr/hyprland.lua)
@@ -480,16 +481,7 @@ in
     '';
   };
 
-  services.awww = {
-    enable = true;
-    # Our controller restores assignments; do not restore a separate native cache.
-    extraArgs = [ "--no-cache" ];
-  };
-
   systemd.user.services = {
-    # Restore the visible workspaces after backend startup/restart, without polling.
-    awww.Service.ExecStartPost = "${workspaceWallpapers} --wait";
-
     hyprpolkitagent = {
       Unit = {
         Description = "Hyprland PolicyKit authentication agent";

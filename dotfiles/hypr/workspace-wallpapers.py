@@ -14,7 +14,7 @@ import time
 from PIL import Image, ImageOps
 
 
-# The pinned awww package does not enable its optional AVIF/JPEG XL decoders.
+# Keep the established collection formats; preparation normalizes them to RGB BMP.
 FORMATS = {".png", ".jpg", ".jpeg", ".webp"}
 
 
@@ -80,27 +80,6 @@ def prepare_image(source, size, directory):
     return str(target)
 
 
-def publish_assignments(state_path, epoch, assignments, prepared):
-    # Plain data, not executable Lua: one small, atomically replaced file per ID.
-    # Lua can read this without starting Python or querying compositor/backend IPC.
-    root = state_path.with_suffix("")
-    for name, images in prepared.items():
-        # Encoded output names cannot escape the private generated-cache directory.
-        directory = root / name.encode().hex()
-        directory.mkdir(mode=0o700, parents=True, exist_ok=True)
-        keys = set(assignments) | {
-            path.name for path in directory.iterdir() if path.name.lstrip("-").isdigit()
-        }
-        for key in keys:
-            path = directory / str(int(key))
-            content = f"{epoch}\n{assignments.get(key, '')}\n{images.get(key, '')}"
-            if path.exists() and path.read_text() == content:
-                continue
-            temporary = path.with_suffix(".tmp")
-            temporary.write_text(content)
-            temporary.replace(path)
-
-
 def reconcile(directory, state_path, interval, run, now=None):
     now = time.time() if now is None else now
     epoch = int(now // interval)
@@ -147,17 +126,16 @@ def reconcile(directory, state_path, interval, run, now=None):
         free = [image for image in images if image not in assignments.values()]
         assignments.update(assign(missing, free or images, previous))
 
-    # Query actual backend state: restarts/reloads must not leave a stale cache.
-    outputs = json.loads(run("awww", "query", "--json")).get("", [])
+    # Hyprland reports physical mode dimensions. Odd transforms rotate the mode.
+    outputs = monitors
     cache = state_path.parent / "workspace-wallpaper-images"
     cache.mkdir(mode=0o700, exist_ok=True)
     while True:
         prepared, failed = {}, set()
         for output in outputs:
-            size = (
-                round(output["width"] * output["scale"]),
-                round(output["height"] * output["scale"]),
-            )
+            size = (output["width"], output["height"])
+            if output.get("transform", 0) % 2:
+                size = size[::-1]
             if min(size) <= 0:
                 continue
             rendered = prepared[output["name"]] = {}
@@ -177,33 +155,6 @@ def reconcile(directory, state_path, interval, run, now=None):
             missing = [key for key in keys if key not in assignments]
             free = [image for image in images if image not in assignments.values()]
             assignments.update(assign(missing, free or images, previous))
-    # Publish only once all assigned images are ready. Previous images stay visible
-    # while preparation runs, and ordinary switches never perform this work.
-    publish_assignments(state_path, epoch, assignments, prepared)
-    # Preparation can take seconds; never apply a workspace snapshot from before it.
-    monitors = json.loads(run("-j", "monitors"))
-    active = {
-        output["name"]: output["displaying"].get("image")
-        for output in json.loads(run("awww", "query", "--json")).get("", [])
-    }
-    for monitor in monitors:
-        # Special workspaces overlay the regular workspace and keep its backdrop.
-        name = monitor["name"]
-        image = prepared.get(name, {}).get(str(monitor["activeWorkspace"]["id"]))
-        if image and active.get(name) != image:
-            run(
-                "awww",
-                "img",
-                "--transition-type",
-                "none",
-                "--resize",
-                "no",
-                "--outputs",
-                name,
-                "--",
-                image,
-            )
-
     old_prepared = state.get("prepared", {})
     retained = (
         list({image for output in old_prepared.values() for image in output.values()})
@@ -218,9 +169,13 @@ def reconcile(directory, state_path, interval, run, now=None):
         "prepared": prepared,
         "retained": retained,
     }
-    temporary = state_path.with_suffix(".tmp")
-    temporary.write_text(json.dumps(state))
-    temporary.replace(state_path)
+    # Publish one atomic manifest, only after every selected image is ready.
+    # The plugin watches this rename and swaps resident textures; no switch IPC.
+    content = json.dumps(state)
+    if not state_path.exists() or state_path.read_text() != content:
+        temporary = state_path.with_suffix(".tmp")
+        temporary.write_text(content)
+        temporary.replace(state_path)
     # Retain one previous set for in-flight requests; bound storage to two sets.
     # Only our generated BMPs are pruned, never originals or unrelated files.
     keep = {image for output in prepared.values() for image in output.values()} | set(
@@ -236,28 +191,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--hyprctl", required=True)
-    parser.add_argument("--awww", required=True)
     parser.add_argument("--interval", type=int, default=900)
-    parser.add_argument(
-        "--wait", action="store_true", help="wait briefly for backend startup"
-    )
     args = parser.parse_args()
     if args.interval <= 0:
         parser.error("interval must be positive")
     session = Path(
         os.environ["XDG_RUNTIME_DIR"], "hypr", os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
     )
-    socket = Path(
-        os.environ["XDG_RUNTIME_DIR"],
-        Path(os.environ["WAYLAND_DISPLAY"]).name + "-awww-daemon.sock",
-    )
-    if args.wait:
-        for _ in range(40):
-            if socket.exists():
-                break
-            time.sleep(0.25)
-    if not socket.exists():
-        return
     # Serialize short-lived invocations; read monitor state only after the lock.
     with (session / "workspace-wallpapers.lock").open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -265,11 +205,7 @@ def main():
             args.directory,
             session / "workspace-wallpapers.json",
             args.interval,
-            lambda *parts: (
-                command(args.awww, *parts[1:])
-                if parts[0] == "awww"
-                else command(args.hyprctl, *parts)
-            ),
+            lambda *parts: command(args.hyprctl, *parts),
         )
 
 

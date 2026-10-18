@@ -84,7 +84,7 @@ to keep every bootstrap component.
 | Screenshots and clipboard | yumedots/snap, wl-clipboard | Print opens Snap; `packages/snap.nix`; no clipboard-history manager |
 | Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
-| Wallpaper | awww | Home Manager session service; Hyprland events/timer select per-workspace images |
+| Wallpaper | hyprmosaic, wallpaper-only backport | Native plugin draws workspace-linked images; Lua events/timer trigger preparation |
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
 power-profiles-daemon, and UPower. The TUI controls are launched on demand; the
@@ -133,14 +133,19 @@ so `home/jeffreyc/packages.nix` adds a compatibility symlink to that same binary
 Do not replace it with an obsolete p7zip package or install an entire KDE bundle.
 Ark follows the shared Qt/KDE theme and starts on demand, without a new daemon.
 
-awww is the sole wallpaper renderer, using one session service and no local
-backend patch. Hyprland events and its quarter-hour timer coordinate remembered
-per-workspace assignments. A short-lived Pillow helper prepares display-sized
-copies so ordinary switches avoid full-resolution image work. The collection
-and generated cache stay outside Git and the Nix store; the shared theme and
-lock screen remain independent. See [workspace wallpapers](wallpapers.md) for
-implementation, memory bounds, format support, and the unresolved awww
-buffer-release warning.
+hyprmosaic is the sole wallpaper renderer, built as a wallpaper-only backport
+against the pinned Hyprland 0.55.4. `packages/hyprmosaic/` pins upstream source
+and retains its license; the local C++ adaptation uses the old API and our
+per-output manifest, omitting grid navigation and blurred margins. Wallpaper
+textures follow native workspace animation progress. Interrupted horizontal
+slides preserve their last rendered positions as a joined strip instead of
+copying native position resets that can expose a gap. Window animations remain
+untouched; there is no separately timed fade or wallpaper process on ordinary
+switches. Native controls stay unchanged. Lua events and its quarter-hour timer launch a short-lived Pillow
+helper for remembered assignments and display-sized copies. No extra background
+service is added; awww is no longer enabled. The collection and runtime cache
+stay outside Git and the Nix store; theme/lock screen stay independent. See
+[workspace wallpapers](wallpapers.md) for limits, validation, and recovery.
 
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Snap's source is locked as a non-flake input and built locally with xmake, with
@@ -257,7 +262,7 @@ wrapper provides clipboard, OCR, and Hyprland commands without requiring Omarchy
 - `home/jeffreyc/`: user identity/session variables, packages, programs, desktop.
 - `dotfiles/hypr/`: managed Hyprland Lua configuration.
 - `theme/`: shared Latte data and adapter contract.
-- `tests/`: wallpaper policy and Lua fast-path regression tests.
+- `tests/`: wallpaper policy and Lua scheduling regression tests.
 - `packages/`: local packages for requested tools missing from the pinned nixpkgs.
 - `README.md`: setup, rebuild, and maintenance commands.
 - `AGENTS.md`: instructions for how agents should work.
