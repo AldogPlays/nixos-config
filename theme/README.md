@@ -90,8 +90,8 @@ links document research, not an instruction to fetch themes during activation.
 | SDDM | `modules/nixos/hyprland.nix` uses the pinned [where-is-my-sddm-theme](https://github.com/stepanzubkov/where-is-my-sddm-theme/tree/v1.12.0) layout and native settings, with fail-fast substitutions for hardcoded selection/failure colors and a static thin error outline. [SDDM's theming API](https://github.com/sddm/sddm/wiki/Theming) and the [Catppuccin reference port](https://github.com/catppuccin/sddm) informed research; the latter is not a build dependency. |
 | Hyprlock | Home Manager generates native settings from roles and typography, checked against pinned 0.9.5 source, [upstream documentation](https://wiki.hypr.land/Hypr-Ecosystem/hyprlock/) and the [Catppuccin reference](https://github.com/catppuccin/hyprlock). No copied palette, wallpaper reader, command-driven clock or refresh service is needed. PAM is declared separately in the NixOS desktop module. |
 
-`material` supplies one background-opacity value and Hyprland blur parameters
-for the frosted-glass trial. Alacritty's native alpha stays at 1.0; a general
+`material` supplies focused/unfocused opacity values and Hyprland blur parameters
+for frosted glass. Alacritty's native alpha stays at 1.0; a general
 Hyprland rule applies to normal application windows, using `focusedOpacity`
 when focused, `opacity` when unfocused and 1.0 in fullscreen. This affects text,
 images and video as well as the background, without a focus-watching daemon.
@@ -130,11 +130,13 @@ primary text on the selection background is about 5.17:1, rather than the
 starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
 
-Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette, LibreWolf,
-Snap, app-specific TUI themes, and
-wpaperd's wallpaper image. Terminal apps inherit Alacritty's ANSI palette where
-they use terminal colors; apps emitting their own truecolor values need separate
-research. Do not call those apps fully themed just because their terminal is.
+Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette,
+LibreWolf, Snap, and app-specific TUI themes. Personal wallpaper images are
+deliberately independent of the palette; see
+[workspace wallpapers](../docs/wallpapers.md). Terminal apps inherit Alacritty's
+ANSI palette where they use terminal colors; apps emitting their own truecolor
+values need separate research. Do not call those apps fully themed just because
+their terminal is.
 
 Gwenview and Ark reuse the KDE adapter. The cursor is an explicit packaged-asset
 exception: [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark

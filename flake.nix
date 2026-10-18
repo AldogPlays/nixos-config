@@ -21,7 +21,6 @@
       url = "github:yumedots/snap";
       flake = false;
     };
-
   };
 
   outputs =
@@ -33,6 +32,7 @@
     }:
     let
       system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
       pkgsUnstable = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
@@ -58,6 +58,28 @@
         ];
       };
 
-      formatter.${system} = nixpkgs.legacyPackages.${system}.nixfmt-tree;
+      checks.${system}.workspace-wallpapers =
+        pkgs.runCommand "workspace-wallpaper-checks"
+          {
+            nativeBuildInputs = [
+              (pkgs.python3.withPackages (p: [ p.pillow ]))
+              pkgs.lua
+            ];
+          }
+          ''
+            export PYTHONDONTWRITEBYTECODE=1
+            cp -r ${./dotfiles} dotfiles
+            cp -r ${./tests} tests
+            python3 -m unittest discover -s tests -v
+            luac -p ${
+              inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+            }
+            lua tests/test_workspace_wallpapers.lua ${
+              inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+            }
+            touch "$out"
+          '';
+
+      formatter.${system} = pkgs.nixfmt-tree;
     };
 }

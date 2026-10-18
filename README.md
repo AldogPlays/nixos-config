@@ -13,14 +13,16 @@ home/jeffreyc/                Home Manager modules
 packages/                     local Nix packages (Snap)
 dotfiles/hypr/                versioned Hyprland configuration
 theme/                        shared Latte palette, semantic roles, adapter contract
+tests/                        wallpaper policy and Lua fast-path regression tests
 docs/system-context.md        system inventory and configuration decisions
+docs/wallpapers.md            workspace wallpaper design, cache and troubleshooting
 docs/audit.md                 bootstrap hardware/configuration audit
 ```
 
 The fixed Catppuccin Latte theme is documented in
 [theme/README.md](theme/README.md). Hyprland borders, Alacritty, Rofi, Waybar,
 SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4 colors, SDDM and hyprlock consume the
-shared palette. App-specific styling remains separate follow-up work.
+shared palette. Remaining coverage and exceptions are documented there.
 
 ## Desktop controls
 
@@ -50,8 +52,8 @@ Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
 window's width/height; Right/Down grows it. Tiled resizing respects the layout.
 Floating windows move and resize in pixel increments instead of snapping to
 screen edges. Mouse snapping is disabled. Waybar has top/side margins matching
-the compact outer window gaps, rounded corners and a thin 1px border; it still reserves
-space above tiled windows rather than covering them.
+the compact outer window gaps, rounded corners and a thin 1px border; it still
+reserves space above tiled windows rather than covering them.
 It hides when the focused workspace has no tiled windows, but appears while
 Rofi is open. Floating dialogs and PiP do not count as tiles. Closing Rofi
 restores the workspace-based visibility. Native Hyprland Lua events control the
@@ -62,10 +64,13 @@ Other existing controls remain unchanged.
 The cursor hides after five seconds without pointer activity and reappears on
 movement. This is Hyprland's native timeout, not a separate idle service.
 
-wpaperd starts with the graphical session and shuffles images from
-`~/Pictures/Wallpapers` (including subfolders) every 15 minutes, without a fade.
-Add your images there; `wpaperctl next` advances manually. No placeholder images
-are added during activation. Wallpaper images are personal data, not Git files.
+awww gives each workspace a remembered random image from `~/Pictures/Wallpapers`,
+including subfolders. Assignments refresh every quarter-hour, without fades or
+wallpaper-based theme changes. Display-sized copies are prepared ahead of time
+for quick switching; originals remain untouched and outside Git.
+See [workspace wallpapers](docs/wallpapers.md) for implementation, cache limits,
+supported formats, and troubleshooting.
+
 Snap and wlctl are pinned in `flake.lock`; Snap's local build is in `packages/snap.nix`.
 
 ## Desktop integration
@@ -101,16 +106,18 @@ opaque; unfocused windows use `material.opacity` and fullscreen is fully opaque.
 Explicitly marked modal dialogs and recognized LibreWolf/Firefox picture-in-picture
 windows stay fully opaque; recognized PiP windows float at a compact initial size,
 without forcing position or pin state. Manual resizing remains available; a
-config reload reapplies the default once. PiP matching uses the browser class and exact English
-`Picture-in-Picture` title; other apps/localizations may need additional verified
-identifiers. Unmarked dialogs cannot be identified generically by this rule.
+config reload reapplies the default once. PiP matching uses the browser class and
+exact English `Picture-in-Picture` title; other apps/localizations may need
+additional verified identifiers. Unmarked dialogs cannot be identified
+generically by this rule.
 Hyprland affects the whole surface, including text, images and video; native
 terminal alpha stays at 1.0 to avoid double transparency. Waybar uses a fully
-opaque shared Latte background, independent of window focus. The login screen stays opaque.
+opaque shared Latte background, independent of window focus. The login screen
+stays opaque.
 Windows have 1px borders: the shared focus color when active and muted border
 color when inactive. Rofi's outer frame and the notification-center frame remain
-borderless; useful control outlines
-and separators remain. This is matte blur, without glossy gradients or refraction.
+borderless; useful control outlines and separators remain. This is matte blur,
+without glossy gradients or refraction.
 The existing NixOS generation rollback command below restores the previous
 active configuration; returning the repository to the earlier design is a
 separate Git change, so a future rebuild does not reapply an unwanted trial.
@@ -212,9 +219,8 @@ Keep typing `ls` and `ll`: interactive aliases use eza for directory grouping,
 file-type icons, readable file colors and Git status in long listings. Icons
 appear only in terminal output, using the existing Nerd Font fallback.
 `ls --tree --level=2` gives a compact directory-tree peek without a new command.
-`command ls` bypasses the
-alias for exact GNU behavior; scripts are unchanged. Eza is not completely
-flag-compatible with GNU ls.
+`command ls` bypasses the alias for exact GNU behavior; scripts are unchanged.
+Eza is not completely flag-compatible with GNU ls.
 
 Git uses delta automatically for paged diffs, show/log and blame, including line
 numbers and word-level change emphasis. Normal pager controls still work (`q`

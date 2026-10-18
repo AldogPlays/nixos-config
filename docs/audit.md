@@ -1,5 +1,8 @@
 # System audit — 2026-10-16
 
+Historical bootstrap observations, not the current inventory. See
+[system context](system-context.md) and the configuration for intended state.
+
 ## Hardware
 
 - Lenovo IdeaPad 5 2-in-1 14AKP10 (`83KT`), firmware `R4CN15WW`.

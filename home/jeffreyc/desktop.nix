@@ -9,6 +9,14 @@ let
   theme = import ../../theme;
   inherit (theme) roles palette typography;
   fontSize = toString typography.size;
+  wallpaperInterval = 15 * 60;
+  wallpaperPython = pkgs.python3.withPackages (p: [ p.pillow ]);
+  workspaceWallpapers = pkgs.writeShellScript "workspace-wallpapers" ''
+    exec ${wallpaperPython}/bin/python3 ${../../dotfiles/hypr/workspace-wallpapers.py} \
+      --directory ${lib.escapeShellArg "${config.xdg.userDirs.pictures}/Wallpapers"} \
+      --hyprctl ${pkgs.hyprland}/bin/hyprctl --awww ${pkgs.awww}/bin/awww \
+      --interval ${toString wallpaperInterval} "$@"
+  '';
   kdeFont = "${typography.family},${fontSize},-1,5,50,0,0,0,0,0";
   # Native Adwaita/adw-gtk3 semantic colors; both GTK generations consume these.
   gtkColors = {
@@ -291,6 +299,10 @@ in
         "@FOCUSED_OPACITY@"
         "@UNFOCUSED_OPACITY@"
         "@WAYBAR_SYSTEMCTL@"
+        "@WORKSPACE_WALLPAPERS@"
+        "@WALLPAPER_INTERVAL@"
+        "@WALLPAPER_AWWW@"
+        "@THEME_BACKGROUND@"
       ]
       [
         (hex roles.borderFocused)
@@ -307,6 +319,10 @@ in
         (toString theme.material.focusedOpacity)
         (toString theme.material.opacity)
         "${pkgs.systemd}/bin/systemctl"
+        "${workspaceWallpapers}"
+        (toString wallpaperInterval)
+        "${pkgs.awww}/bin/awww"
+        (hex roles.background)
       ]
       (builtins.readFile ../../dotfiles/hypr/hyprland.lua)
   );
@@ -464,23 +480,15 @@ in
     '';
   };
 
-  services.wpaperd = {
+  services.awww = {
     enable = true;
-    settings.default = {
-      path = "${config.xdg.userDirs.pictures}/Wallpapers";
-      sorting = "random";
-      duration = "15m";
-      recursive = true;
-      mode = "center";
-      transition-time = 0;
-    };
+    # Our controller restores assignments; do not restore a separate native cache.
+    extraArgs = [ "--no-cache" ];
   };
 
   systemd.user.services = {
-    # This Home Manager release writes wallpaper.toml; wpaperd defaults to config.toml.
-    wpaperd.Service.ExecStart = lib.mkForce (
-      "${pkgs.wpaperd}/bin/wpaperd --config ${config.xdg.configHome}/wpaperd/wallpaper.toml"
-    );
+    # Restore the visible workspaces after backend startup/restart, without polling.
+    awww.Service.ExecStartPost = "${workspaceWallpapers} --wait";
 
     hyprpolkitagent = {
       Unit = {

@@ -84,7 +84,7 @@ to keep every bootstrap component.
 | Screenshots and clipboard | yumedots/snap, wl-clipboard | Print opens Snap; `packages/snap.nix`; no clipboard-history manager |
 | Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
-| Wallpaper | wpaperd | Existing session service; random images from XDG Pictures/Wallpapers |
+| Wallpaper | awww | Home Manager session service; Hyprland events/timer select per-workspace images |
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
 power-profiles-daemon, and UPower. The TUI controls are launched on demand; the
@@ -133,10 +133,14 @@ so `home/jeffreyc/packages.nix` adds a compatibility symlink to that same binary
 Do not replace it with an obsolete p7zip package or install an entire KDE bundle.
 Ark follows the shared Qt/KDE theme and starts on demand, without a new daemon.
 
-wpaperd shuffles the user's wallpaper directory recursively every 15 minutes,
-using its existing session unit and no extra scheduler. Activation creates the
-wallpaper directory but does not populate it with placeholder images. The image
-collection is intentionally outside the repository and Nix store.
+awww is the sole wallpaper renderer, using one session service and no local
+backend patch. Hyprland events and its quarter-hour timer coordinate remembered
+per-workspace assignments. A short-lived Pillow helper prepares display-sized
+copies so ordinary switches avoid full-resolution image work. The collection
+and generated cache stay outside Git and the Nix store; the shared theme and
+lock screen remain independent. See [workspace wallpapers](wallpapers.md) for
+implementation, memory bounds, format support, and the unresolved awww
+buffer-release warning.
 
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Snap's source is locked as a non-flake input and built locally with xmake, with
@@ -252,7 +256,9 @@ wrapper provides clipboard, OCR, and Hyprland commands without requiring Omarchy
 - `modules/nixos/`: core OS, AMD/laptop support, and system desktop integration.
 - `home/jeffreyc/`: user identity/session variables, packages, programs, desktop.
 - `dotfiles/hypr/`: managed Hyprland Lua configuration.
-- `theme/`: shared Latte data and future adapter contract.
+- `theme/`: shared Latte data and adapter contract.
+- `tests/`: wallpaper policy and Lua fast-path regression tests.
 - `packages/`: local packages for requested tools missing from the pinned nixpkgs.
 - `README.md`: setup, rebuild, and maintenance commands.
 - `AGENTS.md`: instructions for how agents should work.
+- `docs/wallpapers.md`: wallpaper implementation, cache, and troubleshooting.
