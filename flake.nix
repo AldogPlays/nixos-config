@@ -22,11 +22,6 @@
       flake = false;
     };
 
-    hyprspace-src = {
-      # Upstream's hyprpm compatibility pin for Hyprland 0.55.4, including Lua bindings.
-      url = "github:KZDKM/Hyprspace/3624878a7b6c00dfa77e351438fa209df99ad81d";
-      flake = false;
-    };
   };
 
   outputs =

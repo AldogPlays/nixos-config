@@ -21,6 +21,20 @@ in
     size = 24;
   };
 
+  # Shell backplates and normal-window focus opacity; modal/PiP exceptions in Lua.
+  material = {
+    opacity = 0.90;
+    focusedOpacity = 0.95;
+    blur = {
+      size = 6;
+      passes = 2;
+      noise = 0.015;
+      contrast = 1.0;
+      brightness = 1.0;
+      vibrancy = 0.0;
+    };
+  };
+
   # Personal role choices live here; preserve the official palette above.
   roles = {
     background = palette.base;

@@ -38,7 +38,31 @@ Home Manager's conflicting-file backup suffix is `.hm-backup`. The current edito
 is Nano, shell is Bash, locale is `en_US.UTF-8`, and timezone is
 `America/Los_Angeles`.
 
+Starship is the Bash prompt, integrated through Home Manager in `programs.nix`.
+It shows a single line with directory, Git branch/status and success/error arrow,
+with colors from shared theme roles. No custom command modules, language-version
+segments or background service are configured. Existing shells need reinitializing;
+new interactive Bash shells load it automatically.
+
+Interactive Bash also loads pinned ble.sh before completion/Starship and attaches
+it afterward, only on a real terminal. It adds local history/completion ghost
+suggestions, Tab acceptance and syntax highlighting without changing shells.
+The generated rc file is store-managed, not a second user-maintained theme.
+Existing command names remain: interactive `ls`/`ll` use eza; `command ls`
+retains GNU behavior. Git uses delta as its diff/show/log/blame pager and
+interactive diff filter. Delta's syntax theme is deliberately disabled rather
+than importing a second bat palette; shared roles color changes and emphasis.
+No cat/grep/cd replacement or additional shell service is declared. Scripts and
+unpiped native-tool semantics should not be inferred from interactive aliases;
+eza is not fully GNU-ls flag-compatible.
+Eza adds file-type icons only on terminal output, using the existing Nerd Font
+symbols. It does not supply image thumbnails or interactive content previews.
+
 ## Desktop components
+
+Hyprland handles cursor hiding with its native inactivity timeout, without an
+idle daemon. Meta+J uses Dwindle's `togglesplit` for the focused tile's parent
+split, with split preservation enabled; it is not a whole-workspace rotation.
 
 These are declared choices, subject to Jeffrey's review rather than a commitment
 to keep every bootstrap component.
@@ -61,7 +85,6 @@ to keep every bootstrap component.
 | Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
 | Wallpaper | wpaperd | Existing session service; random images from XDG Pictures/Wallpapers |
-| Workspace overview | Hyprspace | Same pinned nixpkgs/Hyprland build; rendered Lua plugin path; Super+Tab |
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
 power-profiles-daemon, and UPower. The TUI controls are launched on demand; the
@@ -119,25 +142,73 @@ wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Snap's source is locked as a non-flake input and built locally with xmake, with
 Nix paths substituted for upstream's distribution-specific protocol paths. Its
 wrapper provides clipboard, OCR, and Hyprland commands without requiring Omarchy.
-Hyprspace uses `pkgs.hyprlandPlugins.hyprspace` with a source override pinned in
-`flake.lock` to upstream's Hyprland 0.55.4 compatibility revision. This supplies
-the required Lua bindings while building against the same Hyprland/compiler
-pairing as the compositor. Review that compatibility pin during Hyprland upgrades.
 
 ## Customization decisions
 
-- The requested look uses 1.0 scaling, compact gaps, thin borders, restrained
+- The requested look uses 1.0 scaling, compact gaps, thin window frames, restrained
   corners, and no window shadows. Exact geometry lives in the Hyprland and
   Home Manager desktop configurations.
+- Ctrl+Meta+Arrow changes focus directionally through Hyprland's native focus
+  dispatcher, repeating when held. Meta+Arrow retains layout movement for tiled
+  windows, but moves floating windows by relative pixel increments. Meta+Shift+Arrow resizes by
+  relative increments. Both repeat when held; mouse snapping is explicitly
+  disabled. Waybar uses matching compact top/side margins and rounded corners,
+  preserving its exclusive zone so tiled windows do not overlap it.
+  Workspace-button backgrounds also have rounded corners, so active/hover fills
+  do not paint square corners over the bar's outer rounding. Waybar is visible
+  when the focused monitor's active workspace (or active special workspace)
+  has a mapped, non-hidden tiled window, or while a mapped Rofi layer exists.
+  Floating dialogs/PiP do not count. Native Lua window/workspace/layer events
+  reconcile visibility using its standard SIGUSR1 toggle, signaling the main
+  process of `waybar.service` through systemd rather than matching wrapped
+  executable names. Invisible Waybar stays
+  mapped, so the explicit invisible mode uses the bottom layer while the visible
+  bar uses top; Lua queries this real state, without a stale visibility cache.
+  Small one-shot timers coalesce events and asynchronous signals. No polling loop
+  or extra service is added. The existing Home Manager reload signal is preserved.
+  Hidden Waybar releases its exclusive zone; visible Waybar reserves
+  space as before. Multi-output bars currently share this focused-monitor policy.
 - The touchpad should remain usable during typing and use non-natural scrolling.
   Both `disable_while_typing` and `natural_scroll` are false in the Lua source.
 - Windows explicitly marked modal float through a single Hyprland rule. Normal
-  application windows stay tiled; there are no title-based popup heuristics or
-  Bitwarden-specific exceptions. Unmarked extension windows may need separate
-  inspection if this baseline does not catch them.
+  application windows stay tiled. Modal detection does not use broad title
+  heuristics or Bitwarden-specific exceptions; the separate browser PiP rule
+  below uses its known dedicated title. Unmarked extension windows may need
+  separate inspection if this baseline does not catch them.
 - The theme direction is fixed Catppuccin Latte, with locally versioned official
   palette values and shared semantic roles. No switching, refresh coordinator,
   or theme daemon is wanted. See `theme/README.md` for the data contract.
+- The material direction is matte frosted glass, not liquid/glossy/refractive
+  glass. Normal application windows (including LibreWolf and Dolphin), Rofi
+  and SwayNC use Hyprland background blur. Shared opacity and blur controls
+  live under `theme/default.nix.material`. Normal windows use a native
+  Hyprland rule for nearly opaque focus, frosted unfocused state, and fully opaque
+  fullscreen. Their whole surfaces, including text, follow that opacity; native
+  Alacritty alpha stays at 1.0 to avoid multiplying two transparency settings.
+  Later rules keep explicitly modal windows and recognized LibreWolf/Firefox
+  PiP fully opaque, without exempting all floating windows. Recognized PiP also
+  floats with a compact initial size defined in the Lua component, without
+  forcing placement or pin state. Initial sizing runs once per PiP window (and
+  once again after config reload), not on later metadata updates, so manual
+  resizing remains available. PiP uses the exact
+  English `Picture-in-Picture` title and browser class, researched from Mozilla's
+  upstream player/localization sources. Unmarked dialogs and other PiP app/title
+  combinations need separate runtime inspection rather than broad title guesses.
+  Native Hyprland open/title/class/reload callbacks cover late metadata and
+  existing PiP windows because floating rules only apply when a window maps.
+  A one-shot next-loop callback allows class/layout updates to finish before
+  floating. No polling helper or background service is used.
+  Windows and Waybar have thin 1px borders using the shared border roles;
+  focused windows use the distinct focus-border role. The login surface remains
+  opaque. Hyprlock uses a solid, opaque shared Latte background, without a
+  background screenshot, blur or transparency. Session-lock xray is disabled;
+  authentication stays unchanged. Keep the pinned Hyprland version rather than
+  upgrading or maintaining a compositor patch for lock-screen effects.
+  Waybar is fully opaque, using the shared background role independently
+  of the glass opacity and window focus.
+  Rofi and the notification-center outer frame remain borderless; input/control
+  outlines, separators and status indicators remain useful and are not removed.
+  No shader, refraction plugin, highlight gradient, shadow or new service is added.
 - Fonts share the family and point size in `theme/default.nix` across terminal,
   launcher, bar, notifications, GTK defaults and KDE UI roles. CSS uses `pt`, not
   `px`, to avoid unit mismatches. Web content and app-specific overrides are not
@@ -164,8 +235,10 @@ pairing as the compositor. Review that compatibility pin during Hyprland upgrade
   login-screen test mode do not establish successful real authentication.
 - Native theme adapters consume the shared definitions for Hyprland borders,
   Alacritty, Rofi, Waybar, SwayNC, and Dolphin/KDE Qt colors. Keep app-specific syntax in the existing
-  modules; do not install independent Catppuccin palettes. Bar and window colors
-  are opaque to avoid wallpaper-dependent shifts. See `theme/README.md` for
+  modules; do not install independent Catppuccin palettes. Canonical palette
+  values stay opaque; shell backplates and normal windows add alpha at the adapter
+  boundary. Their displayed tint now intentionally depends on the blurred content
+  behind them. See `theme/README.md` for
   researched integration details and the remaining unthemed components.
 - GitHub Actions workflows were deliberately removed. Validation stays local
   unless CI is requested. Repository visibility and remote settings need direct

@@ -30,10 +30,12 @@ shared palette. App-specific styling remains separate follow-up work.
 | New LibreWolf window | Meta+F |
 | Close focused window | Meta+Q |
 | Toggle floating | Meta+W |
+| Toggle focused tile split (top/bottom ↔ side-by-side) | Meta+J |
 | Toggle fullscreen | Alt+Enter |
 | Workspace 1–10 | Meta+1–9, Meta+0 for 10 |
 | Move window to workspace | Meta+Shift+1–9 or 0 |
-| Move focused window in layout | Meta+Arrow |
+| Focus window in a direction | Ctrl+Meta+Arrow; hold to repeat |
+| Move focused window | Meta+Arrow; tiled layout move or 20 px floating move, hold to repeat |
 | Resize focused window | Meta+Shift+Arrow; 20 px steps, hold to repeat |
 | File browser (Dolphin) | Meta+E |
 | App launcher (Rofi) | Meta+A |
@@ -43,11 +45,22 @@ shared palette. App-specific styling remains separate follow-up work.
 | Bluetooth (Bluetui) | Super+Shift+B or click the bar's Bluetooth module |
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
 | Screenshot (Snap) | Print; press again to dismiss the capture overlay |
-| Workspace overview (Hyprspace) | Super+Tab |
 
 Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
 window's width/height; Right/Down grows it. Tiled resizing respects the layout.
+Floating windows move and resize in pixel increments instead of snapping to
+screen edges. Mouse snapping is disabled. Waybar has top/side margins matching
+the compact outer window gaps, rounded corners and a thin 1px border; it still reserves
+space above tiled windows rather than covering them.
+It hides when the focused workspace has no tiled windows, but appears while
+Rofi is open. Floating dialogs and PiP do not count as tiles. Closing Rofi
+restores the workspace-based visibility. Native Hyprland Lua events control the
+existing Waybar process; there is no extra daemon or polling loop. When hidden,
+Waybar releases its reserved space. The policy follows the focused monitor and
+its active special workspace when one is open.
 Other existing controls remain unchanged.
+The cursor hides after five seconds without pointer activity and reappears on
+movement. This is Hyprland's native timeout, not a separate idle service.
 
 wpaperd starts with the graphical session and shuffles images from
 `~/Pictures/Wallpapers` (including subfolders) every 15 minutes, without a fade.
@@ -81,6 +94,27 @@ applications with their own font settings are not forcibly overridden.
 The contrasting Catppuccin Mocha Dark cursor is configured for Hyprland, GTK,
 Qt/KDE and X11 in `home/jeffreyc/desktop.nix`; the rest of the theme stays Latte.
 
+Frosted glass applies to normal application windows, Rofi and SwayNC.
+`theme/default.nix.material` controls their shared background opacity and
+Hyprland blur settings. `material.focusedOpacity` makes focused windows nearly
+opaque; unfocused windows use `material.opacity` and fullscreen is fully opaque.
+Explicitly marked modal dialogs and recognized LibreWolf/Firefox picture-in-picture
+windows stay fully opaque; recognized PiP windows float at a compact initial size,
+without forcing position or pin state. Manual resizing remains available; a
+config reload reapplies the default once. PiP matching uses the browser class and exact English
+`Picture-in-Picture` title; other apps/localizations may need additional verified
+identifiers. Unmarked dialogs cannot be identified generically by this rule.
+Hyprland affects the whole surface, including text, images and video; native
+terminal alpha stays at 1.0 to avoid double transparency. Waybar uses a fully
+opaque shared Latte background, independent of window focus. The login screen stays opaque.
+Windows have 1px borders: the shared focus color when active and muted border
+color when inactive. Rofi's outer frame and the notification-center frame remain
+borderless; useful control outlines
+and separators remain. This is matte blur, without glossy gradients or refraction.
+The existing NixOS generation rollback command below restores the previous
+active configuration; returning the repository to the earlier design is a
+separate Git change, so a future rebuild does not reapply an unwanted trial.
+
 ## GTK, login and lock screens
 
 GTK3 uses `adw-gtk3` for widget structure with generated Latte named colors;
@@ -99,8 +133,10 @@ shortcuts are F10 suspend, F11 power off and F12 reboot. The new greeter takes
 effect when SDDM next starts, normally on your next boot; do not restart the
 display manager mid-session just to preview it.
 
-Meta+L runs hyprlock with an opaque Latte background, username and thin-bordered
-password field. The generated config is in `~/.config/hypr/hyprlock.conf`;
+Meta+L runs hyprlock with a solid, opaque Latte background, username and
+thin-bordered password field. No background screenshot, blur or transparency is
+configured. Live session-lock xray remains disabled.
+Authentication is unchanged. The generated config is in `~/.config/hypr/hyprlock.conf`;
 NixOS declares its PAM service for normal password authentication. No auto-lock
 timer, idle daemon or authentication grace period is added. Test unlocking at a
 convenient time; configuration checks do not prove a successful password unlock.
@@ -155,6 +191,37 @@ Home Manager is integrated into the NixOS configuration; a separate `home-manage
 The first activation may preserve a conflicting user file with the suffix `.hm-backup`. After confirming the managed version, remove the backup manually.
 
 ## Routine maintenance
+
+Starship supplies a minimal single-line Bash prompt: directory, Git branch/status
+when applicable, and an arrow that changes color after a failed command. Its
+settings are declared in `home/jeffreyc/programs.nix`, using shared theme roles;
+the generated file is `~/.config/starship.toml`. Open a new terminal after
+activation to initialize it, or run `exec bash` at an idle shell prompt. No new
+background service is added.
+
+### Shell conveniences
+
+Interactive Bash uses ble.sh for syntax highlighting, completion menus and
+grey/italic suggestions from local history and normal shell completion. Press
+Tab to accept a visible suggestion (Right Arrow also works at the end of the
+line); without a suggestion, Tab performs ordinary completion. Enter executes
+only the accepted text. Ctrl+R still searches history. Suggestions are not AI
+and do not send your history anywhere.
+
+Keep typing `ls` and `ll`: interactive aliases use eza for directory grouping,
+file-type icons, readable file colors and Git status in long listings. Icons
+appear only in terminal output, using the existing Nerd Font fallback.
+`ls --tree --level=2` gives a compact directory-tree peek without a new command.
+`command ls` bypasses the
+alias for exact GNU behavior; scripts are unchanged. Eza is not completely
+flag-compatible with GNU ls.
+
+Git uses delta automatically for paged diffs, show/log and blame, including line
+numbers and word-level change emphasis. Normal pager controls still work (`q`
+to quit, `/` to search); `n`/`N` navigate diff sections. `git --no-pager diff`
+bypasses it. Piped Git output remains normal Git output. These settings live in
+`home/jeffreyc/programs.nix`; generated configuration uses the shared theme.
+Open a new terminal after activation; no daemon or shell migration is involved.
 
 ```bash
 nix flake update

@@ -1,6 +1,5 @@
 -- Managed by Home Manager from this repository.
--- Home Manager substitutes the pinned plugin path and shared theme colors.
-hl.plugin.load("@HYPRSPACE_PLUGIN@")
+-- Home Manager substitutes shared theme settings.
 
 hl.monitor({
     output = "",
@@ -29,6 +28,7 @@ hl.config({
             inactive_border = "rgb(@THEME_INACTIVE_BORDER@)",
         },
         resize_on_border = true,
+        snap = { enabled = false },
         allow_tearing = false,
         layout = "dwindle",
     },
@@ -45,13 +45,17 @@ hl.config({
         },
         blur = {
             enabled = true,
-            size = 3,
-            passes = 1,
-            vibrancy = 0.17,
+            size = @BLUR_SIZE@,
+            passes = @BLUR_PASSES@,
+            noise = @BLUR_NOISE@,
+            contrast = @BLUR_CONTRAST@,
+            brightness = @BLUR_BRIGHTNESS@,
+            vibrancy = @BLUR_VIBRANCY@,
         },
     },
     animations = { enabled = true },
     dwindle = { preserve_split = true },
+    cursor = { inactive_timeout = 5 },
     input = {
         kb_layout = "us",
         follow_mouse = 1,
@@ -62,10 +66,143 @@ hl.config({
         },
     },
     misc = {
+        -- Keep the opaque lock screen isolated from the live desktop.
+        session_lock_xray = false,
         force_default_wallpaper = -1,
         disable_hyprland_logo = false,
     },
 })
+
+-- Blur translucent shell backplates, not the fully transparent surrounding area.
+hl.layer_rule({
+    name = "frosted-shell",
+    match = { namespace = "^(waybar|rofi|swaync-control-center|swaync-notification-window)$" },
+    blur = true,
+    ignore_alpha = 0.2,
+})
+
+-- Focus-dependent glass applies to normal application windows, not just terminals.
+hl.window_rule({
+    name = "window-focus-opacity",
+    match = { class = ".*" },
+    opacity = "@FOCUSED_OPACITY@ override @UNFOCUSED_OPACITY@ override 1.0 override",
+})
+
+-- Later exceptions override the generic rule without exempting all floaters.
+hl.window_rule({
+    name = "opaque-modal-dialogs",
+    match = { modal = true },
+    opacity = "1.0 override 1.0 override 1.0 override",
+})
+
+-- Firefox-family PiP has a dedicated title; ordinary browser tabs are unaffected.
+local pipSize = { x = 480, y = 270 }
+hl.window_rule({
+    name = "opaque-browser-pip",
+    match = {
+        class = "(?i)^(librewolf|firefox|org[.]mozilla[.]firefox)$",
+        title = "^Picture-in-Picture$",
+    },
+    float = true,
+    size = string.format("%d %d", pipSize.x, pipSize.y),
+    opacity = "1.0 override 1.0 override 1.0 override",
+})
+
+-- Floating rules run at map time. Cover a delayed PiP title and existing PiP
+-- windows on reload with native events, without polling or an extra service.
+local sizedPipWindows = {}
+local function floatBrowserPip(window)
+    if not window or not window.mapped or window.title ~= "Picture-in-Picture" then return end
+    local class = string.lower(window.class or "")
+    if class == "librewolf" or class == "firefox" or class == "org.mozilla.firefox" then
+        if not window.floating then
+            hl.dispatch(hl.dsp.window.float({ action = "enable", window = window }))
+        end
+        -- Set a compact initial size once, not on every metadata change, so
+        -- resizing manually remains possible afterward.
+        if not sizedPipWindows[window.address] then
+            hl.dispatch(hl.dsp.window.resize({ x = pipSize.x, y = pipSize.y, window = window }))
+            sizedPipWindows[window.address] = true
+        end
+    end
+end
+local function scheduleBrowserPip(window)
+    if not window or window.title ~= "Picture-in-Picture" then return end
+    -- A metadata event can precede the remaining class/layout updates.
+    hl.timer(function() floatBrowserPip(window) end, { timeout = 1, type = "oneshot" })
+end
+hl.on("window.open", scheduleBrowserPip)
+hl.on("window.title", scheduleBrowserPip)
+hl.on("window.class", scheduleBrowserPip)
+hl.on("window.close", function(window)
+    if window then sizedPipWindows[window.address] = nil end
+end)
+hl.on("config.reloaded", function()
+    for _, window in ipairs(hl.get_windows()) do scheduleBrowserPip(window) end
+end)
+
+-- Waybar is useful with tiles or the launcher, not over an empty desktop.
+-- Invisible Waybar stays mapped but uses our configured bottom layer; the
+-- visible bar uses the top layer. Query that real state instead of caching it.
+local waybarUpdateQueued = false
+local waybarSignalPending = false
+local waybarDirty = false
+local scheduleWaybarVisibility
+local function updateWaybarVisibility()
+    local wanted, present, visible = false, false, false
+    for _, layer in ipairs(hl.get_layers()) do
+        if layer.mapped then
+            if layer.namespace == "rofi" then wanted = true end
+            if layer.namespace == "waybar" then
+                present = true
+                visible = layer.layer == 2 -- zwlr_layer_shell_v1 top
+            end
+        end
+    end
+    local workspace = hl.get_active_special_workspace() or hl.get_active_workspace()
+    if workspace then
+        for _, window in ipairs(workspace:get_windows()) do
+            if window.mapped and not window.hidden and not window.floating then
+                wanted = true
+                break
+            end
+        end
+    end
+    if not present or wanted == visible then return end
+    waybarSignalPending = true
+    hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=SIGUSR1 waybar.service"))
+    hl.timer(function()
+        waybarSignalPending = false
+        if waybarDirty then
+            waybarDirty = false
+            scheduleWaybarVisibility()
+        end
+    end, { timeout = 100, type = "oneshot" })
+end
+scheduleWaybarVisibility = function()
+    if waybarSignalPending then waybarDirty = true; return end
+    if waybarUpdateQueued then return end
+    waybarUpdateQueued = true
+    hl.timer(function()
+        waybarUpdateQueued = false
+        updateWaybarVisibility()
+    end, { timeout = 20, type = "oneshot" })
+end
+for _, event in ipairs({
+    "window.open", "window.close", "window.destroy", "window.active",
+    "window.move_to_workspace", "window.update_rules", "workspace.active",
+    "monitor.focused", "monitor.added", "monitor.removed", "config.reloaded",
+}) do
+    hl.on(event, scheduleWaybarVisibility)
+end
+for _, event in ipairs({ "layer.opened", "layer.closed" }) do
+    hl.on(event, function(layer)
+        if layer and (layer.namespace == "rofi" or layer.namespace == "waybar") then
+            scheduleWaybarVisibility()
+        end
+    end)
+end
+scheduleWaybarVisibility()
 
 hl.curve("easeOutQuint", { type = "bezier", points = { { 0.23, 1 }, { 0.32, 1 } } })
 hl.curve("quick", { type = "bezier", points = { { 0.15, 0 }, { 0.1, 1 } } })
@@ -84,16 +221,14 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
+hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"),
+    { description = "Toggle focused tile split: top/bottom or side-by-side" })
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("alacritty --class wlctl -e wlctl"))
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("alacritty --class bluetui -e bluetui"))
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd("alacritty --class wiremix -e wiremix"))
 hl.bind("PRINT", hl.dsp.exec_cmd("snap"))
-hl.bind(mainMod .. " + TAB", function()
-    hl.plugin.overview.toggle()
-end, { description = "Toggle Hyprspace overview" })
 
 hl.bind("ALT + Return", hl.dsp.window.fullscreen({ action = "toggle" }),
     { description = "Alt+Enter: toggle fullscreen" })
@@ -104,7 +239,20 @@ for _, direction in ipairs({
     { key = "up", x = 0, y = -20 },
     { key = "down", x = 0, y = 20 },
 }) do
-    hl.bind(mainMod .. " + " .. direction.key, hl.dsp.window.move({ direction = direction.key }))
+    hl.bind(mainMod .. " + CTRL + " .. direction.key,
+        hl.dsp.focus({ direction = direction.key }),
+        { repeating = true, description = "Focus window " .. direction.key })
+    hl.bind(mainMod .. " + " .. direction.key, function()
+        local window = hl.get_active_window()
+        if not window then return end
+        if window.floating then
+            hl.dispatch(hl.dsp.window.move({
+                x = direction.x, y = direction.y, relative = true, window = window,
+            }))
+        else
+            hl.dispatch(hl.dsp.window.move({ direction = direction.key, window = window }))
+        end
+    end, { repeating = true })
     hl.bind(mainMod .. " + SHIFT + " .. direction.key,
         hl.dsp.window.resize({ x = direction.x, y = direction.y, relative = true }),
         { repeating = true })

@@ -15,7 +15,7 @@ services. App adapters may install their native styling plugins.
   The upstream project uses the [MIT license](https://github.com/catppuccin/palette/blob/v1.8.0/LICENSE).
   Values are stored locally and versioned in Git; builds do not fetch a palette.
 - `default.nix` is the public entry point. It exports `name`, `variant`,
-  `appearance`, `palette`, `roles`, `typography`, and `cursor`. Every color is an opaque lowercase
+  `appearance`, `palette`, `roles`, `typography`, `cursor`, and `material`. Every color is an opaque lowercase
   `#rrggbb` string.
 - `roles` assigns colors to purposes. These assignments are our starting choices,
   not an official Catppuccin application theme. Adjust a shared role here instead
@@ -79,6 +79,8 @@ links document research, not an instruction to fetch themes during activation.
 | Component | Native integration and reference |
 | --- | --- |
 | Alacritty | `programs.nix`: TOML `colors` groups from the [app documentation](https://alacritty.org/config-alacritty.html), with ANSI/indexed mapping informed by the [Catppuccin port](https://github.com/catppuccin/alacritty/tree/f6cb5a5c2b404cdaceaff193b9c52317f62c62f7). Shared roles deliberately control cursor, search, and selection instead of copying port-specific choices. |
+| Starship | `programs.nix`: native TOML styles consume shared roles directly for directory, Git context and prompt character. [Upstream configuration](https://starship.rs/config/) and the [Catppuccin reference](https://github.com/catppuccin/starship) informed the adapter; no preset or second palette is installed. |
+| Shell tools | `programs.nix`: ble.sh ghost text, selection and common syntax faces use shared roles; remaining native ANSI faces inherit terminal colors. [ble.sh](https://github.com/akinomyoga/ble.sh) documents completion and initialization. Eza's [native YAML theme](https://github.com/eza-community/eza/blob/main/docs/theme.yml) maps file kinds and Git states to roles. Delta's native styles use shared roles, with syntax themes disabled; [upstream docs](https://dandavison.github.io/delta/configuration.html) and the [Catppuccin reference](https://github.com/catppuccin/delta) informed the adapter. No copied theme files or palette cache are installed. |
 | Rofi | `programs.nix`: generated native Rasi layered over Rofi's default layout. [Rasi documentation](https://github.com/davatorium/rofi/blob/next/doc/rofi-theme.5.markdown) and the [reference port](https://github.com/catppuccin/rofi/tree/71fb15577ccb091df2f4fc1f65710edbc61b5a53) informed normal/active/urgent and selected/alternate state coverage. |
 | Waybar | `desktop.nix`: native GTK3 CSS; [upstream styling manual](https://github.com/Alexays/Waybar/blob/master/man/waybar-styles.5.scd.in) and [reference port](https://github.com/catppuccin/waybar/tree/ee8ed32b4f63e9c417249c109818dcc05a2e25da). Colors are interpolated directly, without importing a second palette file. |
 | SwayNC | `desktop.nix`: GTK4 custom properties from the pinned 0.12.6 package's default stylesheet, plus targeted title/DND/action styling. The [reference port](https://github.com/catppuccin/swaync/tree/f09852bfa35d50e763ae967c26dbe524b9e9f305) informs state coverage, not a copied replacement stylesheet. [Upstream project](https://github.com/ErikReider/SwayNotificationCenter) documents native styling. Default structural CSS remains loaded by SwayNC. |
@@ -88,9 +90,40 @@ links document research, not an instruction to fetch themes during activation.
 | SDDM | `modules/nixos/hyprland.nix` uses the pinned [where-is-my-sddm-theme](https://github.com/stepanzubkov/where-is-my-sddm-theme/tree/v1.12.0) layout and native settings, with fail-fast substitutions for hardcoded selection/failure colors and a static thin error outline. [SDDM's theming API](https://github.com/sddm/sddm/wiki/Theming) and the [Catppuccin reference port](https://github.com/catppuccin/sddm) informed research; the latter is not a build dependency. |
 | Hyprlock | Home Manager generates native settings from roles and typography, checked against pinned 0.9.5 source, [upstream documentation](https://wiki.hypr.land/Hypr-Ecosystem/hyprlock/) and the [Catppuccin reference](https://github.com/catppuccin/hyprlock). No copied palette, wallpaper reader, command-driven clock or refresh service is needed. PAM is declared separately in the NixOS desktop module. |
 
-Bar backgrounds and window opacity are opaque; shadows remain disabled. This
-prevents the wallpaper from tinting the generated colors. Existing geometry and
-spacing stays in the existing modules. Some ANSI colors are intentionally faint
+`material` supplies one background-opacity value and Hyprland blur parameters
+for the frosted-glass trial. Alacritty's native alpha stays at 1.0; a general
+Hyprland rule applies to normal application windows, using `focusedOpacity`
+when focused, `opacity` when unfocused and 1.0 in fullscreen. This affects text,
+images and video as well as the background, without a focus-watching daemon.
+Later exceptions keep explicitly modal windows and recognized Firefox-family
+PiP opaque; recognized PiP also floats with a compact initial size, no forced
+placement/pinning, and manual resizing afterward. A config reload reapplies
+the initial size once; subsequent metadata updates do not reset manual resizing.
+PiP matching is class-scoped with the exact English title from
+[Mozilla's player localization](https://github.com/mozilla-firefox/firefox/blob/main/toolkit/locales/en-US/toolkit/pictureinpicture/pictureinpicture.ftl).
+Other apps/localizations and unmarked dialogs require verified additional matches;
+do not treat every floating window as a dialog or PiP window.
+Native compositor open/title/class/reload callbacks cover delayed PiP metadata
+and windows already open during reload, since floating rules only apply at map
+time. A one-shot next-loop callback waits for the metadata update to finish.
+Rofi uses `#rrggbbaa`; SwayNC uses native RGBA CSS. Waybar deliberately uses the
+opaque shared background role, without applying the glass opacity. Rofi's unselected
+rows remain transparent to avoid stacking opaque fills over its backplate.
+Hyprland layer blur is limited to the exact Waybar, Rofi and SwayNC namespaces,
+ignoring fully transparent regions. Alacritty uses normal window background blur.
+These translations do not alter canonical palette colors. Shell text stays
+opaque; normal application content follows its window's opacity.
+
+Global window opacity remains 1.0, with the scoped rules above overriding
+it. Shadows remain disabled. Modal/PiP exceptions and SDDM stay opaque.
+Hyprlock uses the opaque shared background role directly, without applying
+material opacity, blur or a background screenshot. Session-lock xray remains
+disabled; its text and password field are also opaque.
+Frosted surfaces deliberately pick up some tint
+from the blurred content behind them; this is not a claim that displayed pixels
+always equal the canonical palette. No gloss gradients, refraction, distortion,
+shader plugins or new services are used. Geometry stays in the existing modules.
+Some ANSI colors are intentionally faint
 for terminal compatibility, not intended as default body-text colors.
 The shared secondary-text and selection roles use `subtext1` and `surface0`:
 primary text on the selection background is about 5.17:1, rather than the
@@ -98,7 +131,7 @@ starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
 
 Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette, LibreWolf,
-Hyprspace-specific appearance, Snap, app-specific TUI themes, and
+Snap, app-specific TUI themes, and
 wpaperd's wallpaper image. Terminal apps inherit Alacritty's ANSI palette where
 they use terminal colors; apps emitting their own truecolor values need separate
 research. Do not call those apps fully themed just because their terminal is.

@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
   ...
@@ -87,6 +86,7 @@ let
         2
         4
       ];
+  glass = color: "rgba(${rgb color}, ${toString theme.material.opacity})";
   # KDE uses comma-separated RGB values, not the canonical #rrggbb notation.
   kdeForegrounds = {
     DecorationFocus = rgb roles.borderFocused;
@@ -142,11 +142,6 @@ let
         shadeSortColumn = false;
       };
     };
-  # Keep nixpkgs' Hyprland/compiler pairing, with upstream's compatible Lua source.
-  hyprspace = pkgs.hyprlandPlugins.hyprspace.overrideAttrs (_: {
-    src = inputs.hyprspace-src;
-    version = "0-unstable-${inputs.hyprspace-src.shortRev}";
-  });
 in
 {
   gtk = {
@@ -282,20 +277,36 @@ in
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
     builtins.replaceStrings
       [
-        "@HYPRSPACE_PLUGIN@"
         "@THEME_ACTIVE_BORDER@"
         "@THEME_INACTIVE_BORDER@"
         "@THEME_SHADOW@"
         "@CURSOR_THEME@"
         "@CURSOR_SIZE@"
+        "@BLUR_SIZE@"
+        "@BLUR_PASSES@"
+        "@BLUR_NOISE@"
+        "@BLUR_CONTRAST@"
+        "@BLUR_BRIGHTNESS@"
+        "@BLUR_VIBRANCY@"
+        "@FOCUSED_OPACITY@"
+        "@UNFOCUSED_OPACITY@"
+        "@WAYBAR_SYSTEMCTL@"
       ]
       [
-        "${hyprspace}/lib/libhyprspace.so"
         (hex roles.borderFocused)
         (hex roles.border)
         (hex roles.backgroundAlt)
         config.home.pointerCursor.name
         (toString config.home.pointerCursor.size)
+        (toString theme.material.blur.size)
+        (toString theme.material.blur.passes)
+        (toString theme.material.blur.noise)
+        (toString theme.material.blur.contrast)
+        (toString theme.material.blur.brightness)
+        (toString theme.material.blur.vibrancy)
+        (toString theme.material.focusedOpacity)
+        (toString theme.material.opacity)
+        "${pkgs.systemd}/bin/systemctl"
       ]
       (builtins.readFile ../../dotfiles/hypr/hyprland.lua)
   );
@@ -307,7 +318,19 @@ in
       layer = "top";
       position = "top";
       height = 24;
+      margin-top = 4;
+      margin-left = 4;
+      margin-right = 4;
       spacing = 4;
+      # Hyprland's native event callbacks reconcile this with tiles/Rofi.
+      on-sigusr1 = "toggle";
+      # Keep invisible mode observable by Lua even though its surface stays mapped.
+      modes.invisible = {
+        layer = "bottom";
+        exclusive = false;
+        passthrough = true;
+        visible = false;
+      };
       modules-left = [
         "hyprland/workspaces"
         "hyprland/window"
@@ -381,8 +404,9 @@ in
         font-family: "${typography.family}", "Symbols Nerd Font";
         font-size: ${fontSize}pt;
       }
-      window#waybar { background: ${roles.background}; color: ${roles.foreground}; }
-      #workspaces button { padding: 0 5px; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
+      window#waybar { background: ${roles.background}; color: ${roles.foreground}; border: 1px solid ${roles.border}; border-radius: 4px; }
+      #workspaces { background: transparent; }
+      #workspaces button { padding: 0 5px; border-radius: 4px; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
       #workspaces button:hover { background: ${roles.surface}; color: ${roles.foreground}; }
       #workspaces button.active { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
       #workspaces button.urgent { color: ${roles.error}; }
@@ -409,10 +433,10 @@ in
     style = ''
       /* SwayNC 0.12 uses GTK4 custom properties; its default CSS supplies layout. */
       :root {
-        --cc-bg: ${roles.backgroundAlt};
+        --cc-bg: ${glass roles.backgroundAlt};
         --noti-border-color: ${roles.border};
         --noti-bg: ${rgb roles.background};
-        --noti-bg-alpha: 1;
+        --noti-bg-alpha: ${toString theme.material.opacity};
         --noti-bg-darker: ${roles.backgroundAlt};
         --noti-bg-hover: ${roles.surface};
         --noti-bg-focus: ${roles.selection};
@@ -429,7 +453,7 @@ in
       * { font-family: "${typography.family}", "Symbols Nerd Font"; font-size: ${fontSize}pt; }
       .widget-title > label, .widget-dnd > label { font-size: ${fontSize}pt; }
       .notification-row .notification-background .notification.critical { border-color: ${roles.error}; }
-      .control-center { border: 1px solid ${roles.border}; }
+      .control-center { border: none; }
       .widget-title > button, .notification-action, .widget-dnd switch {
         background: ${roles.surface}; color: ${roles.foreground};
         border: 1px solid ${roles.border}; box-shadow: none;
