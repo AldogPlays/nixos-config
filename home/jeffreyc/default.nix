@@ -13,10 +13,6 @@
   ];
 
   home = {
-    username = "jeffreyc";
-    homeDirectory = "/home/jeffreyc";
-    stateVersion = "26.05";
-
     sessionVariables = {
       EDITOR = "nano";
       BROWSER = "librewolf";

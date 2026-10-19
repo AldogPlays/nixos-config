@@ -7,6 +7,11 @@ values, decisions, progress notes, and completed work out of this file.
 
 - Build a clean, slim, reproducible NixOS and Hyprland setup managed through Git
   and GitHub, customized to Jeffrey's specifications.
+- Make the complete setup reproducible through a single bootstrap command on a
+  fresh NixOS installation. Keep setup logic in this repository and handle the
+  new installation's hardware configuration rather than reusing this machine's
+  disk UUIDs. Support other x86-64 PCs as well as this Lenovo. Optimizations must
+  be included in that reproducible setup.
 - Jeffrey wants control over each part of the desktop. Explain which component
   provides a feature, where its configuration lives, and how it starts. Make
   additions, replacements, and new background services explicit in the proposed

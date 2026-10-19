@@ -1,6 +1,7 @@
 # NixOS configuration
 
 Flake-based NixOS and Home Manager configuration for the `nixos` host (Lenovo IdeaPad 5 2-in-1 14AKP10) and user `jeffreyc`.
+The bootstrap app also generates installation-specific hosts for other x86-64 PCs.
 
 ## Layout
 
@@ -11,6 +12,8 @@ hosts/nixos/                  machine identity, disks, and boot hardware
 modules/nixos/                reusable OS, hardware, and desktop modules
 home/jeffreyc/                Home Manager modules
 packages/                     local Nix packages (Snap, wallpaper-only hyprmosaic)
+scripts/                      portable bootstrap and host inventory reader
+bootstrap/                    generated-host templates
 dotfiles/hypr/                versioned Hyprland configuration
 theme/                        shared Latte palette, semantic roles, adapter contract
 tests/                        wallpaper policy and Lua scheduling regression tests
@@ -69,6 +72,8 @@ hyprmosaic draws each workspace's remembered random image from
 workspaces instead of changing underneath them. Assignments refresh every
 quarter-hour, without wallpaper-based theme changes. Display-sized copies are
 prepared ahead of time; originals remain untouched and outside Git.
+A bounded 512 MiB cache in `~/.cache/workspace-wallpapers` reuses the exact
+prepared images across logins and later refreshes, warming automatically on use.
 See [workspace wallpapers](docs/wallpapers.md) for implementation, cache limits,
 supported formats, and troubleshooting.
 
@@ -185,6 +190,58 @@ Existing windows are not force-closed. A fresh login also picks up the declarati
 Qt session settings.
 
 ## First activation
+
+On a fresh **x86-64 NixOS 26.05 installation**, run as the existing desktop user
+after enabling access to this private GitHub repository:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run 'git+ssh://git@github.com/AldogPlays/nixos-config?ref=main#bootstrap' -- --apply
+```
+
+This remote command requires the bootstrap changes to have been pushed. From an
+existing checkout, use `nix run .#bootstrap -- --apply`. Omit `--apply` for a preview;
+add `--output /tmp/project-host-preview` to save the generated files for review.
+Both modes use the project's locked inputs. SSH access to GitHub is a prerequisite,
+not a credential embedded in Nix. Run from an installed system, not the live ISO.
+
+The app reads `/etc/nixos/configuration.nix` using the pinned NixOS modules, copies
+that installation's `hardware-configuration.nix`, and preserves the existing
+normal user's login/home, hostname, system compatibility baseline, initrd style,
+systemd-boot or GRUB/EFI settings, and graphics-driver selection. It carries standard
+NVIDIA branch/PRIME settings and standard VA-API driver extras when configured,
+including 32-bit graphics support; it does not auto-select a proprietary
+driver for unconfigured hardware. It never partitions/formats disks or copies this
+Lenovo's UUIDs. The shared desktop and persistent wallpaper cache are included.
+Existing mutable-account passwords remain on the installation; personal files,
+wallpapers and application logins must be restored separately.
+
+With `--apply`, it builds the complete system **before** privileged writes, backs
+up `/etc/nixos` to `/etc/nixos.pre-project-TIMESTAMP`, then installs a local host
+flake plus lock, JSON settings and copied hardware module. The original
+`configuration.nix` and `hardware-configuration.nix` remain untouched. Activation
+may replace the current display manager/session; no automatic reboot is performed.
+For systemd-boot it also clears the persistent EFI menu-timeout override when EFI
+variables are writable, so the declared zero-second timeout takes effect.
+
+The generated host pins the exact project source snapshot in the Nix store.
+Its `/etc/nixos-project-source` link retains that snapshot through the system
+closure so garbage collection cannot remove the private source needed to rebuild.
+`rebuild` then uses `/etc/nixos#nixos`; rerun bootstrap from an updated project
+revision to adopt later project changes. Reruns recognize the generated host and
+back up its current state again. A newer installed NixOS release or compatibility
+baseline than the pinned release,
+an unrelated existing flake, immutable accounts, custom Secure Boot/mirrored GRUB,
+or custom graphics package requires an explicit migration; bootstrap stops before
+changing it. `--configuration`/`--hardware` can select alternative input files for
+previewing a conventional host. Arbitrary relative imports need a host module.
+
+Portable tests evaluate complete Intel/UEFI, AMD/BIOS GRUB and NVIDIA host
+configurations and check user/disk isolation. They do not prove boot or GPU
+behavior on every physical PC. The bootstrap has been exercised in preview mode
+on this laptop; its fresh-install activation path still needs a VM or spare-PC
+trial before being called deployment-tested.
+
+For the original Lenovo host, use the repository's existing target:
 
 Review the diff and evaluate before switching:
 

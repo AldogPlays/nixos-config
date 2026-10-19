@@ -4,11 +4,13 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/nixos/core.nix
-    ../../modules/nixos/hardware-amd.nix
+    ../../modules/nixos/hardware.nix
     ../../modules/nixos/hyprland.nix
   ];
 
   networking.hostName = "nixos";
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
   users.users.jeffreyc = {
     isNormalUser = true;

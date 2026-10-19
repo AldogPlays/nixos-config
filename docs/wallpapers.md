@@ -74,6 +74,25 @@ dimensions, including repeated assignments, equal-sized outputs and retries
 after a failed source. Each later update rechecks source metadata normally;
 EXIF orientation, RGB conversion and Lanczos cover resizing are unchanged.
 
+A second cache keeps exact prepared BMPs across logins and later refreshes under
+`$XDG_CACHE_HOME/workspace-wallpapers` (`~/.cache/workspace-wallpapers` by default).
+The wrapper declares its location and 512 MiB budget in `desktop.nix`; there is
+no separate daemon, initial import, or manual warm-up step. Entries are populated
+on demand and keyed by processing version, source path/size/mtime and output
+dimensions. Existing session images also seed the disk cache without decoding
+their originals again. Least-recently-used generated files are evicted when the
+budget is exceeded; a single image larger than the budget is not stored.
+
+Cache hits validate the RGB BMP header, dimensions and payload length, then copy
+the file atomically into the session cache. Copies have separate inodes so either
+cache can be pruned independently. A cross-session file lock protects disk-cache
+copies and eviction, without holding it during original-image decoding. Missing,
+unwritable or structurally corrupt cache entries fall back to normal preparation;
+a failed cache write does not reject a usable original. Only hash-named regular
+BMPs count toward eviction; symlinks and unrelated files are preserved. The disk
+budget excludes the lock and transient copy files. It does not reduce resident
+GPU memory, and first use still requires decoding/resizing the original.
+
 The plugin watches the session directory using inotify, reads new manifests,
 and uploads changed prepared images on the next render. Textures are reused by
 prepared-image path across workspaces and outputs, including within a new
@@ -83,7 +102,7 @@ service, native last-image cache, or parallel wallpaper renderer.
 
 ## Runtime state and memory
 
-All generated data lives under
+Session state and renderer-facing images live under
 `$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE`:
 
 - `workspace-wallpapers.json`: assignments and per-output prepared-image paths.
@@ -104,13 +123,20 @@ keeps resident textures: ten distinct 32-bit images at that size have about 88 M
 pixel payload, excluding allocation overhead and transient decode storage.
 These are component estimates, not measured total process memory. More outputs
 or workspaces increase usage. Originals and unrelated files are never removed.
-State survives config/plugin reloads, not a new login, and is never committed.
+Assignments survive config/plugin reloads, not a new login. The secondary disk
+cache survives logins but holds no assignment policy or renderer state. Generated
+data is never committed; deleting the secondary cache only causes later
+preparations to run normally. Source metadata/dimension changes invalidate its
+entries; bump the processing-version string when changing preparation semantics.
 
 ## Validation, limitations and recovery
 
 `nix flake check --show-trace` runs Python policy/image-cache tests, generated Lua
 syntax checks, and scheduling regression tests. The system build compiles the
-plugin against the pinned compositor. Isolated nested-compositor testing covers
+plugin against the pinned compositor. Disk-cache tests include pixel-identical
+EXIF-oriented output, reuse across sessions without original decoding, source and
+size invalidation, LRU budgeting, corrupt/unavailable caches, interrupted copies,
+symlink preservation and concurrent sessions. Isolated nested-compositor testing covers
 plugin load, atomic image loading, actual mid-tone screenshot pixels over a light
 fallback, repeated redraws, moving both wallpapers on an empty-workspace switch,
 rapid reversals and third-workspace interruptions (checking rendered scanlines

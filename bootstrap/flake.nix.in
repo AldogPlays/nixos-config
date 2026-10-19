@@ -1,0 +1,13 @@
+{
+  inputs.project.url = @PROJECT_URL@;
+  outputs = { project, ... }:
+    let
+      host = builtins.fromJSON (builtins.readFile ./project-host.json);
+    in {
+      nixosConfigurations.nixos = project.lib.mkPortableSystem {
+        hardwareModule = ./project-hardware.nix;
+        hostModule = ./project-host.nix;
+        inherit (host) username homeDirectory homeStateVersion;
+      };
+    };
+}

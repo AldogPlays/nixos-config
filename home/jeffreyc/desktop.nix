@@ -10,12 +10,15 @@ let
   inherit (theme) roles palette typography;
   fontSize = toString typography.size;
   wallpaperInterval = 15 * 60;
+  wallpaperCacheMiB = 512;
   hyprmosaic = pkgs.callPackage ../../packages/hyprmosaic { };
   wallpaperPython = pkgs.python3.withPackages (p: [ p.pillow ]);
   workspaceWallpapers = pkgs.writeShellScript "workspace-wallpapers" ''
     exec ${wallpaperPython}/bin/python3 ${../../dotfiles/hypr/workspace-wallpapers.py} \
       --directory ${lib.escapeShellArg "${config.xdg.userDirs.pictures}/Wallpapers"} \
       --hyprctl ${pkgs.hyprland}/bin/hyprctl \
+      --cache-directory ${lib.escapeShellArg "${config.xdg.cacheHome}/workspace-wallpapers"} \
+      --cache-limit ${toString (wallpaperCacheMiB * 1024 * 1024)} \
       --interval ${toString wallpaperInterval} "$@"
   '';
   kdeFont = "${typography.family},${fontSize},-1,5,50,0,0,0,0,0";

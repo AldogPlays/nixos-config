@@ -37,48 +37,221 @@
         inherit system;
         config.allowUnfree = true;
       };
+      mkSystem =
+        {
+          modules,
+          username ? "jeffreyc",
+          homeDirectory ? "/home/${username}",
+          homeStateVersion ? "26.05",
+        }:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit inputs pkgsUnstable; };
+
+          modules = modules ++ [
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                backupFileExtension = "hm-backup";
+                extraSpecialArgs = { inherit inputs pkgsUnstable; };
+                users.${username} = {
+                  imports = [ ./home/jeffreyc ];
+                  home = {
+                    inherit username homeDirectory;
+                    stateVersion = homeStateVersion;
+                  };
+                };
+              };
+            }
+          ];
+        };
     in
     {
-      nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs pkgsUnstable; };
+      nixosConfigurations.nixos = mkSystem { modules = [ ./hosts/nixos ]; };
 
-        modules = [
-          ./hosts/nixos
-          home-manager.nixosModules.home-manager
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              backupFileExtension = "hm-backup";
-              extraSpecialArgs = { inherit inputs pkgsUnstable; };
-              users.jeffreyc = import ./home/jeffreyc;
-            };
+      lib.mkPortableSystem =
+        {
+          hardwareModule,
+          hostModule,
+          username,
+          homeDirectory,
+          homeStateVersion ? "26.05",
+        }:
+        mkSystem {
+          inherit username homeDirectory homeStateVersion;
+          modules = [
+            hardwareModule
+            hostModule
+            {
+              # Keep the exact private project snapshot reachable after GC.
+              environment.etc."nixos-project-source".source = inputs.self.outPath;
+            }
+            ./modules/nixos/core.nix
+            ./modules/nixos/hardware.nix
+            ./modules/nixos/hyprland.nix
+          ];
+        };
+
+      apps.${system}.bootstrap = {
+        type = "app";
+        meta.description = "Preview or adopt an installed x86-64 NixOS system";
+        program = nixpkgs.lib.getExe (
+          pkgs.callPackage ./packages/bootstrap.nix {
+            projectSource = inputs.self.outPath;
+            nixpkgsSource = nixpkgs.outPath;
           }
-        ];
+        );
       };
 
-      checks.${system}.workspace-wallpapers =
-        pkgs.runCommand "workspace-wallpaper-checks"
-          {
-            nativeBuildInputs = [
-              (pkgs.python3.withPackages (p: [ p.pillow ]))
-              pkgs.lua
-            ];
-          }
-          ''
-            export PYTHONDONTWRITEBYTECODE=1
-            cp -r ${./dotfiles} dotfiles
-            cp -r ${./tests} tests
-            python3 -m unittest discover -s tests -v
-            luac -p ${
-              inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+      checks.${system} = {
+        workspace-wallpapers =
+          pkgs.runCommand "workspace-wallpaper-checks"
+            {
+              nativeBuildInputs = [
+                (pkgs.python3.withPackages (p: [ p.pillow ]))
+                pkgs.lua
+              ];
             }
-            lua tests/test_workspace_wallpapers.lua ${
-              inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+            ''
+              export PYTHONDONTWRITEBYTECODE=1
+              cp -r ${./dotfiles} dotfiles
+              cp -r ${./tests} tests
+              python3 -m unittest discover -s tests -p test_workspace_wallpapers.py -v
+              luac -p ${
+                inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+              }
+              lua tests/test_workspace_wallpapers.lua ${
+                inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+              }
+              touch "$out"
+            '';
+
+        bootstrap =
+          pkgs.runCommand "bootstrap-checks"
+            {
+              nativeBuildInputs = [ pkgs.python3 ];
             }
-            touch "$out"
+            ''
+              export PYTHONDONTWRITEBYTECODE=1
+              cp -r ${./scripts} scripts
+              cp -r ${./bootstrap} bootstrap
+              cp -r ${./tests} tests
+              python3 -m unittest discover -s tests -p test_bootstrap.py -v
+              touch "$out"
+            '';
+
+        portable-hosts =
+          let
+            fixture =
+              name: bios: driver:
+              let
+                data = {
+                  username = "alex";
+                  homeDirectory = "/home/alex";
+                  homeStateVersion = "26.05";
+                  hostName = name;
+                  stateVersion = "25.11";
+                  initrdSystemd = true;
+                  kernelParams = [ ];
+                  resumeDevice = "";
+                  videoDrivers = [ driver ];
+                  graphics = {
+                    enable32Bit = name == "portable-intel";
+                    extraPackageNames = if name == "portable-intel" then [ "intel-media-driver" ] else [ ];
+                    extraPackageNames32 = [ ];
+                  };
+                  nvidia = {
+                    open = true;
+                    modesetting.enable = true;
+                  };
+                  bootLoader = {
+                    systemd-boot.enable = !bios;
+                    grub = {
+                      enable = bios;
+                      devices = [ "/dev/disk/by-id/fixture" ];
+                    };
+                    efi = {
+                      canTouchEfiVariables = !bios;
+                      efiSysMountPoint = "/efi";
+                    };
+                  };
+                };
+                hostJSON = builtins.toFile "project-host.json" (builtins.toJSON data);
+                hostModule = builtins.toFile "fixture-host.nix" (
+                  builtins.replaceStrings [ "./project-host.json" ] [ (toString hostJSON) ] (
+                    builtins.readFile ./bootstrap/host.nix
+                  )
+                );
+              in
+              (inputs.self.lib.mkPortableSystem {
+                inherit hostModule;
+                inherit (data) username homeDirectory homeStateVersion;
+                hardwareModule = {
+                  fileSystems = {
+                    "/" = {
+                      device = "/dev/disk/by-label/new-root";
+                      fsType = "ext4";
+                    };
+                    "/efi" = {
+                      device = "/dev/disk/by-label/new-efi";
+                      fsType = "vfat";
+                    };
+                  };
+                  boot.kernelModules = [ (if bios then "kvm-amd" else "kvm-intel") ];
+                };
+              }).config;
+            intel = fixture "portable-intel" false "modesetting";
+            bios = fixture "portable-bios" true "modesetting";
+            nvidia = fixture "portable-nvidia" false "nvidia";
+            readFixture =
+              extras:
+              import ./scripts/read-host.nix {
+                nixpkgs = nixpkgs.outPath;
+                username = "alex";
+                configuration = builtins.toFile "read-host-fixture.nix" ''
+                  { pkgs, ... }: {
+                    system.stateVersion = "25.11";
+                    users.users.alex.isNormalUser = true;
+                    boot.loader.systemd-boot.enable = true;
+                    hardware.graphics = {
+                      enable = true;
+                      enable32Bit = true;
+                      extraPackages = [ ${extras} ];
+                      extraPackages32 = [ pkgs.pkgsi686Linux.intel-media-driver ];
+                    };
+                  }
+                '';
+              };
+            readIntel = readFixture "pkgs.intel-media-driver";
+            readCustom = readFixture "pkgs.hello";
+          in
+          assert intel.fileSystems."/".device == "/dev/disk/by-label/new-root";
+          assert intel.boot.loader.efi.efiSysMountPoint == "/efi";
+          assert builtins.elem "kvm-intel" intel.boot.kernelModules;
+          assert !(builtins.elem "kvm-amd" intel.boot.kernelModules);
+          assert !(intel.users.users ? jeffreyc);
+          assert intel.home-manager.users.alex.home.homeDirectory == "/home/alex";
+          assert intel.system.stateVersion == "25.11";
+          assert intel.hardware.graphics.enable32Bit;
+          assert
+            (builtins.head intel.hardware.graphics.extraPackages).drvPath == pkgs.intel-media-driver.drvPath;
+          assert intel.environment.etc."nixos-project-source".source == inputs.self.outPath;
+          assert bios.boot.loader.grub.enable && !bios.boot.loader.systemd-boot.enable;
+          assert bios.boot.loader.grub.devices == [ "/dev/disk/by-id/fixture" ];
+          assert nvidia.services.xserver.videoDrivers == [ "nvidia" ];
+          assert readIntel.graphics.extraPackageNames == [ "intel-media-driver" ];
+          assert readIntel.graphics.extraPackageNames32 == [ "intel-media-driver" ];
+          assert !readIntel.unsupportedGraphics;
+          assert readCustom.unsupportedGraphics;
+          pkgs.runCommand "portable-host-checks" { } ''
+            # Force complete generation evaluation, including module assertions.
+            echo ${builtins.unsafeDiscardStringContext intel.system.build.toplevel.drvPath} > "$out"
+            echo ${builtins.unsafeDiscardStringContext bios.system.build.toplevel.drvPath} >> "$out"
+            echo ${builtins.unsafeDiscardStringContext nvidia.system.build.toplevel.drvPath} >> "$out"
           '';
+      };
 
       formatter.${system} = pkgs.nixfmt-tree;
     };

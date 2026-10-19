@@ -2,9 +2,11 @@
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import random
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest import mock
 
@@ -277,6 +279,197 @@ class WallpaperTests(unittest.TestCase):
                         all(result[key] != previous.get(key) for key in keys)
                     )
                 previous = result
+
+
+class PreparedCacheTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.source = self.root / "original.jpg"
+        image = Image.new("RGB", (127, 83))
+        for x in range(image.width):
+            for y in range(image.height):
+                image.putpixel((x, y), (x, y, (x + y) % 256))
+        exif = image.getexif()
+        exif[274] = 6  # Rotation must remain identical on cached and cold paths.
+        image.save(self.source, exif=exif)
+        self.disk = self.root / "persistent"
+        self.cache = wallpapers.PreparedCache(self.disk)
+        self.size = (80, 50)
+
+    def prepare(self, session, size=None, cache=True):
+        runtime = self.root / session
+        runtime.mkdir(exist_ok=True)
+        return Path(
+            wallpapers.prepare_image(
+                self.source, size or self.size, runtime, self.cache if cache else None
+            )
+        )
+
+    def test_new_session_reuses_exact_pixels_without_decoding_original(self):
+        baseline = self.prepare("reference", cache=False).read_bytes()
+        first = self.prepare("session-one")
+        self.assertEqual(first.read_bytes(), baseline)
+        with mock.patch.object(Image, "open", side_effect=AssertionError("decoded")):
+            second = self.prepare("session-two")
+        self.assertEqual(second.read_bytes(), baseline)
+        cached = self.disk / first.name
+        self.assertNotEqual(first.stat().st_ino, cached.stat().st_ino)
+        self.assertNotEqual(second.stat().st_ino, cached.stat().st_ino)
+        first.unlink()
+        self.assertTrue(cached.exists())
+        self.assertTrue(second.exists())
+
+    def test_existing_runtime_image_seeds_persistent_cache(self):
+        first = self.prepare("session", cache=False)
+        self.assertFalse(self.disk.exists())
+        with mock.patch.object(Image, "open", side_effect=AssertionError("decoded")):
+            self.prepare("session")
+        self.assertEqual((self.disk / first.name).read_bytes(), first.read_bytes())
+
+    def test_reconciliation_publishes_only_session_paths_on_cache_hits(self):
+        images = self.root / "images"
+        images.mkdir()
+        (images / self.source.name).write_bytes(self.source.read_bytes())
+
+        def run(*args):
+            return json.dumps(
+                [
+                    {
+                        "name": "eDP-1",
+                        "width": 80,
+                        "height": 50,
+                        "activeWorkspace": {"id": 1},
+                    }
+                ]
+                if args == ("-j", "monitors")
+                else [{"id": 1}]
+            )
+
+        states = []
+        for session in ("one", "two"):
+            directory = self.root / session
+            directory.mkdir()
+            with mock.patch.object(
+                Image,
+                "open",
+                wraps=Image.open if session == "one" else None,
+                side_effect=None if session == "one" else AssertionError("decoded"),
+            ):
+                states.append(
+                    wallpapers.reconcile(
+                        images, directory / "state.json", 900, run, 9000, self.cache
+                    )
+                )
+            for path in states[-1]["prepared"]["eDP-1"].values():
+                self.assertEqual(Path(path).parent.parent, directory)
+                self.assertTrue(Path(path).is_file())
+        self.assertEqual(states[0]["assignments"], states[1]["assignments"])
+
+    def test_source_changes_and_output_dimensions_invalidate_cache(self):
+        first = self.prepare("one")
+        metadata = self.source.stat()
+        os.utime(self.source, ns=(metadata.st_atime_ns, metadata.st_mtime_ns + 1))
+        second = self.prepare("two")
+        third = self.prepare("three", size=(50, 80))
+        self.assertEqual(len({first.name, second.name, third.name}), 3)
+        with Image.open(third) as image:
+            self.assertEqual(image.size, (50, 80))
+
+    def test_corrupt_cached_bmp_is_rebuilt(self):
+        first = self.prepare("one")
+        cached = self.disk / first.name
+        for corrupt in (b"broken", first.read_bytes()[:-1]):
+            with self.subTest(length=len(corrupt)):
+                cached.write_bytes(corrupt)
+                first.unlink(missing_ok=True)
+                self.prepare("one")
+                self.assertEqual(cached.read_bytes(), first.read_bytes())
+
+    def test_wrong_dimensions_with_same_payload_length_are_rebuilt(self):
+        first = self.prepare("one")
+        baseline = first.read_bytes()
+        # Both row strides are 240 bytes, so length alone cannot catch this.
+        Image.new("RGB", (79, 50), "red").save(self.disk / first.name)
+        first.unlink()
+        self.assertEqual(self.prepare("one").read_bytes(), baseline)
+
+    def test_unavailable_cache_and_failed_writes_keep_good_source(self):
+        self.disk.touch()  # A regular file cannot be used as a cache directory.
+        first = self.prepare("one")
+        self.assertTrue(first.is_file())
+        self.disk.unlink()
+        with mock.patch.object(wallpapers, "copy_atomic", side_effect=OSError("full")):
+            second = self.prepare("two")
+        self.assertEqual(second.read_bytes(), first.read_bytes())
+
+    def test_interrupted_copy_is_not_published_and_temporary_is_removed(self):
+        first = self.prepare("one")
+        baseline = first.read_bytes()
+
+        def fail_copy(source, destination):
+            destination.write(source.read(20))
+            raise OSError("interrupted copy")
+
+        with mock.patch.object(wallpapers.shutil, "copyfileobj", side_effect=fail_copy):
+            second = self.prepare("two")
+        self.assertEqual(second.read_bytes(), baseline)
+        self.assertEqual((self.disk / first.name).read_bytes(), baseline)
+        self.assertEqual(list(second.parent.iterdir()), [second])
+
+    def test_budget_evicts_least_recently_used_without_touching_runtime(self):
+        first = self.prepare("one")
+        size = first.stat().st_size
+        self.cache.limit = size * 2
+        second = self.prepare("two", size=(79, 50))
+        older = self.disk / first.name
+        os.utime(older, ns=(1, 1))
+        # A cache hit refreshes recency, even when a different session uses it.
+        self.prepare("three")
+        os.utime(self.disk / second.name, ns=(2, 2))
+        third = self.prepare("four", size=(78, 50))
+        self.assertTrue(older.exists())
+        self.assertFalse((self.disk / second.name).exists())
+        self.assertTrue((self.disk / third.name).exists())
+        self.assertTrue(first.exists() and second.exists() and third.exists())
+        self.assertLessEqual(
+            sum(path.stat().st_size for path in self.disk.glob("*.bmp")),
+            self.cache.limit,
+        )
+
+    def test_zero_budget_and_oversized_entries_use_runtime_only(self):
+        self.cache.limit = 0
+        self.prepare("one")
+        self.assertEqual(list(self.disk.glob("*.bmp")), [])
+        self.cache.limit = 1
+        self.prepare("two")
+        self.assertEqual(list(self.disk.glob("*.bmp")), [])
+
+    def test_cleanup_preserves_symlinks_and_unrelated_files(self):
+        first = self.prepare("one")
+        cached = self.disk / first.name
+        cached.unlink()
+        cached.symlink_to(self.source)
+        unrelated = self.disk / "personal.bmp"
+        unrelated.write_bytes(b"keep")
+        directory = self.disk / ("a" * 64 + ".bmp")
+        directory.mkdir()
+        self.cache.limit = 0
+        self.prepare("two")
+        self.assertTrue(cached.is_symlink())
+        self.assertEqual(unrelated.read_bytes(), b"keep")
+        self.assertTrue(directory.is_dir())
+        self.assertTrue(self.source.is_file())
+
+    def test_parallel_sessions_publish_complete_independent_files(self):
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            paths = list(executor.map(self.prepare, ["one", "two", "three", "four"]))
+        self.assertEqual(len({path.read_bytes() for path in paths}), 1)
+        self.assertEqual(len(list(self.disk.glob("*.bmp"))), 1)
+        self.assertEqual(
+            {path.name for path in self.disk.iterdir()}, {".lock", paths[0].name}
+        )
 
 
 if __name__ == "__main__":

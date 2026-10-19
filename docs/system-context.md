@@ -13,11 +13,28 @@ MediaTek MT7925 Wi-Fi, roughly 13 GiB usable RAM, and a 476.9 GiB NVMe SSD.
 Touchscreen, Wacom pen/touch, and tablet mode matter when evaluating hardware or
 desktop changes.
 
+AMD VA-API decoding comes from the declared Mesa graphics stack. On 2026-10-19,
+an isolated LibreWolf 158 profile using the installed defaults confirmed native
+Wayland/WebRender, VA-API initialization and `IsHardwareAccelerated=true` during
+1080p H.264 playback (180 frames, zero dropped over about six seconds). The browser
+also advertised hardware H.264, VP9, AV1 and HEVC decoding; VP8 was software-only.
+No extra browser preferences, forced driver overrides or sandbox changes were
+needed. This test does not establish that every site/stream uses hardware decoding.
+
 The stable OS input is `nixos-26.05`. Home Manager follows it through
 `release-26.05`; `flake.lock` pins revisions. A separate unstable input supplies
 Codex so that tool can advance independently of the OS base. Home Manager is
 integrated into the NixOS rebuild, rather than maintained as a separate switch.
 Both compatibility baselines are `26.05`.
+
+`nix run .#bootstrap` previews a portable fresh-install adoption; `--apply` builds,
+backs up and activates it. It targets other x86-64 PCs too, preserving their own
+user, disk/encryption, initrd, bootloader and graphics selections. Shared hardware
+services now live in `modules/nixos/hardware.nix`; CPU/disk details stay in host
+modules. The original Lenovo target retains its settings. Generated hosts pin a
+project source snapshot and rebuild through `/etc/nixos`; rerun bootstrap from a
+new project revision to update that snapshot. See README for authentication,
+supported layouts, recovery and the remaining fresh-install deployment test.
 
 The official ChatGPT desktop app provides graphical Codex alongside the Codex CLI.
 Both are declared from the pinned unstable input; the Linux desktop launcher is

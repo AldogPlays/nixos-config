@@ -1,6 +1,7 @@
 """One-shot wallpaper reconciliation; Hyprland owns the events and timer."""
 
 import argparse
+from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
@@ -8,7 +9,11 @@ import os
 from pathlib import Path
 import random
 import re
+import shutil
+import stat
+import struct
 import subprocess
+import tempfile
 import time
 
 from PIL import Image, ImageOps
@@ -16,6 +21,95 @@ from PIL import Image, ImageOps
 
 # Keep the established collection formats; preparation normalizes them to RGB BMP.
 FORMATS = {".png", ".jpg", ".jpeg", ".webp"}
+CACHE_LIMIT = 512 * 1024 * 1024
+
+
+def copy_atomic(source, target):
+    """Independent copies: pruning either cache must not affect the other."""
+    with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as temporary:
+        path = Path(temporary.name)
+        try:
+            with source.open("rb") as stream:
+                shutil.copyfileobj(stream, temporary)
+            temporary.close()
+            path.replace(target)
+        finally:
+            path.unlink(missing_ok=True)
+
+
+def valid_bmp(path, size):
+    """Check our RGB BMP header and payload length without decoding pixels."""
+    if path.is_symlink() or not path.is_file():
+        return False
+    with path.open("rb") as stream:
+        header = stream.read(54)
+        length = os.fstat(stream.fileno()).st_size
+    width, height = size
+    expected = 54 + ((width * 3 + 3) // 4 * 4) * height
+    return (
+        len(header) == 54
+        and header[:2] == b"BM"
+        and length == expected
+        and struct.unpack_from("<I", header, 2)[0] == expected
+        and struct.unpack_from("<IIiiHHI", header, 10)
+        == (54, 40, width, height, 1, 24, 0)
+    )
+
+
+class PreparedCache:
+    """Optional, bounded disk history; never publish these paths to the plugin."""
+
+    def __init__(self, directory, limit=CACHE_LIMIT):
+        self.directory = Path(directory)
+        self.limit = limit
+
+    @contextmanager
+    def locked(self):
+        self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        with (self.directory / ".lock").open("a") as lock:
+            # Shared by sessions, held only for small prepared-file operations.
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            yield
+
+    def prune(self):
+        entries = []
+        for path in self.directory.iterdir():
+            if re.fullmatch(r"[0-9a-f]{64}\.bmp", path.name):
+                metadata = path.lstat()
+                if stat.S_ISREG(metadata.st_mode):
+                    entries.append((metadata.st_mtime_ns, path, metadata.st_size))
+        total = sum(size for _, _, size in entries)
+        for _, path, size in sorted(entries):
+            if total <= self.limit:
+                break
+            path.unlink()
+            total -= size
+
+    def restore(self, target, size):
+        try:
+            with self.locked():
+                cached = self.directory / target.name
+                if not valid_bmp(cached, size):
+                    return False
+                copy_atomic(cached, target)
+                cached.touch()
+                self.prune()
+                return True
+        except OSError:
+            # A missing/unwritable/full disk cache must not reject a good source.
+            return False
+
+    def store(self, source, size):
+        try:
+            with self.locked():
+                cached = self.directory / source.name
+                if not cached.is_symlink() and source.stat().st_size <= self.limit:
+                    if not valid_bmp(cached, size):
+                        copy_atomic(source, cached)
+                    cached.touch()
+                self.prune()
+        except OSError:
+            pass
 
 
 def discover(directory):
@@ -64,12 +158,14 @@ def command(executable, *args):
     )
 
 
-def prepare_image(source, size, directory):
+def prepare_image(source, size, directory, persistent_cache=None):
     source = Path(source)
     stat = source.stat()
     identity = f"lanczos-cover-v1:{source}:{stat.st_size}:{stat.st_mtime_ns}:{size}"
     target = directory / (hashlib.sha256(identity.encode()).hexdigest() + ".bmp")
     if not target.exists():
+        if persistent_cache is not None and persistent_cache.restore(target, size):
+            return str(target)
         # One-time high-quality cover resize, not a cheaper filter on every switch.
         with Image.open(source) as image:
             image = ImageOps.exif_transpose(image).convert("RGB")
@@ -77,10 +173,12 @@ def prepare_image(source, size, directory):
             temporary = target.with_suffix(".tmp")
             image.save(temporary, format="BMP")
             temporary.replace(target)
+    if persistent_cache is not None:
+        persistent_cache.store(target, size)
     return str(target)
 
 
-def reconcile(directory, state_path, interval, run, now=None):
+def reconcile(directory, state_path, interval, run, now=None, persistent_cache=None):
     now = time.time() if now is None else now
     epoch = int(now // interval)
     try:
@@ -149,7 +247,14 @@ def reconcile(directory, state_path, interval, run, now=None):
                 try:
                     identity = (image, size)
                     if identity not in prepared_images:
-                        prepared_images[identity] = prepare_image(image, size, cache)
+                        if persistent_cache is None:
+                            prepared_images[identity] = prepare_image(
+                                image, size, cache
+                            )
+                        else:
+                            prepared_images[identity] = prepare_image(
+                                image, size, cache, persistent_cache
+                            )
                     rendered[key] = prepared_images[identity]
                 except (OSError, ValueError, Image.DecompressionBombError):
                     rejected.add(image)
@@ -202,9 +307,13 @@ def main():
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--hyprctl", required=True)
     parser.add_argument("--interval", type=int, default=900)
+    parser.add_argument("--cache-directory", type=Path, required=True)
+    parser.add_argument("--cache-limit", type=int, default=CACHE_LIMIT)
     args = parser.parse_args()
     if args.interval <= 0:
         parser.error("interval must be positive")
+    if args.cache_limit < 0:
+        parser.error("cache limit must not be negative")
     session = Path(
         os.environ["XDG_RUNTIME_DIR"], "hypr", os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
     )
@@ -216,6 +325,7 @@ def main():
             session / "workspace-wallpapers.json",
             args.interval,
             lambda *parts: command(args.hyprctl, *parts),
+            persistent_cache=PreparedCache(args.cache_directory, args.cache_limit),
         )
 
 
