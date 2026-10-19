@@ -321,7 +321,7 @@ in
         (toString theme.material.blur.brightness)
         (toString theme.material.blur.vibrancy)
         (toString theme.material.focusedOpacity)
-        (toString theme.material.opacity)
+        (toString theme.material.unfocusedOpacity)
         "${pkgs.systemd}/bin/systemctl"
         "${workspaceWallpapers}"
         (toString wallpaperInterval)

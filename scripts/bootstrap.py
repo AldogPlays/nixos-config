@@ -228,8 +228,12 @@ def main(argv=None):
     with tempfile.TemporaryDirectory(prefix="nixos-config-bootstrap-") as temporary:
         stage = Path(temporary)
         write_configuration(stage, project, hardware, host)
-        nix("flake", "lock", stage)
-        target = str(stage) + "#nixosConfigurations.nixos.config.system.build.toplevel"
+        # Explicit path references avoid inheriting an unrelated parent Git repo.
+        stage_reference = "path:" + str(stage)
+        nix("flake", "lock", stage_reference)
+        target = (
+            stage_reference + "#nixosConfigurations.nixos.config.system.build.toplevel"
+        )
         nix("build", target, "--no-link", *([] if args.apply else ["--dry-run"]))
         if args.apply:
             install(stage, Path("/etc/nixos"), host)

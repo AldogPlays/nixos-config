@@ -79,6 +79,25 @@ supported formats, and troubleshooting.
 
 Snap and wlctl are pinned in `flake.lock`; Snap's local build is in `packages/snap.nix`.
 
+Cisco Packet Tracer is declared from pinned nixpkgs (`cisco-packet-tracer_9`,
+currently 9.0.1). Launch **Cisco Packet Tracer** from Rofi or run `packettracer9`.
+Its package uses XWayland per application; no global Qt platform change or
+background service is added. First launch may require Cisco's license acceptance
+and Networking Academy sign-in.
+
+Cisco requires a separately obtained installer. On a fresh installation, download
+`CiscoPacketTracer_901_Ubuntu_64bit.deb` from
+[Cisco's Resource Hub](https://www.netacad.com/resources/lab-downloads) into
+`~/Downloads` before running bootstrap. Bootstrap checks its SHA-256 against the
+pinned package and imports it automatically; the same single bootstrap command
+then installs it with the rest of the desktop. The binary and Cisco credentials
+are never committed. When updating the pinned package, use its exact installer
+version. For an existing checkout without bootstrap, import the file once with:
+
+```bash
+nix-store --add-fixed sha256 ~/Downloads/CiscoPacketTracer_901_Ubuntu_64bit.deb
+```
+
 ## Desktop integration
 
 Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
@@ -107,8 +126,9 @@ Qt/KDE and X11 in `home/jeffreyc/desktop.nix`; the rest of the theme stays Latte
 
 Frosted glass applies to normal application windows, Rofi and SwayNC.
 `theme/default.nix.material` controls their shared background opacity and
-Hyprland blur settings. `material.focusedOpacity` makes focused windows nearly
-opaque; unfocused windows use `material.opacity` and fullscreen is fully opaque.
+Hyprland blur settings. `material.focusedOpacity` makes focused windows fully
+opaque; unfocused windows use `material.unfocusedOpacity` (95% opacity), and
+fullscreen is fully opaque. Shell backplates use `material.opacity` (90%).
 Explicitly marked modal dialogs and recognized LibreWolf/Firefox picture-in-picture
 windows stay fully opaque; recognized PiP windows float at a compact initial size,
 without forcing position or pin state. Manual resizing remains available; a

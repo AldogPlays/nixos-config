@@ -93,7 +93,8 @@ links document research, not an instruction to fetch themes during activation.
 `material` supplies focused/unfocused opacity values and Hyprland blur parameters
 for frosted glass. Alacritty's native alpha stays at 1.0; a general
 Hyprland rule applies to normal application windows, using `focusedOpacity`
-when focused, `opacity` when unfocused and 1.0 in fullscreen. This affects text,
+when focused (1.0), `unfocusedOpacity` when unfocused (0.95) and 1.0 in fullscreen.
+Shell backplates use `opacity` (0.90). This affects text,
 images and video as well as the background, without a focus-watching daemon.
 Later exceptions keep explicitly modal windows and recognized Firefox-family
 PiP opaque; recognized PiP also floats with a compact initial size, no forced

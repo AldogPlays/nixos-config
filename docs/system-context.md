@@ -40,6 +40,17 @@ The official ChatGPT desktop app provides graphical Codex alongside the Codex CL
 Both are declared from the pinned unstable input; the Linux desktop launcher is
 `chatgpt`. This uses nixpkgs' adaptation of the official application binary.
 
+Cisco Packet Tracer is supplied by pinned nixpkgs, launched as `packettracer9` or
+through its desktop entry. The package selects XWayland locally. Cisco's matching
+installer is a separately downloaded input: bootstrap verifies and imports it
+from `~/Downloads` when absent from the store. See README for the exact version
+and manual import command; binaries, license state and Cisco credentials stay
+outside the repository.
+
+Joplin Desktop is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs.
+It launches from the app menu or `joplin-desktop`; no autostart service or sync
+account is configured. Notes and application preferences remain user-managed.
+
 The kernel selection is `pkgs.linuxPackages_latest` from the stable input. Recent
 hardware support is a consideration when reviewing that choice, but a specific
 requirement for this kernel has not been established.
@@ -220,7 +231,7 @@ wrapper provides clipboard, OCR, and Hyprland commands without requiring Omarchy
   glass. Normal application windows (including LibreWolf and Dolphin), Rofi
   and SwayNC use Hyprland background blur. Shared opacity and blur controls
   live under `theme/default.nix.material`. Normal windows use a native
-  Hyprland rule for nearly opaque focus, frosted unfocused state, and fully opaque
+  Hyprland rule for fully opaque focus, 95% opaque unfocused state, and fully opaque
   fullscreen. Their whole surfaces, including text, follow that opacity; native
   Alacritty alpha stays at 1.0 to avoid multiplying two transparency settings.
   Later rules keep explicitly modal windows and recognized LibreWolf/Firefox

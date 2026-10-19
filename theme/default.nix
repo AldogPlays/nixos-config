@@ -24,7 +24,8 @@ in
   # Shell backplates and normal-window focus opacity; modal/PiP exceptions in Lua.
   material = {
     opacity = 0.90;
-    focusedOpacity = 0.95;
+    focusedOpacity = 1.0;
+    unfocusedOpacity = 0.95;
     blur = {
       size = 6;
       passes = 1;

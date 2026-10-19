@@ -93,7 +93,9 @@ class BootstrapTests(unittest.TestCase):
         if arguments[0] == "eval":
             return SimpleNamespace(stdout=json.dumps(self.host))
         if arguments[:2] == ("flake", "lock"):
-            (Path(arguments[2]) / "flake.lock").write_text("{}")
+            (Path(str(arguments[2]).removeprefix("path:")) / "flake.lock").write_text(
+                "{}"
+            )
         return SimpleNamespace(returncode=0)
 
     def test_preserves_host_identity_hardware_and_compatibility_baseline(self):
