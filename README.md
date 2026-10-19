@@ -100,6 +100,13 @@ nix-store --add-fixed sha256 ~/Downloads/CiscoPacketTracer_901_Ubuntu_64bit.deb
 
 ## Desktop integration
 
+Steam is installed through `programs.steam` in `modules/nixos/hyprland.nix`.
+Launch **Steam** from Rofi or run `steam`, then sign in. The NixOS module supplies
+the runtime, 32-bit graphics/audio support and controller permissions. Steam
+downloads Valve's Proton when needed for Windows games; compatibility can be
+selected per game under **Properties → Compatibility**. No extra gaming launcher,
+overlay, tuning daemon or Steam-specific firewall opening is configured.
+
 Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
 `Pictures`, `Public`, `Templates`, `Videos`, and `Projects`, plus writable
 `Pictures/Screenshots` and `Pictures/Wallpapers` subfolders. Snap uses the XDG

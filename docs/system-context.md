@@ -52,6 +52,15 @@ input to meet the requested version above 3.7.0; stable nixpkgs supplies 3.5.13.
 It launches from the app menu or `joplin-desktop`; no autostart service or sync
 account is configured. Notes and application preferences remain user-managed.
 
+Steam is enabled through the NixOS module in `modules/nixos/hyprland.nix`.
+That module supplies its runtime and `steam-run`, enables 32-bit graphics/audio,
+and adds controller udev rules plus the `uinput` kernel module. Steam launches
+on demand; no autostart or gaming daemon is added. Valve's Proton is managed by
+Steam; separate Wine, custom Proton builds, overlays and tuning utilities are
+not part of this minimal setup. Steam-specific firewall openings stay disabled.
+Portable bootstrap treats captured 32-bit graphics support as a default so
+Steam's required support takes precedence even on a previously 64-bit-only host.
+
 The kernel selection is `pkgs.linuxPackages_latest` from the stable input. Recent
 hardware support is a consideration when reviewing that choice, but a specific
 requirement for this kernel has not been established.

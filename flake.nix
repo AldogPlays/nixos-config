@@ -240,7 +240,9 @@
           assert intel.environment.etc."nixos-project-source".source == inputs.self.outPath;
           assert bios.boot.loader.grub.enable && !bios.boot.loader.systemd-boot.enable;
           assert bios.boot.loader.grub.devices == [ "/dev/disk/by-id/fixture" ];
+          assert bios.programs.steam.enable && bios.hardware.graphics.enable32Bit;
           assert nvidia.services.xserver.videoDrivers == [ "nvidia" ];
+          assert nvidia.programs.steam.enable && nvidia.hardware.graphics.enable32Bit;
           assert readIntel.graphics.extraPackageNames == [ "intel-media-driver" ];
           assert readIntel.graphics.extraPackageNames32 == [ "intel-media-driver" ];
           assert !readIntel.unsupportedGraphics;

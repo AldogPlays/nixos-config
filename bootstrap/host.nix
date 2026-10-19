@@ -13,7 +13,8 @@ in
   };
   services.xserver.videoDrivers = host.videoDrivers;
   hardware.graphics = {
-    inherit (host.graphics) enable32Bit;
+    # Preserve the captured preference unless a shared program requires it.
+    enable32Bit = lib.mkDefault host.graphics.enable32Bit;
     extraPackages = map (name: pkgs.${name}) host.graphics.extraPackageNames;
     extraPackages32 = map (name: pkgs.pkgsi686Linux.${name}) host.graphics.extraPackageNames32;
   };

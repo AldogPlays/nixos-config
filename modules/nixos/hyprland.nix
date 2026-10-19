@@ -48,6 +48,9 @@ in
     xwayland.enable = true;
   };
 
+  # Supplies Steam's runtime, 32-bit graphics/audio and controller udev rules.
+  programs.steam.enable = true;
+
   services.xserver.enable = true;
   services.displayManager.sddm = {
     enable = true;
