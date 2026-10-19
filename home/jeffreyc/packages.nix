@@ -29,7 +29,7 @@ in
     kdePackages.ffmpegthumbs
     librewolf
     cisco-packet-tracer_9
-    joplin-desktop
+    pkgsUnstable.joplin-desktop
     # Official desktop client, including graphical Codex, from the pinned input.
     pkgsUnstable.chatgpt
 

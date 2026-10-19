@@ -47,7 +47,8 @@ from `~/Downloads` when absent from the store. See README for the exact version
 and manual import command; binaries, license state and Cisco credentials stay
 outside the repository.
 
-Joplin Desktop is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs.
+Joplin Desktop is declared in `home/jeffreyc/packages.nix` from the pinned unstable
+input to meet the requested version above 3.7.0; stable nixpkgs supplies 3.5.13.
 It launches from the app menu or `joplin-desktop`; no autostart service or sync
 account is configured. Notes and application preferences remain user-managed.
 
