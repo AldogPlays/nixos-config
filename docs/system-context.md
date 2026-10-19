@@ -110,7 +110,7 @@ to keep every bootstrap component.
 | Launcher | Rofi (native Wayland), Super+A | `home/jeffreyc/programs.nix`; Hyprland bindings |
 | Lock screen | hyprlock, Super+L | Home Manager theme, NixOS PAM service; no idle-lock service |
 | Terminal and files | Alacritty, Super+T; Dolphin, Super+E | Home Manager programs/packages; Hyprland bindings |
-| Browser | LibreWolf | Home Manager packages and session variables |
+| Browser | LibreWolf | Home Manager `programs.librewolf` in `home/jeffreyc/programs.nix`; session variables |
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
@@ -129,6 +129,11 @@ and pavucontrol are no longer declared as front ends.
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.
 No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
+
+LibreWolf's package policies default downloads to the XDG Downloads folder and
+disable the per-download location prompt. Home Manager supplies the browser
+through `programs.librewolf`; existing browser profiles remain unmanaged. After
+activation, fully quit and reopen LibreWolf to load the policies.
 
 Desktop integration lives in `home/jeffreyc/default.nix`: managed XDG user
 directories (including existing Projects), explicit MIME defaults for

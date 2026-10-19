@@ -27,7 +27,6 @@ in
     kdePackages.kimageformats
     kdePackages.kdegraphics-thumbnailers
     kdePackages.ffmpegthumbs
-    librewolf
     cisco-packet-tracer_9
     pkgsUnstable.joplin-desktop
     # Official desktop client, including graphical Codex, from the pinned input.

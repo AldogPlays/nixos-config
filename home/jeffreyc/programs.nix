@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   theme = import ../../theme;
@@ -19,6 +24,14 @@ let
   };
 in
 {
+  programs.librewolf = {
+    enable = true;
+    policies = {
+      DefaultDownloadDirectory = config.xdg.userDirs.download;
+      PromptForDownloadLocation = false;
+    };
+  };
+
   programs.bash = {
     enable = true;
     enableCompletion = true;
