@@ -268,7 +268,9 @@ hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + W", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + A", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"),
+hl.bind(mainMod .. " + J", hl.dsp.exec_cmd("uwsm app -- joplin-desktop"),
+    { description = "Open Joplin" })
+hl.bind(mainMod .. " + K", hl.dsp.layout("togglesplit"),
     { description = "Toggle focused tile split: top/bottom or side-by-side" })
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))

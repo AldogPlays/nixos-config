@@ -35,7 +35,8 @@ shared palette. Remaining coverage and exceptions are documented there.
 | New LibreWolf window | Meta+F |
 | Close focused window | Meta+Q |
 | Toggle floating | Meta+W |
-| Toggle focused tile split (top/bottom ↔ side-by-side) | Meta+J |
+| Joplin | Meta+J |
+| Toggle focused tile split (top/bottom ↔ side-by-side) | Meta+K |
 | Toggle fullscreen | Alt+Enter |
 | Workspace 1–10 | Meta+1–9, Meta+0 for 10 |
 | Move window to workspace | Meta+Shift+1–9 or 0 |

@@ -49,7 +49,7 @@ outside the repository.
 
 Joplin Desktop is declared in `home/jeffreyc/packages.nix` from the pinned unstable
 input to meet the requested version above 3.7.0; stable nixpkgs supplies 3.5.13.
-It launches from the app menu or `joplin-desktop`; no autostart service or sync
+It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart service or sync
 account is configured. Notes and application preferences remain user-managed.
 
 Steam is enabled through the NixOS module in `modules/nixos/hyprland.nix`.
@@ -111,7 +111,7 @@ symbols. It does not supply image thumbnails or interactive content previews.
 ## Desktop components
 
 Hyprland handles cursor hiding with its native inactivity timeout, without an
-idle daemon. Meta+J uses Dwindle's `togglesplit` for the focused tile's parent
+idle daemon. Meta+K uses Dwindle's `togglesplit` for the focused tile's parent
 split, with split preservation enabled; it is not a whole-workspace rotation.
 
 These are declared choices, subject to Jeffrey's review rather than a commitment
