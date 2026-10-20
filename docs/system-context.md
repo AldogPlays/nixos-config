@@ -138,8 +138,11 @@ to keep every bootstrap component.
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
 power-profiles-daemon, and UPower. The TUI controls are launched on demand; the
-network/Bluetooth/audio backend services remain enabled. nm-applet, Blueman,
-and pavucontrol are no longer declared as front ends.
+network/Bluetooth/audio backend services remain enabled. Their dedicated
+Alacritty app IDs float through `dotfiles/hypr/hyprland.lua`. Keyboard and Waybar
+launch commands bind unmodified Escape to Alacritty's Quit action for these
+windows only, closing even an active TUI prompt. No extra service is involved.
+nm-applet, Blueman, and pavucontrol are no longer declared as front ends.
 
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.

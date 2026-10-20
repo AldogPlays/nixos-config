@@ -51,6 +51,12 @@ shared palette. Remaining coverage and exceptions are documented there.
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
 | Screenshot | Fn+Prt Sc on this Lenovo; click a window or a gap for the whole monitor; Escape cancels |
 
+Network, Bluetooth, and Audio controls open as floating Alacritty windows from
+either their shortcuts or Waybar. Escape closes the focused control window,
+including when a TUI prompt is open. Hyprland's app-ID rule lives in
+`dotfiles/hypr/hyprland.lua`; launch commands there and in
+`home/jeffreyc/desktop.nix` set the per-window Alacritty Escape binding.
+
 Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
 window's width/height; Right/Down grows it. Tiled resizing respects the layout.
 Floating windows move and resize in pixel increments instead of snapping to

@@ -370,12 +370,12 @@ in
         format-ethernet = "Ethernet";
         format-disconnected = "Offline";
         tooltip-format = "{ifname}: {ipaddr}/{cidr}";
-        on-click = "alacritty --class wlctl -e wlctl";
+        on-click = ''alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl'';
       };
       bluetooth = {
         format = "BT {status}";
         format-connected = "BT {num_connections}";
-        on-click = "alacritty --class bluetui -e bluetui";
+        on-click = ''alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui'';
       };
       pulseaudio = {
         format = "{volume}% {icon}";
@@ -385,7 +385,7 @@ in
           ""
           ""
         ];
-        on-click = "alacritty --class wiremix -e wiremix";
+        on-click = ''alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix'';
       };
       battery = {
         format = "{capacity}% {icon}";

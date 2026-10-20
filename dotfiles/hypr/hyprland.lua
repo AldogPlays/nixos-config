@@ -100,6 +100,13 @@ hl.window_rule({
     opacity = "1.0 override 1.0 override 1.0 override",
 })
 
+-- Both keyboard and Waybar launches use these dedicated Alacritty app IDs.
+hl.window_rule({
+    name = "float-system-controls",
+    match = { class = "^(wlctl|bluetui|wiremix)$" },
+    float = true,
+})
+
 -- Firefox-family PiP has a dedicated title; ordinary browser tabs are unaffected.
 local pipSize = { x = 480, y = 270 }
 hl.window_rule({
@@ -269,9 +276,10 @@ hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"),
     { description = "Toggle focused tile split: top/bottom or side-by-side" })
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
-hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("alacritty --class wlctl -e wlctl"))
-hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("alacritty --class bluetui -e bluetui"))
-hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd("alacritty --class wiremix -e wiremix"))
+-- Escape quits only these control windows, including an active TUI prompt.
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd([[alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl]]))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd([[alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui]]))
+hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd([[alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix]]))
 hl.bind("PRINT", hl.dsp.exec_cmd("screenshot"),
     { description = "Capture a window, or the monitor by selecting a gap" })
 
