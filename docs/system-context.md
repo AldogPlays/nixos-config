@@ -177,7 +177,7 @@ Hover opens temporarily; Meta+Shift+T pins it open or closes it. The existing
 Lua visibility policy keeps the bar visible while pinned on an empty workspace.
 `packages/waybar-tray/` adds a small signal-controlled arrow to the native drawer;
 it reuses the existing StatusNotifier tray, menus and process without a separate
-window or service. Wi-Fi and battery display icons only, with percentages in
+window or service. Wi-Fi, volume and battery display icons only, with percentages in
 tooltips. The plugged-in/charging battery uses a green battery-with-lightning icon,
 distinguishing it from Performance mode's standalone lightning bolt.
 Appearance remains driven by shared theme roles.

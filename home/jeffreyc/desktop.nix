@@ -402,11 +402,11 @@ in
         on-click = ''alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui'';
       };
       pulseaudio = {
-        format = ''<span foreground="${roles.audio}">{icon}</span> {volume}%'';
+        format = ''<span foreground="${roles.audio}">{icon}</span>'';
         format-muted = "󰝟";
-        format-bluetooth = ''<span foreground="${roles.audio}">󰂰</span> {volume}%'';
+        format-bluetooth = ''<span foreground="${roles.audio}">󰂰</span>'';
         format-bluetooth-muted = "󰝟";
-        tooltip-format = "{desc}\nClick for audio controls · Scroll for volume";
+        tooltip-format = "{desc}\nVolume: {volume}%\nClick for audio controls · Scroll for volume";
         scroll-step = 5;
         max-volume = 100;
         format-icons.default = [

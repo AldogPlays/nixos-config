@@ -75,7 +75,7 @@ Other existing controls remain unchanged.
 The left side shows workspaces only. On the right, the tray comes first, followed
 by network, Bluetooth, volume, power mode, battery and notifications. Flat
 controls show icons and useful values, with a background on hover; descriptive text stays in their tooltips.
-Wi-Fi and battery show icons only; their percentages remain in tooltips. Icon accents
+Wi-Fi, volume and battery show icons only; their percentages remain in tooltips. Icon accents
 come from shared Latte roles in `theme/default.nix`. The clock uses 12-hour time
 with AM/PM, without a calendar dropdown or hover popup.
 Scroll over volume to adjust it in 5% steps.
