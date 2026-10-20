@@ -144,9 +144,9 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
-| Audio | PipeWire, WirePlumber; Wiremix, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys retain wpctl |
+| Audio | PipeWire, WirePlumber; Jeffrey’s Wiremix fork, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys retain wpctl |
 | Portals | Hyprland and GTK backends | Hyprland's NixOS module supplies its portal; GTK is added explicitly |
-| Screenshots and clipboard | slurp, grim, wl-clipboard | Print starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
+| Screenshots and clipboard | slurp, grim, wl-clipboard | Print or Meta+Shift+S starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
 | Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
 | Wallpaper | hyprmosaic, wallpaper-only backport | Native plugin draws workspace-linked images; Lua events/timer trigger preparation |
@@ -181,6 +181,14 @@ window or service. Wi-Fi, volume and battery display icons only, with percentage
 tooltips. The plugged-in/charging battery uses a green battery-with-lightning icon,
 distinguishing it from Performance mode's standalone lightning bolt.
 Appearance remains driven by shared theme roles.
+
+Wiremix now comes from Jeffrey's published `AldogPlays/wiremix` fork on
+`codex/ui-match`, pinned in `flake.lock` and following the system nixpkgs.
+`home/jeffreyc/packages.nix` selects the fork instead of stock Wiremix, retaining
+the `wiremix` command and desktop entry for both existing floating launchers.
+The fork's single-page audio sections and contextual controls replace its UI;
+PipeWire/WirePlumber and their startup remain unchanged. No local checkout path,
+imperative installation, or extra service is required on a new machine.
 
 The TUI controls are launched on demand; the
 network/Bluetooth/audio backend services remain enabled. Their dedicated
@@ -263,11 +271,19 @@ rectangle or a gap for that monitor; Escape cancels. Grim captures after selecti
 the helper saves a PNG under XDG Pictures/Screenshots and copies it with
 wl-clipboard. No editor, preview, OCR,
 notification, or screenshot daemon is added. This replaces Snap's capture UI.
-The Lenovo keyboard needs Fn+Prt Sc to send Print. Only the monitor's active
+Fn+Prt Sc sends Print on this Lenovo. Bare screenshot hotkeys on Lenovo can
+send Meta+Shift+S; that chord previously used the example move-to-scratchpad
+binding, which matches the reported unexpected window movement. Both chords
+now launch the same picker. This is a configuration-conflict fix; the physical
+firmware sequence still needs a user keypress to verify without injecting input. Only the monitor's active
 workspace (or open special workspace), plus visible pinned windows, is offered.
 Captures crop visible screen pixels rather than reconstructing obscured windows;
 slurp's smallest-rectangle selection can be ambiguous for overlapping floating
 windows. The same helper and pinned packages are included in portable bootstrap.
+Click-and-drag area selection remains a proposal, not an activated behavior:
+upstream Slurp supports predefined rectangles for clicks alongside free dragging
+when `-r` is omitted. The current helper deliberately retains `-r`; a future
+change should check pointer jitter and preserve gap-to-monitor fallback.
 
 ## Customization decisions
 

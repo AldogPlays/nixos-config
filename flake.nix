@@ -16,6 +16,11 @@
       url = "github:aashish-thapa/wlctl/v0.1.10";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    wiremix = {
+      url = "github:AldogPlays/wiremix/codex/ui-match";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

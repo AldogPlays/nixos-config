@@ -55,7 +55,7 @@ in
     # On-demand TUI controls; NetworkManager, BlueZ, and PipeWire stay in place.
     inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default
     bluetui
-    wiremix
+    inputs.wiremix.packages.${pkgs.stdenv.hostPlatform.system}.wiremix
 
     # Hyprland utilities used by the declarative keybindings/session
     brightnessctl

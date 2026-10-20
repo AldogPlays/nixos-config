@@ -51,7 +51,7 @@ shared palette. Remaining coverage and exceptions are documented there.
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
 | Power mode | Click Waybar's power-mode icon to cycle available profiles |
 | App tray | Hover the arrow or toggle with Meta+Shift+T |
-| Screenshot | Fn+Prt Sc on this Lenovo; click a window or a gap for the whole monitor; Escape cancels |
+| Screenshot | Prt Sc (with or without Fn on this Lenovo), or Meta+Shift+S; click a window or a gap for the whole monitor; Escape cancels |
 
 Network, Bluetooth, and Audio controls open as floating Alacritty windows from
 either their shortcuts or Waybar. Escape closes the focused control window,
@@ -98,6 +98,13 @@ applies the mode; the new `power-source-profile.service` listens to UPower event
 without polling. Its declaration is in `modules/nixos/hardware.nix` and its policy
 is in `scripts/power-source-profile.py`, included in portable bootstrap.
 
+The audio mixer is Jeffrey's Wiremix fork, pinned through the `wiremix` flake
+input and selected in `home/jeffreyc/packages.nix`. It replaces stock Wiremix
+under the same command and desktop entry; Waybar and Meta+Shift+A open the fork
+in the existing floating Alacritty window. PipeWire and WirePlumber are unchanged,
+and no new background service is added. Update the fork deliberately with
+`nix flake update wiremix`, validate, then rebuild.
+
 The cursor hides after five seconds without pointer activity and reappears on
 movement. This is Hyprland's native timeout, not a separate idle service.
 
@@ -117,8 +124,9 @@ Slurp draws a slightly bolder shared-theme outline around the hovered window (or
 the monitor when over a gap), lightly dimming outside the selection; grim captures
 it after the picker closes. Captures save to `Pictures/Screenshots` and copy to
 the clipboard using wl-clipboard, without an editor, preview, or notification.
-Print is the compositor keybinding; this
-Lenovo's keyboard sends it with Fn+Prt Sc. No screenshot daemon is started.
+Print and Meta+Shift+S both start the same picker. Fn+Prt Sc sends Print;
+the bare Lenovo screenshot hotkey can send Meta+Shift+S. The latter no longer
+moves the focused window into the example scratchpad. No screenshot daemon is started.
 Window capture crops the visible screen, so overlapping content remains visible.
 The picker chooses the smallest rectangle under the pointer; overlapping floating
 windows can therefore be ambiguous. Slurp/grim come from pinned nixpkgs; wlctl

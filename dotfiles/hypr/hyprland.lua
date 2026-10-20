@@ -325,7 +325,10 @@ for i = 1, 10 do
 end
 
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+-- Lenovo's bare screenshot hotkey may emit Meta+Shift+S instead of Print.
+-- Use the same picker rather than moving the focused window to the scratchpad.
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("screenshot"),
+    { description = "Capture a window, or the monitor by selecting a gap" })
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
