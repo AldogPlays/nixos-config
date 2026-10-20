@@ -125,8 +125,8 @@ the monitor when over a gap), lightly dimming outside the selection; grim captur
 it after the picker closes. Captures save to `Pictures/Screenshots` and copy to
 the clipboard using wl-clipboard, without an editor, preview, or notification.
 Print and Meta+Shift+S both start the same picker. Fn+Prt Sc sends Print;
-the bare Lenovo screenshot hotkey can send Meta+Shift+S. The latter no longer
-moves the focused window into the example scratchpad. No screenshot daemon is started.
+the bare Lenovo screenshot hotkey can send Meta+Shift+S. No screenshot daemon
+is started.
 Window capture crops the visible screen, so overlapping content remains visible.
 The picker chooses the smallest rectangle under the pointer; overlapping floating
 windows can therefore be ambiguous. Slurp/grim come from pinned nixpkgs; wlctl

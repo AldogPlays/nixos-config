@@ -290,7 +290,6 @@ in
       [
         "@THEME_ACTIVE_BORDER@"
         "@THEME_INACTIVE_BORDER@"
-        "@THEME_SHADOW@"
         "@CURSOR_THEME@"
         "@CURSOR_SIZE@"
         "@BLUR_SIZE@"
@@ -310,7 +309,6 @@ in
       [
         (hex roles.borderFocused)
         (hex roles.border)
-        (hex roles.backgroundAlt)
         config.home.pointerCursor.name
         (toString config.home.pointerCursor.size)
         (toString theme.material.blur.size)

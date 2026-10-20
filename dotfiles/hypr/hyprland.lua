@@ -37,12 +37,7 @@ hl.config({
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 1.0,
-        shadow = {
-            enabled = false,
-            range = 4,
-            render_power = 3,
-            color = "rgb(@THEME_SHADOW@)",
-        },
+        shadow = { enabled = false },
         blur = {
             enabled = true,
             size = @BLUR_SIZE@,
@@ -324,9 +319,8 @@ for i = 1, 10 do
     hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
 
-hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("magic"))
 -- Lenovo's bare screenshot hotkey may emit Meta+Shift+S instead of Print.
--- Use the same picker rather than moving the focused window to the scratchpad.
+-- Both hardware variants use the same screenshot picker.
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("screenshot"),
     { description = "Capture a window, or the monitor by selecting a gap" })
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))

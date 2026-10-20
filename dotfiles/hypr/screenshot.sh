@@ -19,8 +19,7 @@ boxes=$(jq -nr --argjson monitors "$monitors" --argjson clients "$clients" '
   | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"
 ')
 
-# Slurp picks the smallest hovered box. Output rectangles provide the fallback
-# in gaps, so no toolbar, freehand drag, dimension label or editor is needed.
+# Slurp picks the smallest hovered box; output rectangles cover the gaps.
 if ! geometry=$(printf '%s\n' "$boxes" | slurp -r -o \
     -b 00000026 -B 00000026 -s 00000000 -c "$SCREENSHOT_BORDER" -w 2); then
   exit 0 # Escape cancels without creating a file or changing the clipboard.

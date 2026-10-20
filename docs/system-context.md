@@ -272,11 +272,10 @@ the helper saves a PNG under XDG Pictures/Screenshots and copies it with
 wl-clipboard. No editor, preview, OCR,
 notification, or screenshot daemon is added. This replaces Snap's capture UI.
 Fn+Prt Sc sends Print on this Lenovo. Bare screenshot hotkeys on Lenovo can
-send Meta+Shift+S; that chord previously used the example move-to-scratchpad
-binding, which matches the reported unexpected window movement. Both chords
-now launch the same picker. This is a configuration-conflict fix; the physical
-firmware sequence still needs a user keypress to verify without injecting input. Only the monitor's active
-workspace (or open special workspace), plus visible pinned windows, is offered.
+send Meta+Shift+S. Print and Meta+Shift+S now launch the same picker; Jeffrey
+confirmed the shortcut fix works. The conflicting example scratchpad bindings
+are removed. Only the monitor's active workspace (or open special workspace),
+plus visible pinned windows, is offered.
 Captures crop visible screen pixels rather than reconstructing obscured windows;
 slurp's smallest-rectangle selection can be ambiguous for overlapping floating
 windows. The same helper and pinned packages are included in portable bootstrap.
