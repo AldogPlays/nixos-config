@@ -45,8 +45,6 @@ in
             bleopt complete_auto_complete=1
             bleopt complete_auto_delay=200
             bleopt editor=nano
-            ble-bind -m auto_complete -f TAB auto_complete/insert
-            ble-bind -m auto_complete -f C-i auto_complete/insert
             ble-face auto_complete='fg=${roles.foregroundMuted},italic'
             ble-face region='fg=${roles.foreground},bg=${roles.selection}'
             ble-face disabled='fg=${roles.foregroundMuted}'

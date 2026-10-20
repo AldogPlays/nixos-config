@@ -104,8 +104,13 @@ Steam is installed through `programs.steam` in `modules/nixos/hyprland.nix`.
 Launch **Steam** from Rofi or run `steam`, then sign in. The NixOS module supplies
 the runtime, 32-bit graphics/audio support and controller permissions. Steam
 downloads Valve's Proton when needed for Windows games; compatibility can be
-selected per game under **Properties → Compatibility**. No extra gaming launcher,
+selected per game under **Properties → Compatibility**. No extra gaming
 overlay, tuning daemon or Steam-specific firewall opening is configured.
+
+Lutris is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs, including
+its NixOS-compatible game runtime. Launch **Lutris** from Rofi or run `lutris`.
+It starts on demand; game installations, downloaded runners and account sign-ins
+remain user-managed.
 
 Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
 `Pictures`, `Public`, `Templates`, `Videos`, and `Projects`, plus writable
@@ -294,9 +299,9 @@ background service is added.
 ### Shell conveniences
 
 Interactive Bash uses ble.sh for syntax highlighting, completion menus and
-grey/italic suggestions from local history and normal shell completion. Press
-Tab to accept a visible suggestion (Right Arrow also works at the end of the
-line); without a suggestion, Tab performs ordinary completion. Enter executes
+grey/italic suggestions from local history and normal shell completion. Tab
+performs ordinary command/path completion; Right Arrow accepts the visible
+suggestion at the end of the line. Enter executes
 only the accepted text. Ctrl+R still searches history. Suggestions are not AI
 and do not send your history anywhere.
 

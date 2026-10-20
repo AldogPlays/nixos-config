@@ -103,6 +103,11 @@ When the user requests applying the configuration, activate the verified result:
 sudo nixos-rebuild switch --flake .#nixos
 ```
 
+Jeffrey authorizes agents to run this activation command for requested configuration
+changes after validation. If sudo needs authentication, open a local password
+prompt for Jeffrey (for example, a graphical askpass prompt or a visible terminal).
+Never ask him to send a password through chat or store it in repository files.
+
 Activation can affect running services. Match it to the user's request; editing
 documentation does not require activation. Rebooting, logging out, and restarting
 the compositor disrupt the session and need explicit intent from the user.

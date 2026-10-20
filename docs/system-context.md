@@ -61,6 +61,11 @@ not part of this minimal setup. Steam-specific firewall openings stay disabled.
 Portable bootstrap treats captured 32-bit graphics support as a default so
 Steam's required support takes precedence even on a previously 64-bit-only host.
 
+Lutris is declared in `home/jeffreyc/packages.nix` using the pinned nixpkgs FHS
+runtime package. It launches on demand from Rofi or `lutris`, without a new
+background service. Game installations, downloaded runners and account sign-ins
+remain user-managed; the existing Steam module supplies host 32-bit graphics.
+
 The kernel selection is `pkgs.linuxPackages_latest` from the stable input. Recent
 hardware support is a consideration when reviewing that choice, but a specific
 requirement for this kernel has not been established.
@@ -90,7 +95,8 @@ new interactive Bash shells load it automatically.
 
 Interactive Bash also loads pinned ble.sh before completion/Starship and attaches
 it afterward, only on a real terminal. It adds local history/completion ghost
-suggestions, Tab acceptance and syntax highlighting without changing shells.
+suggestions and syntax highlighting without changing shells. Tab performs normal
+command/path completion; Right Arrow accepts a suggestion at the end of the line.
 The generated rc file is store-managed, not a second user-maintained theme.
 Existing command names remain: interactive `ls`/`ll` use eza; `command ls`
 retains GNU behavior. Git uses delta as its diff/show/log/blame pager and
