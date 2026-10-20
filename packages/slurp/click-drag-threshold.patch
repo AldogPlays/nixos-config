@@ -1,0 +1,16 @@
+--- a/include/slurp.h
++++ b/include/slurp.h
+@@ -27,0 +28 @@
++	bool drag_started;
+--- a/main.c
++++ b/main.c
+@@ -114,0 +115,7 @@
++	// Preserve click targets through small pointer/touchpad movements.
++	if (current_selection == &seat->pointer_selection &&
++			current_selection->has_selection && !current_selection->drag_started &&
++			abs(dist_x) < 4 && abs(dist_y) < 4) {
++		return;
++	}
++	current_selection->drag_started = true;
+@@ -211,0 +219 @@
++	current_selection->drag_started = false;

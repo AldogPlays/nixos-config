@@ -106,6 +106,7 @@
       };
 
       checks.${system} = {
+        screenshot-selector = pkgs.callPackage ./packages/slurp { };
         power-source-profile =
           pkgs.runCommand "power-source-profile-checks"
             {

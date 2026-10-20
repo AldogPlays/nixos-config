@@ -8,6 +8,7 @@
 
 let
   theme = import ../../theme;
+  screenshotSlurp = pkgs.callPackage ../../packages/slurp { };
   screenshot = pkgs.writeShellApplication {
     name = "screenshot";
     runtimeInputs = with pkgs; [
@@ -15,7 +16,7 @@ let
       util-linux
       hyprland
       jq
-      slurp
+      screenshotSlurp
       grim
       wl-clipboard
     ];

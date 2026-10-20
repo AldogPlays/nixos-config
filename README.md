@@ -51,7 +51,7 @@ shared palette. Remaining coverage and exceptions are documented there.
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
 | Power mode | Click Waybar's power-mode icon to cycle available profiles |
 | App tray | Hover the arrow or toggle with Meta+Shift+T |
-| Screenshot | Prt Sc (with or without Fn on this Lenovo), or Meta+Shift+S; click a window or a gap for the whole monitor; Escape cancels |
+| Screenshot | Prt Sc (with or without Fn on this Lenovo), or Meta+Shift+S; click a window/gap, or drag an area; Escape cancels |
 
 Network, Bluetooth, and Audio controls open as floating Alacritty windows from
 either their shortcuts or Waybar. Escape closes the focused control window,
@@ -120,17 +120,19 @@ supported formats, and troubleshooting.
 
 The screenshot shortcut starts the on-demand `screenshot` helper declared in
 `home/jeffreyc/packages.nix`, with its script in `dotfiles/hypr/screenshot.sh`.
-Slurp draws a slightly bolder shared-theme outline around the hovered window (or
-the monitor when over a gap), lightly dimming outside the selection; grim captures
-it after the picker closes. Captures save to `Pictures/Screenshots` and copy to
+Slurp outlines the hovered window (or the monitor when over a gap), lightly
+dimming outside the selection. Click to capture that rectangle, or hold the left
+button and drag to select a free area. Movements smaller than four logical pixels
+on both axes still count as a click. Grim captures after the picker closes. Captures save to `Pictures/Screenshots` and copy to
 the clipboard using wl-clipboard, without an editor, preview, or notification.
 Print and Meta+Shift+S both start the same picker. Fn+Prt Sc sends Print;
 the bare Lenovo screenshot hotkey can send Meta+Shift+S. No screenshot daemon
 is started.
 Window capture crops the visible screen, so overlapping content remains visible.
 The picker chooses the smallest rectangle under the pointer; overlapping floating
-windows can therefore be ambiguous. Slurp/grim come from pinned nixpkgs; wlctl
-remains pinned in `flake.lock`.
+windows can therefore be ambiguous. Slurp comes from pinned nixpkgs with the
+small click-tolerance patch and headless tests in `packages/slurp/`; Grim uses
+the pinned upstream package.
 
 Cisco Packet Tracer is declared from pinned nixpkgs (`cisco-packet-tracer_9`,
 currently 9.0.1). Launch **Cisco Packet Tracer** from Rofi or run `packettracer9`.

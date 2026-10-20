@@ -267,7 +267,8 @@ and workspace animations.
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
 Screenshots use an on-demand slurp picker with a slightly bolder shared-theme hover
 outline and light dimming outside the selection. Click a visible window for its
-rectangle or a gap for that monitor; Escape cancels. Grim captures after selection;
+rectangle or a gap for that monitor; hold the left button and drag for a free
+area. Escape cancels. Grim captures after selection;
 the helper saves a PNG under XDG Pictures/Screenshots and copies it with
 wl-clipboard. No editor, preview, OCR,
 notification, or screenshot daemon is added. This replaces Snap's capture UI.
@@ -279,10 +280,13 @@ plus visible pinned windows, is offered.
 Captures crop visible screen pixels rather than reconstructing obscured windows;
 slurp's smallest-rectangle selection can be ambiguous for overlapping floating
 windows. The same helper and pinned packages are included in portable bootstrap.
-Click-and-drag area selection remains a proposal, not an activated behavior:
-upstream Slurp supports predefined rectangles for clicks alongside free dragging
-when `-r` is omitted. The current helper deliberately retains `-r`; a future
-change should check pointer jitter and preserve gap-to-monitor fallback.
+The helper uses Slurp's combined rectangle-click and free-drag mode without `-r`,
+retaining `-o` for gap-to-monitor fallback. `packages/slurp/` applies a small
+four-logical-pixel threshold before pointer motion replaces a click target with
+an area; once dragging starts, it stays an area until release. This avoids tiny
+captures from click jitter. The patch builds against pinned Slurp, with headless
+checks calling its actual selection handlers for click, overlap, jitter, drag
+direction, cross-output coordinates and gesture reset. No new daemon is added.
 
 ## Customization decisions
 
