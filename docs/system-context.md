@@ -152,7 +152,37 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Wallpaper | hyprmosaic, wallpaper-only backport | Native plugin draws workspace-linked images; Lua events/timer trigger preparation |
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
-power-profiles-daemon, and UPower. The TUI controls are launched on demand; the
+power-profiles-daemon, and UPower. `power-source-profile.service`, declared in
+`modules/nixos/hardware.nix`, runs the repository's Python policy at system boot.
+It listens for UPower and power-profile D-Bus changes without polling. Automatic
+selection is Performance on AC, Balanced on battery, and Power Saver at or below
+20%. A manual profile change stays in effect until the power source changes;
+service restart also resets it. Hosts without Performance fall back to Balanced.
+The daemon's native battery-aware hardware tuning remains enabled: it adjusts
+tuning within the selected profile, rather than replacing this selection policy.
+The service reconnects after backend failure by restarting; it neither replaces
+the existing power daemon nor adds TLP or another hardware tuning stack.
+
+Waybar uses its native power-profiles-daemon module for live profile display and
+click-to-cycle. Workspaces are the only left-side module; the tray starts the
+right group. Flat controls show accented icons and useful numeric values;
+their descriptions stay in tooltips, while the battery is a plain readout.
+Control icon accents are semantic roles in `theme/default.nix`; value text stays
+in the normal foreground. The 12-hour clock has no calendar dropdown or tooltip.
+Calendar/Nextcloud integration remains a future choice. Existing Hyprland
+visibility events and TUI launchers stay in use.
+
+The app tray expands left within Waybar using its native animated drawer.
+Hover opens temporarily; Meta+Shift+T pins it open or closes it. The existing
+Lua visibility policy keeps the bar visible while pinned on an empty workspace.
+`packages/waybar-tray/` adds a small signal-controlled arrow to the native drawer;
+it reuses the existing StatusNotifier tray, menus and process without a separate
+window or service. Wi-Fi and battery display icons only, with percentages in
+tooltips. The plugged-in/charging battery uses a green battery-with-lightning icon,
+distinguishing it from Performance mode's standalone lightning bolt.
+Appearance remains driven by shared theme roles.
+
+The TUI controls are launched on demand; the
 network/Bluetooth/audio backend services remain enabled. Their dedicated
 Alacritty app IDs float through `dotfiles/hypr/hyprland.lua`. Keyboard and Waybar
 launch commands bind unmodified Escape to Alacritty's Quit action for these
@@ -253,7 +283,7 @@ windows. The same helper and pinned packages are included in portable bootstrap.
   Workspace-button backgrounds also have rounded corners, so active/hover fills
   do not paint square corners over the bar's outer rounding. Waybar is visible
   when the focused monitor's active workspace (or active special workspace)
-  has a mapped, non-hidden tiled window, or while a mapped Rofi layer exists.
+  has a mapped, non-hidden tiled window, or while Rofi is mapped or the app tray is pinned open.
   Floating dialogs/PiP do not count. Native Lua window/workspace/layer events
   reconcile visibility using its standard SIGUSR1 toggle, signaling the main
   process of `waybar.service` through systemd rather than matching wrapped

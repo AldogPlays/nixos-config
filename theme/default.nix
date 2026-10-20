@@ -51,5 +51,13 @@ in
     warning = palette.yellow;
     error = palette.red;
     info = palette.sapphire;
+    # Control icon accents; labels retain the normal foreground for readability.
+    network = palette.sapphire;
+    bluetooth = palette.mauve;
+    audio = palette.peach;
+    powerPerformance = palette.maroon;
+    powerBalanced = palette.teal;
+    powerSaver = palette.green;
+    notifications = palette.mauve;
   };
 }

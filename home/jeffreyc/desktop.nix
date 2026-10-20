@@ -332,6 +332,7 @@ in
 
   programs.waybar = {
     enable = true;
+    package = pkgs.callPackage ../../packages/waybar-tray { };
     systemd.enable = true;
     settings.mainBar = {
       layer = "top";
@@ -350,35 +351,64 @@ in
         passthrough = true;
         visible = false;
       };
-      modules-left = [
-        "hyprland/workspaces"
-        "hyprland/window"
-      ];
+      modules-left = [ "hyprland/workspaces" ];
       modules-center = [ "clock" ];
       modules-right = [
+        "group/app-tray"
         "network"
         "bluetooth"
         "pulseaudio"
+        "power-profiles-daemon"
         "battery"
         "custom/notifications"
-        "tray"
       ];
-      clock.format = "{:%a %b %d  %H:%M}";
+      tray = {
+        icon-size = 18;
+        spacing = 8;
+      };
+      "group/app-tray" = {
+        orientation = "horizontal";
+        drawer = {
+          signal = 8;
+          transition-duration = 160;
+          transition-left-to-right = false;
+        };
+        modules = [ "tray" ];
+      };
+      clock = {
+        format = "{:%a %b %d  %I:%M %p}";
+        tooltip = false;
+      };
       network = {
-        format-wifi = "{essid}  {signalStrength}%";
-        format-ethernet = "Ethernet";
-        format-disconnected = "Offline";
-        tooltip-format = "{ifname}: {ipaddr}/{cidr}";
+        format-wifi = ''<span foreground="${roles.network}"></span>'';
+        format-ethernet = ''<span foreground="${roles.network}">󰈀</span>'';
+        format-linked = "󰈀";
+        format-disconnected = "󰖪";
+        format-disabled = "󰖪";
+        tooltip-format-wifi = "{essid}\nSignal: {signalStrength}%\n{ipaddr}\nClick for network controls";
+        tooltip-format-ethernet = "Wired connection\n{ipaddr}\nClick for network controls";
+        tooltip-format-disconnected = "No network connection\nClick for network controls";
+        tooltip-format-disabled = "Wi-Fi disabled\nClick for network controls";
         on-click = ''alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl'';
       };
       bluetooth = {
-        format = "BT {status}";
-        format-connected = "BT {num_connections}";
+        format = ''<span foreground="${roles.bluetooth}"></span>'';
+        format-disabled = "";
+        format-off = "";
+        format-connected = ''<span foreground="${roles.bluetooth}"></span> {num_connections}'';
+        tooltip-format = "Bluetooth: {status}\nClick for Bluetooth controls";
+        tooltip-format-connected = "{device_enumerate}\nClick for Bluetooth controls";
+        tooltip-format-enumerate-connected = "{device_alias}";
         on-click = ''alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui'';
       };
       pulseaudio = {
-        format = "{volume}% {icon}";
-        format-muted = "Muted";
+        format = ''<span foreground="${roles.audio}">{icon}</span> {volume}%'';
+        format-muted = "󰝟";
+        format-bluetooth = ''<span foreground="${roles.audio}">󰂰</span> {volume}%'';
+        format-bluetooth-muted = "󰝟";
+        tooltip-format = "{desc}\nClick for audio controls · Scroll for volume";
+        scroll-step = 5;
+        max-volume = 100;
         format-icons.default = [
           ""
           ""
@@ -386,9 +416,26 @@ in
         ];
         on-click = ''alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix'';
       };
+      "power-profiles-daemon" = {
+        format = "{icon}";
+        format-icons = {
+          default = "";
+          performance = "";
+          balanced = "";
+          power-saver = "";
+        };
+        tooltip-format = "Power mode: {profile}\nClick to cycle modes\nPlugging in or unplugging restores automatic selection";
+      };
       battery = {
-        format = "{capacity}% {icon}";
-        format-charging = "{capacity}% ";
+        states = {
+          warning = 20;
+          critical = 10;
+        };
+        format = "{icon}";
+        format-charging = "󰂄";
+        format-plugged = "󰂄";
+        format-full = "";
+        tooltip-format = "Battery: {capacity}%\n{timeTo}";
         format-icons = [
           ""
           ""
@@ -402,7 +449,7 @@ in
         return-type = "json";
         format = "{icon}";
         format-icons = {
-          notification = "";
+          notification = "";
           none = "";
           dnd-notification = "";
           dnd-none = "";
@@ -429,11 +476,31 @@ in
       #workspaces button:hover { background: ${roles.surface}; color: ${roles.foreground}; }
       #workspaces button.active { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
       #workspaces button.urgent { color: ${roles.error}; }
-      tooltip { background: ${roles.backgroundAlt}; border: 1px solid ${roles.border}; }
-      tooltip label { color: ${roles.foreground}; }
+      tooltip { background: ${roles.background}; border: 1px solid ${roles.border}; border-radius: 4px; }
+      tooltip label { color: ${roles.foreground}; padding: 6px; font-family: "${typography.family}", monospace; text-shadow: none; }
+      /* Flat controls with a hover cue; avoid a row of tiny input-like boxes. */
+      #network, #bluetooth, #pulseaudio, #power-profiles-daemon, #custom-notifications {
+        background: transparent; border: none;
+        border-radius: 4px; margin: 2px 1px; padding: 0 7px;
+      }
+      #network:hover, #bluetooth:hover, #pulseaudio:hover, #power-profiles-daemon:hover, #custom-notifications:hover {
+        background: ${roles.surface};
+      }
+      #bluetooth, #power-profiles-daemon, #custom-notifications { min-width: 16px; }
+      #bluetooth.off, #bluetooth.disabled, #pulseaudio.muted { color: ${roles.foregroundMuted}; }
+      #power-profiles-daemon.performance { color: ${roles.powerPerformance}; }
+      #power-profiles-daemon.balanced { color: ${roles.powerBalanced}; }
+      #power-profiles-daemon.power-saver { color: ${roles.powerSaver}; }
+      #custom-notifications { color: ${roles.notifications}; }
+      #app-tray { margin-right: 5px; }
+      #app-tray-arrow { padding: 0 7px; color: ${roles.foregroundMuted}; -gtk-icon-transform: rotate(0deg); transition: -gtk-icon-transform 160ms ease; }
+      #app-tray.open #app-tray-arrow { color: ${roles.accent}; -gtk-icon-transform: rotate(180deg); }
+      #tray { padding: 0 5px; }
+      #battery { padding: 0 6px; margin-left: 3px; }
       #battery.warning { color: ${roles.foreground}; border-bottom: 1px solid ${roles.warning}; }
       #battery.critical, #network.disconnected { color: ${roles.error}; }
-      #clock, #network, #bluetooth, #pulseaudio, #battery, #custom-notifications, #tray { padding: 0 5px; }
+      #battery.charging, #battery.plugged, #battery.full { color: ${roles.success}; }
+      #clock { padding: 0 6px; }
     '';
   };
 

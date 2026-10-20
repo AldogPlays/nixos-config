@@ -1,0 +1,46 @@
+--- a/include/group.hpp
++++ b/include/group.hpp
+@@ -3,0 +4 @@
++#include <gtkmm/image.h>
+@@ -16,0 +18 @@
++  auto refresh(int signal) -> void override;
+@@ -22,0 +25,3 @@
++  Gtk::Image drawer_arrow;
++  int drawer_signal = 0;
++  bool drawer_pinned = false;
+--- a/src/group.cpp
++++ b/src/group.cpp
+@@ -3,0 +4 @@
++#include <csignal>
+@@ -53,0 +55,2 @@
++    // Cache options: Bar::getModules passes a constructor-local JSON copy.
++    drawer_signal = config_["drawer"]["signal"].asInt();
+@@ -83,0 +87,9 @@
++  if (drawer_signal > 0) {
++    drawer_arrow.set_from_icon_name("pan-start-symbolic", Gtk::ICON_SIZE_MENU);
++    drawer_arrow.set_name("app-tray-arrow");
++    box.pack_end(drawer_arrow, false, false);
++    drawer_arrow.show();
++    event_box_.set_tooltip_text("App tray · Meta+Shift+T");
++    // Built-in arrow occupies the first slot; all modules belong in the drawer.
++    is_first_widget = false;
++  }
+@@ -87,0 +100 @@
++  box.get_style_context()->add_class("open");
+@@ -92,0 +106 @@
++  box.get_style_context()->remove_class("open");
+@@ -105 +119 @@
+-  if (!click_to_reveal && e->detail != GDK_NOTIFY_INFERIOR) {
++  if (!drawer_pinned && !click_to_reveal && e->detail != GDK_NOTIFY_INFERIOR) {
+@@ -120,0 +135,11 @@
++}
++
++auto Group::refresh(int signal) -> void {
++  if (drawer_signal <= 0) return;
++  if (signal == SIGRTMIN + drawer_signal) {
++    drawer_pinned = true;
++    show_group();
++  } else if (signal == SIGRTMIN + drawer_signal + 1) {
++    drawer_pinned = false;
++    hide_group();
++  }

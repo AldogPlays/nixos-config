@@ -159,9 +159,10 @@ end)
 local waybarUpdateQueued = false
 local waybarSignalPending = false
 local waybarDirty = false
+local waybarTrayPinned = false
 local scheduleWaybarVisibility
 local function updateWaybarVisibility()
-    local wanted, present, visible = false, false, false
+    local wanted, present, visible = waybarTrayPinned, false, false
     for _, layer in ipairs(hl.get_layers()) do
         if layer.mapped then
             if layer.namespace == "rofi" then wanted = true end
@@ -276,6 +277,12 @@ hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"),
     { description = "Toggle focused tile split: top/bottom or side-by-side" })
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
+hl.bind(mainMod .. " + SHIFT + T", function()
+    waybarTrayPinned = not waybarTrayPinned
+    scheduleWaybarVisibility()
+    local signal = waybarTrayPinned and "SIGRTMIN+8" or "SIGRTMIN+9"
+    hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=" .. signal .. " waybar.service"))
+end, { description = "Toggle the app tray" })
 -- Escape quits only these control windows, including an active TUI prompt.
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd([[alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl]]))
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd([[alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui]]))

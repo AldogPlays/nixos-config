@@ -101,6 +101,18 @@
       };
 
       checks.${system} = {
+        power-source-profile =
+          pkgs.runCommand "power-source-profile-checks"
+            {
+              nativeBuildInputs = [ pkgs.python3 ];
+            }
+            ''
+              export PYTHONDONTWRITEBYTECODE=1
+              cp -r ${./scripts} scripts
+              cp -r ${./tests} tests
+              python3 -m unittest discover -s tests -p test_power_source_profile.py -v
+              touch "$out"
+            '';
         workspace-wallpapers =
           pkgs.runCommand "workspace-wallpaper-checks"
             {

@@ -36,6 +36,9 @@ services. App adapters may install their native styling plugins.
 | `warning` | `yellow` | Warning indication |
 | `error` | `red` | Error indication |
 | `info` | `sapphire` | Information indication |
+| `network`, `bluetooth`, `audio` | `sapphire`, `mauve`, `peach` | Desktop control icon accents |
+| `powerPerformance`, `powerBalanced`, `powerSaver` | `maroon`, `teal`, `green` | Power profile icons |
+| `notifications` | `mauve` | Notification-center control icon |
 
 ## Adapters
 

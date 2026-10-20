@@ -49,6 +49,8 @@ shared palette. Remaining coverage and exceptions are documented there.
 | Wi-Fi (wlctl) | Super+Shift+N or click the bar's network module |
 | Bluetooth (Bluetui) | Super+Shift+B or click the bar's Bluetooth module |
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
+| Power mode | Click Waybar's power-mode icon to cycle available profiles |
+| App tray | Hover the arrow or toggle with Meta+Shift+T |
 | Screenshot | Fn+Prt Sc on this Lenovo; click a window or a gap for the whole monitor; Escape cancels |
 
 Network, Bluetooth, and Audio controls open as floating Alacritty windows from
@@ -64,12 +66,38 @@ screen edges. Mouse snapping is disabled. Waybar has top/side margins matching
 the compact outer window gaps, rounded corners and a thin 1px border; it still
 reserves space above tiled windows rather than covering them.
 It hides when the focused workspace has no tiled windows, but appears while
-Rofi is open. Floating dialogs and PiP do not count as tiles. Closing Rofi
+Rofi is open or the app tray is pinned open. Floating dialogs and PiP do not count as tiles. Closing them
 restores the workspace-based visibility. Native Hyprland Lua events control the
 existing Waybar process; there is no extra daemon or polling loop. When hidden,
 Waybar releases its reserved space. The policy follows the focused monitor and
 its active special workspace when one is open.
 Other existing controls remain unchanged.
+The left side shows workspaces only. On the right, the tray comes first, followed
+by network, Bluetooth, volume, power mode, battery and notifications. Flat
+controls show icons and useful values, with a background on hover; descriptive text stays in their tooltips.
+Wi-Fi and battery show icons only; their percentages remain in tooltips. Icon accents
+come from shared Latte roles in `theme/default.nix`. The clock uses 12-hour time
+with AM/PM, without a calendar dropdown or hover popup.
+Scroll over volume to adjust it in 5% steps.
+
+The app tray expands left inside Waybar with a short animation and a rotating
+arrow. Hover opens it temporarily; Meta+Shift+T pins it open or closes it.
+Only background-app icons live there; network, Bluetooth and audio controls keep
+their existing launchers. `packages/waybar-tray/` extends the pinned Waybar's
+native drawer with a keyboard-controlled arrow. No separate window, tray host,
+or session service is started. Appearance and group configuration live in
+`home/jeffreyc/desktop.nix`; the shortcut and existing bar visibility policy live
+in `dotfiles/hypr/hyprland.lua`.
+
+Power mode defaults to Performance on AC, Balanced on battery, and Power Saver
+at 20% battery or below. Clicking the mode cycles the available profiles; a
+manual choice lasts until plugging in or unplugging resets automatic selection.
+Restarting the policy service also restores automatic selection. Hardware without
+a Performance profile falls back to Balanced. The existing power-profiles-daemon
+applies the mode; the new `power-source-profile.service` listens to UPower events
+without polling. Its declaration is in `modules/nixos/hardware.nix` and its policy
+is in `scripts/power-source-profile.py`, included in portable bootstrap.
+
 The cursor hides after five seconds without pointer activity and reappears on
 movement. This is Hyprland's native timeout, not a separate idle service.
 
