@@ -178,6 +178,10 @@ in
     enable = true;
     font = "${typography.family} ${toString typography.size}";
     terminal = "alacritty";
+    extraConfig = {
+      run-command = "${pkgs.uwsm}/bin/uwsm app -- {cmd}";
+      run-shell-command = "${pkgs.uwsm}/bin/uwsm app -- {terminal} -e {cmd}";
+    };
     modes = [
       "drun"
       "run"

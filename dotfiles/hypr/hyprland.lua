@@ -8,8 +8,8 @@ hl.monitor({
     scale = 1.0,
 })
 
-local terminal = "alacritty"
-local fileManager = "dolphin"
+local terminal = "uwsm app -- alacritty"
+local fileManager = "uwsm app -- dolphin"
 local menu = "rofi -show drun"
 local mainMod = "SUPER"
 
@@ -261,7 +261,7 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "workspa
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + F", hl.dsp.exec_cmd("librewolf --new-window about:blank"))
+hl.bind(mainMod .. " + F", hl.dsp.exec_cmd("uwsm app -- librewolf --new-window about:blank"))
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
@@ -279,9 +279,9 @@ hl.bind(mainMod .. " + SHIFT + T", function()
     hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=" .. signal .. " waybar.service"))
 end, { description = "Toggle the app tray" })
 -- Escape quits only these control windows, including an active TUI prompt.
-hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd([[alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl]]))
-hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd([[alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui]]))
-hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd([[alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix]]))
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd([[uwsm app -- alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl]]))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd([[uwsm app -- alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui]]))
+hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd([[uwsm app -- alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix]]))
 hl.bind("PRINT", hl.dsp.exec_cmd("screenshot"),
     { description = "Capture a window, or the monitor by selecting a gap" })
 

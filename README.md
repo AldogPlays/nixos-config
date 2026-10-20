@@ -59,6 +59,13 @@ including when a TUI prompt is open. Hyprland's app-ID rule lives in
 `dotfiles/hypr/hyprland.lua`; launch commands there and in
 `home/jeffreyc/desktop.nix` set the per-window Alacritty Escape binding.
 
+Keyboard app shortcuts, Waybar's system controls and apps started by Rofi use
+`uwsm app --` to launch in separate application units. Hyprland's service has an
+`OOMPolicy=continue` drop-in so an inherited app's memory kill does not terminate
+the entire session. The drop-in is in `home/jeffreyc/desktop.nix`; reload it with
+`systemctl --user daemon-reload`, without restarting the compositor. This
+contains application failures but does not prevent memory exhaustion itself.
+
 Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
 window's width/height; Right/Down grows it. Tiled resizing respects the layout.
 Floating windows move and resize in pixel increments instead of snapping to

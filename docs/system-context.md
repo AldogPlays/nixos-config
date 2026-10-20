@@ -117,6 +117,21 @@ split, with split preservation enabled; it is not a whole-workspace rotation.
 These are declared choices, subject to Jeffrey's review rather than a commitment
 to keep every bootstrap component.
 
+On 2026-10-20 at 14:47, the kernel reported exhausted RAM and all 8.8 GiB of
+swap, then killed a browser content process using about 5.7 GiB resident RAM
+and 5.0 GiB swap. It was inside `wayland-wm@hyprland.desktop.service`;
+the service's effective `OOMPolicy=stop` then ended the whole graphical session.
+This establishes the latest logout's cause, not every earlier reported freeze.
+The Home Manager drop-in under `systemd/user/wayland-wm@.service.d/` sets
+`OOMPolicy=continue`; a user-manager daemon reload applies it without restarting
+Hyprland. Keyboard application shortcuts, Waybar's TUI launchers, and Rofi's
+run commands use the existing `uwsm app --` to place newly launched apps in
+separate units. Rofi itself and short-lived compositor helpers stay direct.
+Existing app processes retain their original units until normally closed;
+they are not forcibly moved or restarted. This limits session-wide fallout,
+but does not cure a browser memory leak or guarantee responsiveness after all
+memory is exhausted. No extra daemon or storage/swap change is introduced.
+
 SwayNC keeps only its title, do-not-disturb switch and notification list. Its
 content-sized panel, compact spacing, small icons and flat controls are declared
 in `home/jeffreyc/desktop.nix`, consuming shared theme colors and font from

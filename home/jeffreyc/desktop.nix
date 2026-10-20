@@ -387,7 +387,7 @@ in
         tooltip-format-ethernet = "Wired connection\n{ipaddr}\nClick for network controls";
         tooltip-format-disconnected = "No network connection\nClick for network controls";
         tooltip-format-disabled = "Wi-Fi disabled\nClick for network controls";
-        on-click = ''alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl'';
+        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl'';
       };
       bluetooth = {
         format = ''<span foreground="${roles.bluetooth}"></span>'';
@@ -397,7 +397,7 @@ in
         tooltip-format = "Bluetooth: {status}\nClick for Bluetooth controls";
         tooltip-format-connected = "{device_enumerate}\nClick for Bluetooth controls";
         tooltip-format-enumerate-connected = "{device_alias}";
-        on-click = ''alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui'';
+        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui'';
       };
       pulseaudio = {
         format = ''<span foreground="${roles.audio}">{icon}</span>'';
@@ -412,7 +412,7 @@ in
           ""
           ""
         ];
-        on-click = ''alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix'';
+        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix'';
       };
       "power-profiles-daemon" = {
         format = "{icon}";
@@ -598,6 +598,12 @@ in
       .widget-dnd switch slider { background: ${roles.background}; border-radius: 3px; box-shadow: none; min-width: 16px; min-height: 16px; }
     '';
   };
+
+  # Reloadable policy only: never restart the compositor to apply this drop-in.
+  xdg.configFile."systemd/user/wayland-wm@.service.d/10-oom-policy.conf".text = ''
+    [Service]
+    OOMPolicy=continue
+  '';
 
   systemd.user.services = {
     hyprpolkitagent = {
