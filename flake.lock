@@ -58,24 +58,7 @@
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
         "nixpkgs-unstable": "nixpkgs-unstable",
-        "snap-src": "snap-src",
         "wlctl": "wlctl"
-      }
-    },
-    "snap-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1791774790,
-        "narHash": "sha256-SrTmmyPYhJjzwTydBXNxRxdWHzL8PbYlMR5qBBRqidw=",
-        "owner": "yumedots",
-        "repo": "snap",
-        "rev": "6986c58ca7056b7a712f053e6ef1a97af2728f84",
-        "type": "github"
-      },
-      "original": {
-        "owner": "yumedots",
-        "repo": "snap",
-        "type": "github"
       }
     },
     "wlctl": {

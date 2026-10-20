@@ -131,7 +131,7 @@ to keep every bootstrap component.
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
 | Audio | PipeWire, WirePlumber; Wiremix, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys retain wpctl |
 | Portals | Hyprland and GTK backends | Hyprland's NixOS module supplies its portal; GTK is added explicitly |
-| Screenshots and clipboard | yumedots/snap, wl-clipboard | Print opens Snap; `packages/snap.nix`; no clipboard-history manager |
+| Screenshots and clipboard | slurp, grim, wl-clipboard | Print starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
 | Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
 | Wallpaper | hyprmosaic, wallpaper-only backport | Native plugin draws workspace-linked images; Lua events/timer trigger preparation |
@@ -209,9 +209,17 @@ These internal optimizations preserve assignments, refresh timing, image quality
 and workspace animations.
 
 wlctl is pinned through its upstream flake, following the system nixpkgs input.
-Snap's source is locked as a non-flake input and built locally with xmake, with
-Nix paths substituted for upstream's distribution-specific protocol paths. Its
-wrapper provides clipboard, OCR, and Hyprland commands without requiring Omarchy.
+Screenshots use an on-demand slurp picker with a slightly bolder shared-theme hover
+outline and light dimming outside the selection. Click a visible window for its
+rectangle or a gap for that monitor; Escape cancels. Grim captures after selection;
+the helper saves a PNG under XDG Pictures/Screenshots and copies it with
+wl-clipboard. No editor, preview, OCR,
+notification, or screenshot daemon is added. This replaces Snap's capture UI.
+The Lenovo keyboard needs Fn+Prt Sc to send Print. Only the monitor's active
+workspace (or open special workspace), plus visible pinned windows, is offered.
+Captures crop visible screen pixels rather than reconstructing obscured windows;
+slurp's smallest-rectangle selection can be ambiguous for overlapping floating
+windows. The same helper and pinned packages are included in portable bootstrap.
 
 ## Customization decisions
 

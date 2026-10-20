@@ -130,9 +130,16 @@ successful flake evaluation, build, or runtime check.
 ## Handoff and upkeep
 
 - Explain what changed, why, what was checked, and any remaining limitation.
-- After making repository changes, ask Jeffrey whether to commit and push them
-  to GitHub, unless he has already requested a push for that work. Do not push
-  automatically without that authorization.
+- After Jeffrey confirms the completed changes are satisfactory (for example,
+  "looks good"), treat that confirmation as authorization to commit and push
+  those task changes to GitHub. Complete both actions without asking again.
+  An explicit request to commit and push also authorizes both actions. If he has
+  not confirmed or authorized the work, ask once before committing and pushing;
+  respect any instruction to keep changes local or wait.
+- Review the diff, include only the authorized task changes, and preserve
+  unrelated work. After pushing, verify that the remote branch matches the local
+  commit and report whether any local changes remain. Do not claim changes are
+  pushed merely because they are saved or activated.
 - Commit, push, publish, or change remote settings when the user requests those
   actions; preserve the existing Git history and unrelated changes.
 - Change this guide when the directions for agents change. Do not append task

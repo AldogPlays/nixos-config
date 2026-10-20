@@ -16,11 +16,6 @@
       url = "github:aashish-thapa/wlctl/v0.1.10";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    snap-src = {
-      url = "github:yumedots/snap";
-      flake = false;
-    };
   };
 
   outputs =

@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   pkgs,
   pkgsUnstable,
@@ -6,6 +7,24 @@
 }:
 
 let
+  theme = import ../../theme;
+  screenshot = pkgs.writeShellApplication {
+    name = "screenshot";
+    runtimeInputs = with pkgs; [
+      coreutils
+      util-linux
+      hyprland
+      jq
+      slurp
+      grim
+      wl-clipboard
+    ];
+    runtimeEnv = {
+      SCREENSHOT_DIRECTORY = "${config.xdg.userDirs.pictures}/Screenshots";
+      SCREENSHOT_BORDER = "${theme.roles.borderFocused}ff";
+    };
+    text = builtins.readFile ../../dotfiles/hypr/screenshot.sh;
+  };
   # Ark 26.04 invokes `7z`; the maintained upstream package installs `7zz`.
   sevenZip = pkgs.symlinkJoin {
     name = "7zip-${pkgs._7zz.version}";
@@ -43,7 +62,7 @@ in
     hyprpolkitagent
     playerctl
     wl-clipboard
-    (pkgs.callPackage ../../packages/snap.nix { src = inputs.snap-src; })
+    screenshot
 
     # Command-line workflow
     fd

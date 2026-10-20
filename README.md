@@ -11,7 +11,7 @@ flake.nix                     pinned inputs and host output
 hosts/nixos/                  machine identity, disks, and boot hardware
 modules/nixos/                reusable OS, hardware, and desktop modules
 home/jeffreyc/                Home Manager modules
-packages/                     local Nix packages (Snap, wallpaper-only hyprmosaic)
+packages/                     local Nix packages (bootstrap, wallpaper-only hyprmosaic)
 scripts/                      portable bootstrap and host inventory reader
 bootstrap/                    generated-host templates
 dotfiles/hypr/                versioned Hyprland configuration
@@ -49,7 +49,7 @@ shared palette. Remaining coverage and exceptions are documented there.
 | Wi-Fi (wlctl) | Super+Shift+N or click the bar's network module |
 | Bluetooth (Bluetui) | Super+Shift+B or click the bar's Bluetooth module |
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
-| Screenshot (Snap) | Print; press again to dismiss the capture overlay |
+| Screenshot | Fn+Prt Sc on this Lenovo; click a window or a gap for the whole monitor; Escape cancels |
 
 Meta and Super both refer to the Windows/logo key. Resize Left/Up shrinks the
 window's width/height; Right/Down grows it. Tiled resizing respects the layout.
@@ -77,7 +77,18 @@ prepared images across logins and later refreshes, warming automatically on use.
 See [workspace wallpapers](docs/wallpapers.md) for implementation, cache limits,
 supported formats, and troubleshooting.
 
-Snap and wlctl are pinned in `flake.lock`; Snap's local build is in `packages/snap.nix`.
+The screenshot shortcut starts the on-demand `screenshot` helper declared in
+`home/jeffreyc/packages.nix`, with its script in `dotfiles/hypr/screenshot.sh`.
+Slurp draws a slightly bolder shared-theme outline around the hovered window (or
+the monitor when over a gap), lightly dimming outside the selection; grim captures
+it after the picker closes. Captures save to `Pictures/Screenshots` and copy to
+the clipboard using wl-clipboard, without an editor, preview, or notification.
+Print is the compositor keybinding; this
+Lenovo's keyboard sends it with Fn+Prt Sc. No screenshot daemon is started.
+Window capture crops the visible screen, so overlapping content remains visible.
+The picker chooses the smallest rectangle under the pointer; overlapping floating
+windows can therefore be ambiguous. Slurp/grim come from pinned nixpkgs; wlctl
+remains pinned in `flake.lock`.
 
 Cisco Packet Tracer is declared from pinned nixpkgs (`cisco-packet-tracer_9`,
 currently 9.0.1). Launch **Cisco Packet Tracer** from Rofi or run `packettracer9`.
@@ -114,8 +125,8 @@ remain user-managed.
 
 Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
 `Pictures`, `Public`, `Templates`, `Videos`, and `Projects`, plus writable
-`Pictures/Screenshots` and `Pictures/Wallpapers` subfolders. Snap uses the XDG
-Pictures directory and saves under `Screenshots` by default.
+`Pictures/Screenshots` and `Pictures/Wallpapers` subfolders. The screenshot helper
+uses the XDG Pictures directory and saves under `Screenshots`.
 
 Native desktop defaults in `home/jeffreyc/default.nix` select LibreWolf for web
 links, HTML, and PDFs; Dolphin for folders; and Alacritty through

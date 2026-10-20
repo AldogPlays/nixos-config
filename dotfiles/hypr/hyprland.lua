@@ -272,7 +272,8 @@ hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd("alacritty --class wlctl -e wlctl"))
 hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd("alacritty --class bluetui -e bluetui"))
 hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd("alacritty --class wiremix -e wiremix"))
-hl.bind("PRINT", hl.dsp.exec_cmd("snap"))
+hl.bind("PRINT", hl.dsp.exec_cmd("screenshot"),
+    { description = "Capture a window, or the monitor by selecting a gap" })
 
 hl.bind("ALT + Return", hl.dsp.window.fullscreen({ action = "toggle" }),
     { description = "Alt+Enter: toggle fullscreen" })
