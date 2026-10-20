@@ -83,7 +83,7 @@ links document research, not an instruction to fetch themes during activation.
 | Shell tools | `programs.nix`: ble.sh ghost text, selection and common syntax faces use shared roles; remaining native ANSI faces inherit terminal colors. [ble.sh](https://github.com/akinomyoga/ble.sh) documents completion and initialization. Eza's [native YAML theme](https://github.com/eza-community/eza/blob/main/docs/theme.yml) maps file kinds and Git states to roles. Delta's native styles use shared roles, with syntax themes disabled; [upstream docs](https://dandavison.github.io/delta/configuration.html) and the [Catppuccin reference](https://github.com/catppuccin/delta) informed the adapter. No copied theme files or palette cache are installed. |
 | Rofi | `programs.nix`: generated native Rasi layered over Rofi's default layout. [Rasi documentation](https://github.com/davatorium/rofi/blob/next/doc/rofi-theme.5.markdown) and the [reference port](https://github.com/catppuccin/rofi/tree/71fb15577ccb091df2f4fc1f65710edbc61b5a53) informed normal/active/urgent and selected/alternate state coverage. |
 | Waybar | `desktop.nix`: native GTK3 CSS; [upstream styling manual](https://github.com/Alexays/Waybar/blob/master/man/waybar-styles.5.scd.in) and [reference port](https://github.com/catppuccin/waybar/tree/ee8ed32b4f63e9c417249c109818dcc05a2e25da). Colors are interpolated directly, without importing a second palette file. |
-| SwayNC | `desktop.nix`: GTK4 custom properties from the pinned 0.12.6 package's default stylesheet, plus targeted title/DND/action styling. The [reference port](https://github.com/catppuccin/swaync/tree/f09852bfa35d50e763ae967c26dbe524b9e9f305) informs state coverage, not a copied replacement stylesheet. [Upstream project](https://github.com/ErikReider/SwayNotificationCenter) documents native styling. Default structural CSS remains loaded by SwayNC. |
+| SwayNC | `desktop.nix`: GTK4 custom properties from the pinned 0.12.6 package's default stylesheet, plus compact widget/card spacing, small icons, flat buttons, DND and keyboard-focus styling. The panel fits its content; panel and popups share a 12px inset below the usable screen edge and from the right edge, beyond the tiled-window gaps; notification cards use thin borders, while the panel uses the main background and a thin focus-color outline for separation from underlying apps. Colors and typography come from this directory; panel and popup backgrounds are opaque like Waybar. The [reference port](https://github.com/catppuccin/swaync/tree/f09852bfa35d50e763ae967c26dbe524b9e9f305) informs state coverage, not a copied replacement stylesheet. [Upstream project](https://github.com/ErikReider/SwayNotificationCenter) documents native styling. Default structural CSS remains loaded by SwayNC. |
 | Hyprland | `desktop.nix` renders role colors into the Lua source's explicit placeholders, using the pinned 0.55.4 parser/API and the [Lua reference port](https://github.com/catppuccin/hyprland/tree/9f03f26fc10a00e00ec6b2ac2a41e44d16297548) for color-format guidance. Placeholders must not be substituted with a generic variable expander: audio bindings contain unrelated `@DEFAULT_AUDIO_SINK@` tokens. |
 | Dolphin/KDE Qt | `desktop.nix` generates KDE RGB color groups in `kdeglobals` and `color-schemes/JeffreyLatte.colors`. Group coverage was researched from the [KDE reference port](https://github.com/catppuccin/kde/tree/6606b5179cfc1e9ba5c3b6b70e15c468e2dddca2); behavior/terminal keys were checked against pinned Dolphin 26.04.3/KIO 6.26.0 sources and the [Dolphin handbook](https://docs.kde.org/trunk_kf6/en/dolphin/dolphin/configuring-dolphin.html). Selection uses our readable shared selection/text roles rather than the port's separate accent/white palette choice. The Qt platform plugin and Breeze widget style are native rendering dependencies, not a second Latte palette. |
 | GTK3/GTK4 | `desktop.nix` translates one semantic color map into GTK named colors and GTK4 CSS variables. Pinned [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) provides GTK3 structure; GTK4/libadwaita retains its native layout. [Libadwaita's CSS-variable documentation](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/css-variables.html) and the pinned adw-gtk3 CSS determine coverage. The [archived Catppuccin GTK port](https://github.com/catppuccin/gtk) was researched but is not installed or vendored. |
@@ -94,7 +94,7 @@ links document research, not an instruction to fetch themes during activation.
 for frosted glass. Alacritty's native alpha stays at 1.0; a general
 Hyprland rule applies to normal application windows, using `focusedOpacity`
 when focused (1.0), `unfocusedOpacity` when unfocused (0.95) and 1.0 in fullscreen.
-Shell backplates use `opacity` (0.90). This affects text,
+Rofi's backplate uses `opacity` (0.90). Window opacity affects text,
 images and video as well as the background, without a focus-watching daemon.
 Later exceptions keep explicitly modal windows and recognized Firefox-family
 PiP opaque; recognized PiP also floats with a compact initial size, no forced
@@ -107,10 +107,10 @@ do not treat every floating window as a dialog or PiP window.
 Native compositor open/title/class/reload callbacks cover delayed PiP metadata
 and windows already open during reload, since floating rules only apply at map
 time. A one-shot next-loop callback waits for the metadata update to finish.
-Rofi uses `#rrggbbaa`; SwayNC uses native RGBA CSS. Waybar deliberately uses the
-opaque shared background role, without applying the glass opacity. Rofi's unselected
+Rofi uses `#rrggbbaa`; Waybar and SwayNC use the opaque shared background role,
+without applying the glass opacity. SwayNC popup alpha is 1. Rofi's unselected
 rows remain transparent to avoid stacking opaque fills over its backplate.
-Hyprland layer blur is limited to the exact Waybar, Rofi and SwayNC namespaces,
+Hyprland layer blur is limited to the exact Waybar and Rofi namespaces,
 ignoring fully transparent regions. Alacritty uses normal window background blur.
 These translations do not alter canonical palette colors. Shell text stays
 opaque; normal application content follows its window's opacity.

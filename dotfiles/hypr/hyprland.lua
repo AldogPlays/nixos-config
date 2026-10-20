@@ -78,7 +78,7 @@ hl.config({
 -- Blur translucent shell backplates, not the fully transparent surrounding area.
 hl.layer_rule({
     name = "frosted-shell",
-    match = { namespace = "^(waybar|rofi|swaync-control-center|swaync-notification-window)$" },
+    match = { namespace = "^(waybar|rofi)$" },
     blur = true,
     ignore_alpha = 0.2,
 })

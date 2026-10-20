@@ -153,11 +153,11 @@ applications with their own font settings are not forcibly overridden.
 The contrasting Catppuccin Mocha Dark cursor is configured for Hyprland, GTK,
 Qt/KDE and X11 in `home/jeffreyc/desktop.nix`; the rest of the theme stays Latte.
 
-Frosted glass applies to normal application windows, Rofi and SwayNC.
+Frosted glass applies to normal application windows and Rofi.
 `theme/default.nix.material` controls their shared background opacity and
 Hyprland blur settings. `material.focusedOpacity` makes focused windows fully
 opaque; unfocused windows use `material.unfocusedOpacity` (95% opacity), and
-fullscreen is fully opaque. Shell backplates use `material.opacity` (90%).
+fullscreen is fully opaque. Rofi's backplate uses `material.opacity` (90%).
 Explicitly marked modal dialogs and recognized LibreWolf/Firefox picture-in-picture
 windows stay fully opaque; recognized PiP windows float at a compact initial size,
 without forcing position or pin state. Manual resizing remains available; a
@@ -166,11 +166,12 @@ exact English `Picture-in-Picture` title; other apps/localizations may need
 additional verified identifiers. Unmarked dialogs cannot be identified
 generically by this rule.
 Hyprland affects the whole surface, including text, images and video; native
-terminal alpha stays at 1.0 to avoid double transparency. Waybar uses a fully
-opaque shared Latte background, independent of window focus. The login screen
+terminal alpha stays at 1.0 to avoid double transparency. Waybar and SwayNC use a
+fully opaque shared Latte background, independent of window focus. The login screen
 stays opaque.
 Windows have 1px borders: the shared focus color when active and muted border
-color when inactive. Rofi's outer frame and the notification-center frame remain
+color when inactive. The notification-center frame also uses a thin focus-color
+outline to separate it from underlying apps. Rofi's outer frame remains
 borderless; useful control outlines and separators remain. This is matte blur,
 without glossy gradients or refraction.
 The existing NixOS generation rollback command below restores the previous

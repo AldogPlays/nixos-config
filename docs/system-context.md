@@ -117,6 +117,21 @@ split, with split preservation enabled; it is not a whole-workspace rotation.
 These are declared choices, subject to Jeffrey's review rather than a commitment
 to keep every bootstrap component.
 
+SwayNC keeps only its title, do-not-disturb switch and notification list. Its
+content-sized panel, compact spacing, small icons and flat controls are declared
+in `home/jeffreyc/desktop.nix`, consuming shared theme colors and font from
+`theme/default.nix`. Panel and popup backgrounds are fully opaque, matching
+Waybar; their layer surfaces do not request blur. The panel uses the shared main background and
+a thin focus-color outline to separate it from applications underneath.
+Notification cards and controls have thin outlines, with explicit keyboard-focus indication.
+Clear All uses explicit label colors without GTK's additional dimming; when
+disabled on an empty list, it keeps readable muted text on the alternate background.
+The panel and popups are inset 12px below the usable screen edge and from the
+right edge, separating them from tiled-window corners. Layer-shell accounts for
+Waybar's reserved space; popup CSS supplies the same inset as the panel margins.
+The existing session service provides notifications; no extra theme service is
+needed. Reload SwayNC's config and CSS after activation to update a running process.
+
 | Role | Component | Configuration |
 | --- | --- | --- |
 | Compositor and session | Hyprland, UWSM, XWayland | `modules/nixos/hyprland.nix`; `dotfiles/hypr/hyprland.lua` |
@@ -260,8 +275,8 @@ windows. The same helper and pinned packages are included in portable bootstrap.
   palette values and shared semantic roles. No switching, refresh coordinator,
   or theme daemon is wanted. See `theme/README.md` for the data contract.
 - The material direction is matte frosted glass, not liquid/glossy/refractive
-  glass. Normal application windows (including LibreWolf and Dolphin), Rofi
-  and SwayNC use Hyprland background blur. Shared opacity and blur controls
+  glass. Normal application windows (including LibreWolf and Dolphin) and Rofi
+  use Hyprland background blur. Shared opacity and blur controls
   live under `theme/default.nix.material`. Normal windows use a native
   Hyprland rule for fully opaque focus, 95% opaque unfocused state, and fully opaque
   fullscreen. Their whole surfaces, including text, follow that opacity; native
@@ -285,9 +300,10 @@ windows. The same helper and pinned packages are included in portable bootstrap.
   background screenshot, blur or transparency. Session-lock xray is disabled;
   authentication stays unchanged. Keep the pinned Hyprland version rather than
   upgrading or maintaining a compositor patch for lock-screen effects.
-  Waybar is fully opaque, using the shared background role independently
+  Waybar and SwayNC are fully opaque, using the shared background role independently
   of the glass opacity and window focus.
-  Rofi and the notification-center outer frame remain borderless; input/control
+  Rofi's outer frame remains borderless. The notification-center frame uses a
+  thin focus-color outline for separation from underlying apps; input/control
   outlines, separators and status indicators remain useful and are not removed.
   No shader, refraction plugin, highlight gradient, shadow or new service is added.
 - Fonts share the family and point size in `theme/default.nix` across terminal,

@@ -98,7 +98,6 @@ let
         2
         4
       ];
-  glass = color: "rgba(${rgb color}, ${toString theme.material.opacity})";
   # KDE uses comma-separated RGB values, not the canonical #rrggbb notation.
   kdeForegrounds = {
     DecorationFocus = rgb roles.borderFocused;
@@ -443,6 +442,14 @@ in
     settings = {
       positionX = "right";
       positionY = "top";
+      control-center-width = 400;
+      notification-window-width = 400;
+      # Inset overlays farther than the tiled-window gaps so edges do not merge.
+      control-center-margin-top = 12;
+      control-center-margin-right = 12;
+      control-center-margin-bottom = 12;
+      fit-to-screen = false;
+      control-center-height = -1;
       timeout = 5;
       widgets = [
         "title"
@@ -453,10 +460,10 @@ in
     style = ''
       /* SwayNC 0.12 uses GTK4 custom properties; its default CSS supplies layout. */
       :root {
-        --cc-bg: ${glass roles.backgroundAlt};
+        --cc-bg: ${roles.background};
         --noti-border-color: ${roles.border};
         --noti-bg: ${rgb roles.background};
-        --noti-bg-alpha: ${toString theme.material.opacity};
+        --noti-bg-alpha: 1;
         --noti-bg-darker: ${roles.backgroundAlt};
         --noti-bg-hover: ${roles.surface};
         --noti-bg-focus: ${roles.selection};
@@ -467,20 +474,63 @@ in
         --bg-selected: ${roles.accent};
         --border-radius: 4px;
         --notification-shadow: none;
+        --notification-icon-size: 32px;
+        --notification-app-icon-size: 16px;
+        --notification-group-icon-size: 20px;
         --font-size-body: ${fontSize}pt;
         --font-size-summary: ${fontSize}pt;
       }
-      * { font-family: "${typography.family}", "Symbols Nerd Font"; font-size: ${fontSize}pt; }
-      .widget-title > label, .widget-dnd > label { font-size: ${fontSize}pt; }
-      .notification-row .notification-background .notification.critical { border-color: ${roles.error}; }
-      .control-center { border: none; }
-      .widget-title > button, .notification-action, .widget-dnd switch {
-        background: ${roles.surface}; color: ${roles.foreground};
-        border: 1px solid ${roles.border}; box-shadow: none;
+      * {
+        font-family: "${typography.family}", "Symbols Nerd Font";
+        font-size: ${fontSize}pt;
+        text-shadow: none;
+        -gtk-icon-shadow: none;
       }
-      .widget-title > button:hover, .notification-action:hover { background: ${roles.selection}; }
+      .control-center { border: 1px solid ${roles.borderFocused}; padding: 4px; }
+      .widget { margin: 0; padding: 4px; }
+      .widget-title > label, .widget-dnd > label { font-size: ${fontSize}pt; }
+      .widget-title > label { font-weight: bold; }
+      .widget-dnd { margin-bottom: 4px; }
+      .control-center button, .notification button, .close-button {
+        background-image: none;
+        background-color: transparent;
+        color: ${roles.foreground};
+        border: none;
+        border-radius: 4px;
+        box-shadow: none;
+        min-height: 24px;
+        padding: 2px 6px;
+      }
+      .notification-group, .notification-row:focus, .notification-group:focus { background: transparent; }
+      .notification-row .notification-background { padding: 2px 4px; }
+      /* Match the panel's inset; layer-shell already respects Waybar's space. */
+      .floating-notifications { padding: 12px; }
+      .floating-notifications .notification-row .notification-background { padding: 0; margin-bottom: 4px; }
+      .notification-row .notification-background .notification .notification-default-action { padding: 6px; }
+      .control-center .notification-group .notification { background: ${roles.background}; }
+      .notification-group .notification-group-buttons, .notification-group .notification-group-headers { margin: 2px 4px; }
+      .notification-group .notification-group-close-button .close-button { margin: 4px 8px; }
+      .notification-row .notification-background .notification .notification-default-action .notification-content .text-box .time {
+        color: ${roles.foregroundMuted}; font-weight: normal;
+      }
+      .notification-row .notification-background .notification .notification-default-action .notification-content .app-icon { -gtk-icon-shadow: none; }
+      .notification-row .notification-background .notification.critical { border-color: ${roles.error}; }
+      .widget-title > button, .notification .notification-action > button, .widget-dnd switch, .close-button {
+        background: ${roles.surface}; color: ${roles.foreground};
+        border: 1px solid ${roles.border}; border-radius: 4px; box-shadow: none;
+      }
+      .widget-title > button:hover, .notification .notification-action > button:hover, .close-button:hover { background: ${roles.selection}; }
+      /* GTK dims disabled labels as well as recoloring them. Keep Clear All
+         readable when the list is empty, while retaining its disabled state. */
+      .widget-title > button, .widget-title > button label { opacity: 1; filter: none; }
+      .widget-title > button label { color: inherit; }
+      .widget-title > button:disabled { background: ${roles.backgroundAlt}; color: ${roles.foregroundMuted}; }
+      .control-center button:focus-visible, .notification button:focus-visible { outline: 1px solid ${roles.borderFocused}; outline-offset: -1px; }
+      .notification-row .notification-background .notification .notification-action { margin: 0 2px; }
+      .close-button { min-width: 20px; min-height: 20px; padding: 0; margin-top: 4px; margin-right: 6px; }
+      .widget-dnd switch { min-height: 20px; }
       .widget-dnd switch:checked { background: ${roles.accent}; }
-      .widget-dnd switch slider { background: ${roles.background}; box-shadow: none; }
+      .widget-dnd switch slider { background: ${roles.background}; border-radius: 3px; box-shadow: none; min-width: 16px; min-height: 16px; }
     '';
   };
 
