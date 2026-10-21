@@ -121,6 +121,7 @@ in
     cisco-packet-tracer_9
     pkgsUnstable.joplin-desktop
     lutris
+    modrinth-app
     # Official desktop client, including graphical Codex, from the pinned input.
     pkgsUnstable.chatgpt
 
