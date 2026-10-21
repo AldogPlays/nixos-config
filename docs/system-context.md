@@ -214,6 +214,10 @@ nm-applet, Blueman, and pavucontrol are no longer declared as front ends.
 
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.
+Tailscale DNS and MagicDNS are required; preserve them when diagnosing network
+reliability. The tailnet currently supplies a DNS resolver on Jeffrey's TrueNAS
+server, managed outside this repository. Investigate resolver/tunnel timeouts
+rather than bypassing this DNS setup with Wi-Fi or public resolvers.
 No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
 
 LibreWolf's package policies default downloads to the XDG Downloads folder and
