@@ -1,8 +1,11 @@
 """Select a power profile from UPower events; leave manual choices alone."""
 
+import json
 import logging
+import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
@@ -35,6 +38,51 @@ class PowerPolicy:
         return wanted if wanted != active else None
 
 
+class BacklightDimmer:
+    """Dim once per low-battery episode; restore only an untouched dimmed value."""
+
+    def __init__(self, state_file, backlights=Path("/sys/class/backlight"), limit=30):
+        self.state_file = Path(state_file)
+        self.backlights = Path(backlights)
+        self.limit = limit
+        self.state = {"active": False, "devices": {}}
+        if self.state_file.exists():
+            self.state = json.loads(self.state_file.read_text())
+
+    def save(self):
+        temporary = self.state_file.with_suffix(".tmp")
+        temporary.write_text(json.dumps(self.state))
+        temporary.replace(self.state_file)
+
+    def reconcile(self, enabled):
+        if enabled == self.state["active"]:
+            return
+        if enabled:
+            devices = {}
+            for device in self.backlights.glob("*"):
+                current = int((device / "brightness").read_text())
+                maximum = int((device / "max_brightness").read_text())
+                # Match brightnessctl -e4: 30% in the existing keyboard/OSD scale.
+                cap = max(2, round(maximum * (self.limit / 100) ** 4))
+                target = min(current, cap)
+                if target < current:
+                    devices[device.name] = {"before": current, "dimmed": target}
+            self.state = {"active": True, "devices": devices}
+            # Preserve originals across a crash or service restart before writing.
+            self.save()
+            for name, values in devices.items():
+                (self.backlights / name / "brightness").write_text(str(values["dimmed"]))
+            logging.info("Low battery: capped backlight brightness at %s%%", self.limit)
+        else:
+            for name, values in self.state["devices"].items():
+                brightness = self.backlights / name / "brightness"
+                if brightness.exists() and int(brightness.read_text()) == values["dimmed"]:
+                    brightness.write_text(str(values["before"]))
+            self.state = {"active": False, "devices": {}}
+            self.save()
+            logging.info("Left low-battery mode: restored untouched backlights")
+
+
 def main():
     from gi.repository import Gio, GLib
 
@@ -42,6 +90,10 @@ def main():
     bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
     loop = GLib.MainLoop()
     policy = PowerPolicy()
+    dimmer = BacklightDimmer(
+        Path(os.environ["RUNTIME_DIRECTORY"]) / "brightness.json",
+        limit=float(os.environ["LOW_BATTERY_BRIGHTNESS_PERCENT"]),
+    )
     upower_name = "org.freedesktop.UPower"
     upower_path = "/org/freedesktop/UPower"
     profiles_name = "org.freedesktop.UPower.PowerProfiles"
@@ -70,9 +122,10 @@ def main():
     def reconcile():
         available = [entry["Profile"] for entry in value(profiles, "Profiles")]
         percentage = value(battery, "Percentage") if value(battery, "IsPresent") else None
+        on_battery = value(upower, "OnBattery")
+        active = value(profiles, "ActiveProfile")
         wanted = policy.choose(
-            value(upower, "OnBattery"), percentage,
-            available, value(profiles, "ActiveProfile"),
+            on_battery, percentage, available, active,
         )
         if wanted is not None:
             bus.call_sync(
@@ -81,6 +134,10 @@ def main():
                 None, Gio.DBusCallFlags.NONE, 5000, None,
             )
             logging.info("Automatic profile: %s", wanted)
+        dimmer.reconcile(
+            on_battery and percentage is not None and percentage <= policy.low_battery
+            and not policy.manual and (wanted or active) == "power-saver"
+        )
 
     def changed(service, properties, _invalidated):
         nonlocal failed

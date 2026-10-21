@@ -159,10 +159,10 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
-| Audio | PipeWire, WirePlumber; Jeffrey’s Wiremix fork, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys retain wpctl |
+| Audio | PipeWire, WirePlumber; Jeffrey’s Wiremix fork, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys use desktop-feedback around wpctl |
 | Portals | Hyprland and GTK backends | Hyprland's NixOS module supplies its portal; GTK is added explicitly |
 | Screenshots and clipboard | slurp, grim, wl-clipboard | Print or Meta+Shift+S starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
-| Brightness and media | brightnessctl, playerctl | User packages and Hyprland bindings |
+| Brightness and media | brightnessctl, playerctl, SwayOSD | desktop-feedback preserves the brightness curve; Home Manager starts swayosd.service with the graphical session |
 | Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
 | Wallpaper | hyprmosaic, wallpaper-only backport | Native plugin draws workspace-linked images; Lua events/timer trigger preparation |
 
@@ -173,6 +173,14 @@ It listens for UPower and power-profile D-Bus changes without polling. Automatic
 selection is Performance on AC, Balanced on battery, and Power Saver at or below
 20%. A manual profile change stays in effect until the power source changes;
 service restart also resets it. Hosts without Performance fall back to Balanced.
+Entering automatic low-battery Power Saver caps sysfs backlights at 30% on the
+existing brightnessctl fourth-root scale. This is a one-time cap, preserves
+already lower settings, and permits subsequent manual brightness changes. Leaving
+the automatic low-battery condition restores the previous value only for backlights
+still at the dimmed value. Runtime state in `/run/power-source-profile` preserves
+originals across service restarts; it does not survive reboot. The existing
+system policy service handles this without polling or an additional daemon.
+External monitor DDC brightness is outside this policy.
 The daemon's native battery-aware hardware tuning remains enabled: it adjusts
 tuning within the selected profile, rather than replacing this selection policy.
 The service reconnects after backend failure by restarting; it neither replaces
@@ -254,6 +262,16 @@ overwritten. Gwenview is the image MIME default (folders stay assigned to Dolphi
 and offers quick crop/resize/rotate/annotation/basic adjustments. It reuses the
 existing Qt/KDE theme and starts on demand, with no new service.
 
+qpdfview is the default for `application/pdf`, replacing the browser association.
+`home/jeffreyc/default.nix` supplies a minimal XDG `menus/applications.menu` so
+KDE's application index can resolve these associations outside Plasma. Without
+that index, Dolphin/KIO can return no PDF handlers despite a correct mimeapps
+default. The menu indexes installed desktop entries; it adds no panel or daemon.
+The pinned package is built with `qt6Packages` through its existing toolkit
+override, sharing Gwenview’s KDE platform plugin, Breeze style, and generated
+Latte colors. No Qt5 theme adapter or new service is added. It launches on demand;
+its normal preferences and document history remain unmanaged.
+
 Ark is the archive viewer and supplies Dolphin's native extraction/compression
 service menus. Archive MIME defaults are derived from its desktop entry rather
 than maintained as a separate MIME list. Its native libzip/libarchive plugins
@@ -289,8 +307,9 @@ outline and light dimming outside the selection. Click a visible window for its
 rectangle or a gap for that monitor; hold the left button and drag for a free
 area. Escape cancels. Grim captures after selection;
 the helper saves a PNG under XDG Pictures/Screenshots and copies it with
-wl-clipboard. No editor, preview, OCR,
-notification, or screenshot daemon is added. This replaces Snap's capture UI.
+wl-clipboard. After capture and clipboard success, libnotify sends a three-second
+SwayNC confirmation with the saved image as its thumbnail. Cancellation stays
+silent. No editor, OCR, or screenshot daemon is added. This replaces Snap's capture UI.
 Fn+Prt Sc sends Print on this Lenovo. Bare screenshot hotkeys on Lenovo can
 send Meta+Shift+S. Print and Meta+Shift+S now launch the same picker; Jeffrey
 confirmed the shortcut fix works. The conflicting example scratchpad bindings
@@ -309,6 +328,20 @@ direction, cross-output coordinates and gesture reset. No new daemon is added.
 
 ## Customization decisions
 
+Volume/brightness keys, speaker/mic mute, and Waybar volume scrolling use the
+on-demand `desktop-feedback` helper in `home/jeffreyc/packages.nix`. It keeps
+wpctl volume controls (5% steps, 100% cap on raising) and brightnessctl’s existing
+exponential curve/minimum, then sends the result to SwayOSD’s custom progress
+overlay. One Home Manager `swayosd.service` starts with the graphical session;
+no input-listening system daemon is enabled. The overlay expires after one second
+and never enters notification history. Muted audio retains the percentage and
+progress bar; its icon indicates mute. Unmuted icons follow Waybar’s three
+volume bands (0–33%, 34–66%, 67% and above). Adwaita’s vector icon assets provide
+GTK’s default symbolic icons without adding a theme service. Styling uses the shared theme in
+`home/jeffreyc/desktop.nix`. SwayNC stays installed for history and DND; a small
+pinned-package UI substitution hides its hardcoded 96px empty-state icon,
+leaving a readable, muted “No notifications” label.
+
 - The requested look uses 1.0 scaling, compact gaps, thin window frames, restrained
   corners, and no window shadows. Exact geometry lives in the Hyprland and
   Home Manager desktop configurations.
@@ -318,8 +351,10 @@ direction, cross-output coordinates and gesture reset. No new daemon is added.
   relative increments. Both repeat when held; mouse snapping is explicitly
   disabled. Waybar uses matching compact top/side margins and rounded corners,
   preserving its exclusive zone so tiled windows do not overlap it.
-  Workspace-button backgrounds also have rounded corners, so active/hover fills
-  do not paint square corners over the bar's outer rounding. Waybar is visible
+  Workspace buttons and system controls use square hover/pressed/active fills
+  spanning the bar’s inner height, with zero vertical margins. The outer bar
+  retains its existing rounded frame. A 1px margin on the bar’s root content box
+  reserves the painted border so button fills cannot cover it. Waybar is visible
   when the focused monitor's active workspace (or active special workspace)
   has a mapped, non-hidden tiled window, or while Rofi is mapped or the app tray is pinned open.
   Floating dialogs/PiP do not count. Native Lua window/workspace/layer events

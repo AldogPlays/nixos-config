@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 
@@ -57,6 +58,60 @@ class PowerPolicyTests(unittest.TestCase):
     def test_no_redundant_profile_writes(self):
         self.assertIsNone(self.choose(True, 20, "power-saver"))
         self.assertIsNone(self.choose(False, 50, "performance"))
+
+
+class BacklightDimmerTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.device = self.root / "backlights" / "panel"
+        self.device.mkdir(parents=True)
+        (self.device / "max_brightness").write_text("10000")
+        self.brightness = self.device / "brightness"
+        self.brightness.write_text("625")  # 50% using the keyboard's fourth-root curve.
+        self.state_file = self.root / "brightness.json"
+        self.dimmer = module.BacklightDimmer(self.state_file, self.device.parent)
+
+    def test_cap_and_restore(self):
+        self.dimmer.reconcile(True)
+        self.assertEqual(int(self.brightness.read_text()), 81)  # 30% on the same curve.
+        self.dimmer.reconcile(False)
+        self.assertEqual(int(self.brightness.read_text()), 625)
+
+    def test_does_not_brighten_an_already_dim_screen(self):
+        self.brightness.write_text("16")
+        self.dimmer.reconcile(True)
+        self.assertEqual(int(self.brightness.read_text()), 16)
+        self.dimmer.reconcile(False)
+        self.assertEqual(int(self.brightness.read_text()), 16)
+
+    def test_manual_adjustment_is_not_repeatedly_dimmed_or_restored(self):
+        self.dimmer.reconcile(True)
+        self.brightness.write_text("256")
+        self.dimmer.reconcile(True)
+        self.assertEqual(int(self.brightness.read_text()), 256)
+        self.dimmer.reconcile(False)
+        self.assertEqual(int(self.brightness.read_text()), 256)
+        self.dimmer.reconcile(True)
+        self.assertEqual(int(self.brightness.read_text()), 81)
+
+    def test_restart_preserves_original_and_does_not_redim(self):
+        self.dimmer.reconcile(True)
+        restarted = module.BacklightDimmer(self.state_file, self.device.parent)
+        restarted.reconcile(True)
+        restarted.reconcile(False)
+        self.assertEqual(int(self.brightness.read_text()), 625)
+
+    def test_removed_device_and_no_backlight(self):
+        self.dimmer.reconcile(True)
+        self.brightness.unlink()
+        (self.device / "max_brightness").unlink()
+        self.device.rmdir()
+        self.device.parent.rmdir()
+        self.dimmer.reconcile(False)
+        self.dimmer.reconcile(True)
+        self.assertEqual(self.dimmer.state["devices"], {})
 
 
 if __name__ == "__main__":

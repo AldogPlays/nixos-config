@@ -82,11 +82,21 @@ its active special workspace when one is open.
 Other existing controls remain unchanged.
 The left side shows workspaces only. On the right, the tray comes first, followed
 by network, Bluetooth, volume, power mode, battery and notifications. Flat
-controls show icons and useful values, with a background on hover; descriptive text stays in their tooltips.
+controls show icons and useful values, with square backgrounds spanning the bar’s
+inner height on hover/press; descriptive text stays in their tooltips.
 Wi-Fi, volume and battery show icons only; their percentages remain in tooltips. Icon accents
 come from shared Latte roles in `theme/default.nix`. The clock uses 12-hour time
 with AM/PM, without a calendar dropdown or hover popup.
-Scroll over volume to adjust it in 5% steps.
+Scroll over volume to adjust it in 5% steps. Volume/brightness keys, speaker/mic
+mute keys, and volume scrolling show a compact one-second SwayOSD overlay.
+`desktop-feedback`, declared in `home/jeffreyc/packages.nix`, retains wpctl and
+the existing brightnessctl curve. Home Manager starts `swayosd.service` with the
+graphical session; its shared-theme styling lives in `home/jeffreyc/desktop.nix`.
+Adwaita’s vector icon assets supply the overlay’s symbolic icons.
+Unmuted audio uses low/medium/high icons matching Waybar’s volume bands.
+Muted audio still shows its current volume percentage and bar, with a muted icon.
+Feedback stays out of notification history. SwayNC remains the notification
+center; its empty state is a muted text label without the oversized fallback icon.
 
 The app tray expands left inside Waybar with a short animation and a rotating
 arrow. Hover opens it temporarily; Meta+Shift+T pins it open or closes it.
@@ -105,6 +115,13 @@ a Performance profile falls back to Balanced. The existing power-profiles-daemon
 applies the mode; the new `power-source-profile.service` listens to UPower events
 without polling. Its declaration is in `modules/nixos/hardware.nix` and its policy
 is in `scripts/power-source-profile.py`, included in portable bootstrap.
+When this automatic low-battery mode begins, the same service caps the built-in
+backlight at 30% on the existing brightness-key scale, preserving lower settings.
+The cap applies once: brightness keys remain usable. On leaving low-battery mode
+(including plugging in or choosing a manual profile), the previous brightness is
+restored only if it still equals the automatically dimmed value. Originals survive
+service restarts in `/run/power-source-profile`; reboot starts a fresh policy.
+External monitor DDC controls are not included. No additional service is started.
 
 The audio mixer is Jeffrey's Wiremix fork, pinned through the `wiremix` flake
 input and selected in `home/jeffreyc/packages.nix`. It replaces stock Wiremix
@@ -132,7 +149,8 @@ Slurp outlines the hovered window (or the monitor when over a gap), lightly
 dimming outside the selection. Click to capture that rectangle, or hold the left
 button and drag to select a free area. Movements smaller than four logical pixels
 on both axes still count as a click. Grim captures after the picker closes. Captures save to `Pictures/Screenshots` and copy to
-the clipboard using wl-clipboard, without an editor, preview, or notification.
+the clipboard using wl-clipboard. A short SwayNC notification with a thumbnail
+confirms both actions after capture; Escape stays silent. No editor is opened.
 Print and Meta+Shift+S both start the same picker. Fn+Prt Sc sends Print;
 the bare Lenovo screenshot hotkey can send Meta+Shift+S. No screenshot daemon
 is started.
@@ -181,7 +199,7 @@ Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
 uses the XDG Pictures directory and saves under `Screenshots`.
 
 Native desktop defaults in `home/jeffreyc/default.nix` select LibreWolf for web
-links, HTML, and PDFs; Dolphin for folders; and Alacritty through
+links and HTML; qpdfview for PDFs; Dolphin for folders; and Alacritty through
 `xdg-terminal-exec` for compatible terminal-launching apps. `codex://` links
 remain assigned to ChatGPT/Codex. Keep changes declarative rather than editing
 the managed `mimeapps.list` in a GUI. Existing unmanaged files are preserved with
@@ -271,6 +289,11 @@ per-folder view settings are preserved.
 Gwenview is the default image viewer and quick editor, using the same KDE Latte
 theme. It supports crop, resize, rotate, flip, annotation and basic adjustments;
 save a copy when preserving an original. It launches on demand, not as a daemon.
+
+qpdfview is the default PDF viewer. It is built against the same pinned Qt6
+toolkit and uses the existing KDE Latte palette, Breeze controls, icons, and fonts
+without a separate theme configuration. Open PDFs from Dolphin or launch
+**qpdfview** from Rofi. It starts on demand and adds no background service.
 
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;

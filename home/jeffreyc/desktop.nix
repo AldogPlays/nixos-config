@@ -261,7 +261,11 @@ in
     };
   };
   # Expose the icon theme already in Dolphin's closure to the user's Qt apps.
-  home.packages = [ pkgs.kdePackages.breeze-icons ];
+  home.packages = [
+    pkgs.kdePackages.breeze-icons
+    # GTK's default symbolic icons, used by the OSD and notification controls.
+    pkgs.adwaita-icon-theme
+  ];
   xdg.dataFile."color-schemes/JeffreyLatte.colors".source =
     (pkgs.formats.ini { }).generate "JeffreyLatte.colors"
       kdeScheme;
@@ -407,6 +411,8 @@ in
         tooltip-format = "{desc}\nVolume: {volume}%\nClick for audio controls · Scroll for volume";
         scroll-step = 5;
         max-volume = 100;
+        on-scroll-up = "desktop-feedback volume-up";
+        on-scroll-down = "desktop-feedback volume-down";
         format-icons.default = [
           ""
           ""
@@ -469,17 +475,20 @@ in
         font-size: ${fontSize}pt;
       }
       window#waybar { background: ${roles.background}; color: ${roles.foreground}; border: 1px solid ${roles.border}; border-radius: 4px; }
+      /* GTK's top-level border does not inset Waybar's child allocation. */
+      window#waybar > box { margin: 1px; }
       #workspaces { background: transparent; }
-      #workspaces button { padding: 0 5px; border-radius: 4px; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
+      #workspaces button { margin: 0; padding: 0 5px; min-height: 0; border-radius: 0; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
       #workspaces button:hover { background: ${roles.surface}; color: ${roles.foreground}; }
       #workspaces button.active { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
+      #workspaces button:active { background: ${roles.selection}; }
       #workspaces button.urgent { color: ${roles.error}; }
       tooltip { background: ${roles.background}; border: 1px solid ${roles.border}; border-radius: 4px; }
       tooltip label { color: ${roles.foreground}; padding: 6px; font-family: "${typography.family}", monospace; text-shadow: none; }
       /* Flat controls with a hover cue; avoid a row of tiny input-like boxes. */
       #network, #bluetooth, #pulseaudio, #power-profiles-daemon, #custom-notifications {
         background: transparent; border: none;
-        border-radius: 4px; margin: 2px 1px; padding: 0 7px;
+        border-radius: 0; margin: 0 1px; padding: 0 7px;
       }
       #network:hover, #bluetooth:hover, #pulseaudio:hover, #power-profiles-daemon:hover, #custom-notifications:hover {
         background: ${roles.surface};
@@ -502,8 +511,44 @@ in
     '';
   };
 
+  services.swayosd = {
+    enable = true;
+    topMargin = 0.85;
+    stylePath = pkgs.writeText "swayosd-style.css" ''
+      window#osd {
+        background: ${roles.background};
+        color: ${roles.foreground};
+        border: 1px solid ${roles.borderFocused};
+        border-radius: 4px;
+        box-shadow: none;
+      }
+      window#osd #container { margin: 10px 12px; }
+      window#osd image, window#osd label {
+        color: ${roles.foreground};
+        font-family: "${typography.family}";
+        font-size: ${fontSize}pt;
+      }
+      window#osd progressbar { min-height: 4px; }
+      window#osd trough, window#osd progress {
+        min-height: 4px;
+        border: none;
+        border-radius: 2px;
+      }
+      window#osd trough { background: ${roles.surface}; }
+      window#osd progress { background: ${roles.accent}; }
+    '';
+  };
+
   services.swaync = {
     enable = true;
+    # The pinned UI hardcodes a 96px fallback icon. Keep only its native label;
+    # visibility cannot be changed through GTK CSS, so patch this one UI property.
+    package = pkgs.swaynotificationcenter.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace data/ui/notifications_widget.blp \
+          --replace-fail 'pixel-size: 96;' 'visible: false;'
+      '';
+    });
     settings = {
       positionX = "right";
       positionY = "top";
@@ -516,6 +561,7 @@ in
       fit-to-screen = false;
       control-center-height = -1;
       timeout = 5;
+      text-empty = "No notifications";
       widgets = [
         "title"
         "dnd"
@@ -552,6 +598,11 @@ in
         -gtk-icon-shadow: none;
       }
       .control-center { border: 1px solid ${roles.borderFocused}; padding: 4px; }
+      .control-center .control-center-list-placeholder {
+        opacity: 1;
+        color: ${roles.foregroundMuted};
+        padding: 12px;
+      }
       .widget { margin: 0; padding: 4px; }
       .widget-title > label, .widget-dnd > label { font-size: ${fontSize}pt; }
       .widget-title > label { font-weight: bold; }

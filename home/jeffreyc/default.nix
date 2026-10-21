@@ -20,6 +20,20 @@
     };
   };
 
+  # KDE's MIME trader needs an application menu even without a Plasma session.
+  xdg.configFile."menus/applications.menu".text = ''
+    <!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN" "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
+    <Menu>
+      <Name>Applications</Name>
+      <DefaultAppDirs/>
+      <DefaultDirectoryDirs/>
+      <Menu>
+        <Name>All Applications</Name>
+        <Include><All/></Include>
+      </Menu>
+    </Menu>
+  '';
+
   xdg = {
     enable = true;
     userDirs = {
@@ -38,7 +52,7 @@
         "x-scheme-handler/https" = [ "librewolf.desktop" ];
         "text/html" = [ "librewolf.desktop" ];
         "application/xhtml+xml" = [ "librewolf.desktop" ];
-        "application/pdf" = [ "librewolf.desktop" ];
+        "application/pdf" = [ "qpdfview.desktop" ];
         "inode/directory" = [ "org.kde.dolphin.desktop" ];
         "x-scheme-handler/codex" = [ "chatgpt.desktop" ];
       };
@@ -47,7 +61,7 @@
         "x-scheme-handler/http" = [ "chatgpt.desktop" ];
         "x-scheme-handler/https" = [ "chatgpt.desktop" ];
       };
-      associations.added."application/pdf" = [ "librewolf.desktop" ];
+      associations.added."application/pdf" = [ "qpdfview.desktop" ];
     };
     terminal-exec = {
       enable = true;

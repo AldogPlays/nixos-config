@@ -34,3 +34,6 @@ if ! grim -g "$geometry" "$file"; then
 fi
 # The detached clipboard owner must not inherit the picker lock.
 wl-copy --type image/png < "$file" 9>&-
+# Send only after capture and clipboard success, outside the captured pixels.
+notify-send --app-name=Screenshot --icon="$file" --expire-time=3000 \
+  "Screenshot saved" "Copied to clipboard · Pictures/Screenshots" || true

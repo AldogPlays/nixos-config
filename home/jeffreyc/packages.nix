@@ -19,12 +19,81 @@ let
       screenshotSlurp
       grim
       wl-clipboard
+      libnotify
     ];
     runtimeEnv = {
       SCREENSHOT_DIRECTORY = "${config.xdg.userDirs.pictures}/Screenshots";
       SCREENSHOT_BORDER = "${theme.roles.borderFocused}ff";
     };
     text = builtins.readFile ../../dotfiles/hypr/screenshot.sh;
+  };
+  desktopFeedback = pkgs.writeShellApplication {
+    name = "desktop-feedback";
+    runtimeInputs = with pkgs; [
+      brightnessctl
+      wireplumber
+      swayosd
+      jq
+      util-linux
+    ];
+    text = ''
+      # Serialize held-key repeats so the displayed value follows the last change.
+      exec 9>"''${XDG_RUNTIME_DIR:?}/desktop-feedback.lock"
+      flock 9
+      action="''${1:?Expected volume-up, volume-down, mute, mic-mute, brightness-up or brightness-down}"
+      if [[ "$action" == brightness-* ]]; then
+        case "$action" in
+          brightness-up) step=5%+ ;;
+          brightness-down) step=5%- ;;
+          *) exit 2 ;;
+        esac
+        # Preserve the existing exponential curve and minimum raw brightness.
+        brightness=$(brightnessctl -e4 -n2 -m set "$step")
+        IFS=, read -r _ _ _ percent _ <<< "$brightness"
+        percent="''${percent%%%}"
+        progress=$(jq -n --argjson percent "$percent" '$percent / 100')
+        icon=display-brightness-symbolic
+        label="$percent%"
+      else
+        device=@DEFAULT_AUDIO_SINK@
+        case "$action" in
+          volume-up) wpctl set-volume -l 1 "$device" 5%+ ;;
+          volume-down) wpctl set-volume "$device" 5%- ;;
+          mute) wpctl set-mute "$device" toggle ;;
+          mic-mute)
+            device=@DEFAULT_AUDIO_SOURCE@
+            wpctl set-mute "$device" toggle
+            ;;
+          *) exit 2 ;;
+        esac
+        volume=$(wpctl get-volume "$device")
+        read -r _ level muted <<< "$volume"
+        progress=$(jq -n --argjson level "$level" '$level | [., 1] | min | [., 0] | max')
+        percent=$(jq -n --argjson level "$level" '$level * 100 | round')
+        label="$percent%"
+        # Match Waybar's three equal volume bands.
+        if (( percent < 34 )); then
+          band=low
+        elif (( percent < 67 )); then
+          band=medium
+        else
+          band=high
+        fi
+        icon="audio-volume-$band-symbolic"
+        if [[ "$action" == mic-mute ]]; then
+          icon="microphone-sensitivity-$band-symbolic"
+        fi
+        if [[ "$muted" == '[MUTED]' ]]; then
+          icon=audio-volume-muted-symbolic
+          if [[ "$action" == mic-mute ]]; then
+            icon=microphone-sensitivity-muted-symbolic
+          fi
+        fi
+      fi
+      # A renderer failure must not undo or prevent the actual hardware control.
+      swayosd-client --custom-icon "$icon" --custom-progress "$progress" \
+        --custom-progress-text "$label" || true
+    '';
   };
   # Ark 26.04 invokes `7z`; the maintained upstream package installs `7zz`.
   sevenZip = pkgs.symlinkJoin {
@@ -43,6 +112,8 @@ in
     kdePackages.ark
     sevenZip
     kdePackages.gwenview
+    # Small Qt viewer; use the existing Qt6 KDE palette/style integration.
+    (qpdfview.override { libsForQt5 = qt6Packages; })
     # Qt image readers (including HEIC/HEIF, AVIF, JXL and RAW), plus KIO previews.
     kdePackages.kimageformats
     kdePackages.kdegraphics-thumbnailers
@@ -64,6 +135,7 @@ in
     playerctl
     wl-clipboard
     screenshot
+    desktopFeedback
 
     # Command-line workflow
     fd

@@ -21,7 +21,7 @@ in
 
   environment.systemPackages = [ pkgs.libva-utils ];
 
-  # Event-driven policy only; the existing daemon still applies hardware tuning.
+  # Event-driven profiles and low-battery backlight cap; no polling or new daemon.
   systemd.services.power-source-profile = {
     description = "Select a power profile from AC and battery state";
     wantedBy = [ "multi-user.target" ];
@@ -33,11 +33,16 @@ in
       "upower.service"
       "power-profiles-daemon.service"
     ];
-    environment.GI_TYPELIB_PATH = "${pkgs.glib.out}/lib/girepository-1.0";
+    environment = {
+      GI_TYPELIB_PATH = "${pkgs.glib.out}/lib/girepository-1.0";
+      LOW_BATTERY_BRIGHTNESS_PERCENT = "30";
+    };
     serviceConfig = {
       ExecStart = "${powerPython}/bin/python3 ${../../scripts/power-source-profile.py}";
       Restart = "on-failure";
       RestartSec = 3;
+      RuntimeDirectory = "power-source-profile";
+      RuntimeDirectoryPreserve = "restart";
       NoNewPrivileges = true;
       ProtectSystem = "strict";
       ProtectHome = true;
