@@ -7,7 +7,13 @@
 
 let
   theme = import ../../theme;
-  inherit (theme) roles palette typography;
+  inherit (theme)
+    roles
+    palette
+    typography
+    geometry
+    ;
+  px = value: "${toString value}px";
   fontSize = toString typography.size;
   wallpaperInterval = 15 * 60;
   wallpaperCacheMiB = 512;
@@ -174,7 +180,7 @@ in
           ) gtkColors
         )}
         --border-color: ${roles.border};
-        --window-radius: 4px;
+        --window-radius: ${px geometry.radius};
       }
     '';
     font = {
@@ -219,12 +225,12 @@ in
       input-field = [
         {
           monitor = "";
-          size = "280, 40";
+          size = "${toString geometry.passwordWidth}, ${toString geometry.passwordHeight}";
           position = "0, 0";
           halign = "center";
           valign = "center";
-          outline_thickness = 1;
-          rounding = 4;
+          outline_thickness = geometry.borderWidth;
+          rounding = geometry.radius;
           inner_color = "rgb(${hex roles.backgroundAlt})";
           outer_color = "rgb(${hex roles.borderFocused})";
           font_color = "rgb(${hex roles.foreground})";
@@ -292,6 +298,9 @@ in
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
     builtins.replaceStrings
       [
+        "@BORDER_WIDTH@"
+        "@CORNER_RADIUS@"
+        "@SHELL_SPACING@"
         "@THEME_ACTIVE_BORDER@"
         "@THEME_INACTIVE_BORDER@"
         "@CURSOR_THEME@"
@@ -311,6 +320,9 @@ in
         "@THEME_BACKGROUND@"
       ]
       [
+        (toString geometry.borderWidth)
+        (toString geometry.radius)
+        (toString geometry.spacing)
         (hex roles.borderFocused)
         (hex roles.border)
         config.home.pointerCursor.name
@@ -339,11 +351,11 @@ in
     settings.mainBar = {
       layer = "top";
       position = "top";
-      height = 24;
-      margin-top = 4;
-      margin-left = 4;
-      margin-right = 4;
-      spacing = 4;
+      height = geometry.controlHeight;
+      margin-top = geometry.spacing;
+      margin-left = geometry.spacing;
+      margin-right = geometry.spacing;
+      spacing = geometry.spacing;
       # Hyprland's native event callbacks reconcile this with tiles/Rofi.
       on-sigusr1 = "toggle";
       # Keep invisible mode observable by Lua even though its surface stays mapped.
@@ -365,8 +377,8 @@ in
         "custom/notifications"
       ];
       tray = {
-        icon-size = 18;
-        spacing = 8;
+        icon-size = geometry.iconSize;
+        spacing = 2 * geometry.spacing;
       };
       "group/app-tray" = {
         orientation = "horizontal";
@@ -397,7 +409,7 @@ in
         format = ''<span foreground="${roles.bluetooth}"></span>'';
         format-disabled = "";
         format-off = "";
-        format-connected = ''<span foreground="${roles.bluetooth}"></span> {num_connections}'';
+        format-connected = ''<span foreground="${roles.bluetooth}"></span>'';
         tooltip-format = "Bluetooth: {status}\nClick for Bluetooth controls";
         tooltip-format-connected = "{device_enumerate}\nClick for Bluetooth controls";
         tooltip-format-enumerate-connected = "{device_alias}";
@@ -471,43 +483,47 @@ in
       * {
         border: none;
         border-radius: 0;
-        font-family: "${typography.family}", "Symbols Nerd Font";
+        font-family: "${typography.family}", "${typography.symbolsFamily}";
         font-size: ${fontSize}pt;
       }
-      window#waybar { background: ${roles.background}; color: ${roles.foreground}; border: 1px solid ${roles.border}; border-radius: 4px; }
+      window#waybar { background: ${roles.background}; color: ${roles.foreground}; border: ${px geometry.borderWidth} solid ${roles.border}; border-radius: ${px geometry.radius}; }
       /* GTK's top-level border does not inset Waybar's child allocation. */
-      window#waybar > box { margin: 1px; }
+      window#waybar > box { margin: ${px geometry.borderWidth}; }
       #workspaces { background: transparent; }
-      #workspaces button { margin: 0; padding: 0 5px; min-height: 0; border-radius: 0; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
+      #workspaces button { margin: 0; padding: 0 ${px geometry.padding}; min-height: 0; border-radius: 0; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
       #workspaces button:hover { background: ${roles.surface}; color: ${roles.foreground}; }
       #workspaces button.active { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
       #workspaces button:active { background: ${roles.selection}; }
       #workspaces button.urgent { color: ${roles.error}; }
-      tooltip { background: ${roles.background}; border: 1px solid ${roles.border}; border-radius: 4px; }
-      tooltip label { color: ${roles.foreground}; padding: 6px; font-family: "${typography.family}", monospace; text-shadow: none; }
+      tooltip.background { background: transparent; border: none; margin: 0; padding: 0; box-shadow: none; }
+      /* GTK's tooltip box has fixed 6px widget margins; offset those before
+         applying the shared tile inset and the one-border vertical correction. */
+      tooltip > box {
+        background: ${roles.background}; border: ${px geometry.borderWidth} solid ${roles.border}; border-radius: ${px geometry.radius};
+        margin: ${px (geometry.borderWidth - 6)} ${px (geometry.spacing - 6)} -6px -6px; padding: 0;
+      }
+      tooltip label { color: ${roles.foreground}; padding: ${px geometry.padding}; font-family: "${typography.family}", monospace; text-shadow: none; }
       /* Flat controls with a hover cue; avoid a row of tiny input-like boxes. */
-      #network, #bluetooth, #pulseaudio, #power-profiles-daemon, #custom-notifications {
+      #network, #bluetooth, #pulseaudio, #power-profiles-daemon, #battery, #custom-notifications {
         background: transparent; border: none;
-        border-radius: 0; margin: 0 1px; padding: 0 7px;
+        border-radius: 0; margin: 0; padding: 0 ${px geometry.padding}; min-width: ${px geometry.iconSize};
       }
       #network:hover, #bluetooth:hover, #pulseaudio:hover, #power-profiles-daemon:hover, #custom-notifications:hover {
         background: ${roles.surface};
       }
-      #bluetooth, #power-profiles-daemon, #custom-notifications { min-width: 16px; }
       #bluetooth.off, #bluetooth.disabled, #pulseaudio.muted { color: ${roles.foregroundMuted}; }
       #power-profiles-daemon.performance { color: ${roles.powerPerformance}; }
       #power-profiles-daemon.balanced { color: ${roles.powerBalanced}; }
       #power-profiles-daemon.power-saver { color: ${roles.powerSaver}; }
       #custom-notifications { color: ${roles.notifications}; }
-      #app-tray { margin-right: 5px; }
-      #app-tray-arrow { padding: 0 7px; color: ${roles.foregroundMuted}; -gtk-icon-transform: rotate(0deg); transition: -gtk-icon-transform 160ms ease; }
+      #app-tray-arrow { min-width: ${px geometry.iconSize}; padding: 0 ${px geometry.padding}; color: ${roles.foregroundMuted}; -gtk-icon-transform: rotate(0deg); transition: -gtk-icon-transform 160ms ease; }
       #app-tray.open #app-tray-arrow { color: ${roles.accent}; -gtk-icon-transform: rotate(180deg); }
-      #tray { padding: 0 5px; }
-      #battery { padding: 0 6px; margin-left: 3px; }
-      #battery.warning { color: ${roles.foreground}; border-bottom: 1px solid ${roles.warning}; }
+      #tray { padding: 0 ${px geometry.padding}; }
+      /* An inset warning line preserves the same icon allocation in every state. */
+      #battery.warning { color: ${roles.foreground}; box-shadow: inset 0 -${px geometry.borderWidth} 0 ${roles.warning}; }
       #battery.critical, #network.disconnected { color: ${roles.error}; }
       #battery.charging, #battery.plugged, #battery.full { color: ${roles.success}; }
-      #clock { padding: 0 6px; }
+      #clock { padding: 0 ${px geometry.padding}; }
     '';
   };
 
@@ -518,21 +534,21 @@ in
       window#osd {
         background: ${roles.background};
         color: ${roles.foreground};
-        border: 1px solid ${roles.borderFocused};
-        border-radius: 4px;
+        border: ${px geometry.borderWidth} solid ${roles.borderFocused};
+        border-radius: ${px geometry.radius};
         box-shadow: none;
       }
-      window#osd #container { margin: 10px 12px; }
+      window#osd #container { margin: ${px geometry.overlayInset}; }
       window#osd image, window#osd label {
         color: ${roles.foreground};
         font-family: "${typography.family}";
         font-size: ${fontSize}pt;
       }
-      window#osd progressbar { min-height: 4px; }
+      window#osd progressbar { min-height: ${px geometry.spacing}; }
       window#osd trough, window#osd progress {
-        min-height: 4px;
+        min-height: ${px geometry.spacing};
         border: none;
-        border-radius: 2px;
+        border-radius: ${px (geometry.radius / 2)};
       }
       window#osd trough { background: ${roles.surface}; }
       window#osd progress { background: ${roles.accent}; }
@@ -554,10 +570,10 @@ in
       positionY = "top";
       control-center-width = 400;
       notification-window-width = 400;
-      # Inset overlays farther than the tiled-window gaps so edges do not merge.
-      control-center-margin-top = 12;
-      control-center-margin-right = 12;
-      control-center-margin-bottom = 12;
+      # Match the outer tile border, beyond Waybar's reserved screen area.
+      control-center-margin-top = geometry.spacing;
+      control-center-margin-right = geometry.spacing;
+      control-center-margin-bottom = geometry.spacing;
       fit-to-screen = false;
       control-center-height = -1;
       timeout = 5;
@@ -583,49 +599,49 @@ in
         --text-color: ${roles.foreground};
         --text-color-disabled: ${roles.foregroundMuted};
         --bg-selected: ${roles.accent};
-        --border-radius: 4px;
+        --border-radius: ${px geometry.radius};
         --notification-shadow: none;
-        --notification-icon-size: 32px;
-        --notification-app-icon-size: 16px;
-        --notification-group-icon-size: 20px;
+        --notification-icon-size: ${px (2 * geometry.iconSize)};
+        --notification-app-icon-size: ${px geometry.iconSize};
+        --notification-group-icon-size: ${px (geometry.controlHeight - geometry.spacing)};
         --font-size-body: ${fontSize}pt;
         --font-size-summary: ${fontSize}pt;
       }
       * {
-        font-family: "${typography.family}", "Symbols Nerd Font";
+        font-family: "${typography.family}", "${typography.symbolsFamily}";
         font-size: ${fontSize}pt;
         text-shadow: none;
         -gtk-icon-shadow: none;
       }
-      .control-center { border: 1px solid ${roles.borderFocused}; padding: 4px; }
+      .control-center { border: ${px geometry.borderWidth} solid ${roles.border}; padding: ${px geometry.spacing}; }
       .control-center .control-center-list-placeholder {
         opacity: 1;
         color: ${roles.foregroundMuted};
-        padding: 12px;
+        padding: ${px geometry.overlayInset};
       }
-      .widget { margin: 0; padding: 4px; }
+      .widget { margin: 0; padding: ${px geometry.spacing}; }
       .widget-title > label, .widget-dnd > label { font-size: ${fontSize}pt; }
       .widget-title > label { font-weight: bold; }
-      .widget-dnd { margin-bottom: 4px; }
+      .widget-dnd { margin-bottom: ${px geometry.spacing}; }
       .control-center button, .notification button, .close-button {
         background-image: none;
         background-color: transparent;
         color: ${roles.foreground};
         border: none;
-        border-radius: 4px;
+        border-radius: ${px geometry.radius};
         box-shadow: none;
-        min-height: 24px;
-        padding: 2px 6px;
+        min-height: ${px geometry.controlHeight};
+        padding: ${px (geometry.spacing / 2)} ${px geometry.padding};
       }
       .notification-group, .notification-row:focus, .notification-group:focus { background: transparent; }
-      .notification-row .notification-background { padding: 2px 4px; }
+      .notification-row .notification-background { padding: ${px (geometry.spacing / 2)} ${px geometry.spacing}; }
       /* Match the panel's inset; layer-shell already respects Waybar's space. */
-      .floating-notifications { padding: 12px; }
-      .floating-notifications .notification-row .notification-background { padding: 0; margin-bottom: 4px; }
-      .notification-row .notification-background .notification .notification-default-action { padding: 6px; }
+      .floating-notifications { padding: ${px geometry.spacing}; }
+      .floating-notifications .notification-row .notification-background { padding: 0; margin-bottom: ${px geometry.spacing}; }
+      .notification-row .notification-background .notification .notification-default-action { padding: ${px geometry.padding}; }
       .control-center .notification-group .notification { background: ${roles.background}; }
-      .notification-group .notification-group-buttons, .notification-group .notification-group-headers { margin: 2px 4px; }
-      .notification-group .notification-group-close-button .close-button { margin: 4px 8px; }
+      .notification-group .notification-group-buttons, .notification-group .notification-group-headers { margin: ${px (geometry.spacing / 2)} ${px geometry.spacing}; }
+      .notification-group .notification-group-close-button .close-button { margin: ${px geometry.spacing} ${px (2 * geometry.spacing)}; }
       .notification-row .notification-background .notification .notification-default-action .notification-content .text-box .time {
         color: ${roles.foregroundMuted}; font-weight: normal;
       }
@@ -633,7 +649,7 @@ in
       .notification-row .notification-background .notification.critical { border-color: ${roles.error}; }
       .widget-title > button, .notification .notification-action > button, .widget-dnd switch, .close-button {
         background: ${roles.surface}; color: ${roles.foreground};
-        border: 1px solid ${roles.border}; border-radius: 4px; box-shadow: none;
+        border: ${px geometry.borderWidth} solid ${roles.border}; border-radius: ${px geometry.radius}; box-shadow: none;
       }
       .widget-title > button:hover, .notification .notification-action > button:hover, .close-button:hover { background: ${roles.selection}; }
       /* GTK dims disabled labels as well as recoloring them. Keep Clear All
@@ -641,12 +657,16 @@ in
       .widget-title > button, .widget-title > button label { opacity: 1; filter: none; }
       .widget-title > button label { color: inherit; }
       .widget-title > button:disabled { background: ${roles.backgroundAlt}; color: ${roles.foregroundMuted}; }
-      .control-center button:focus-visible, .notification button:focus-visible { outline: 1px solid ${roles.borderFocused}; outline-offset: -1px; }
-      .notification-row .notification-background .notification .notification-action { margin: 0 2px; }
-      .close-button { min-width: 20px; min-height: 20px; padding: 0; margin-top: 4px; margin-right: 6px; }
-      .widget-dnd switch { min-height: 20px; }
+      .control-center button:focus-visible, .notification button:focus-visible { outline: ${px geometry.borderWidth} solid ${roles.borderFocused}; outline-offset: -${px geometry.borderWidth}; }
+      .notification-row .notification-background .notification .notification-action { margin: 0 ${px (geometry.spacing / 2)}; }
+      .close-button { min-width: ${px (geometry.controlHeight - geometry.spacing)}; min-height: ${
+        px (geometry.controlHeight - geometry.spacing)
+      }; padding: 0; margin-top: ${px geometry.spacing}; margin-right: ${px geometry.padding}; }
+      .widget-dnd switch { min-height: ${px (geometry.controlHeight - geometry.spacing)}; }
       .widget-dnd switch:checked { background: ${roles.accent}; }
-      .widget-dnd switch slider { background: ${roles.background}; border-radius: 3px; box-shadow: none; min-width: 16px; min-height: 16px; }
+      .widget-dnd switch slider { background: ${roles.background}; border-radius: ${
+        px (geometry.radius - geometry.borderWidth)
+      }; box-shadow: none; min-width: ${px geometry.iconSize}; min-height: ${px geometry.iconSize}; }
     '';
   };
 

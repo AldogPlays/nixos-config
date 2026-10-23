@@ -20,9 +20,9 @@ hl.env("HYPRCURSOR_SIZE", "@CURSOR_SIZE@")
 
 hl.config({
     general = {
-        gaps_in = 2,
-        gaps_out = 4,
-        border_size = 1,
+        gaps_in = @SHELL_SPACING@ / 2,
+        gaps_out = @SHELL_SPACING@,
+        border_size = @BORDER_WIDTH@,
         col = {
             active_border = "rgb(@THEME_ACTIVE_BORDER@)",
             inactive_border = "rgb(@THEME_INACTIVE_BORDER@)",
@@ -33,7 +33,7 @@ hl.config({
         layout = "dwindle",
     },
     decoration = {
-        rounding = 4,
+        rounding = @CORNER_RADIUS@,
         rounding_power = 2,
         active_opacity = 1.0,
         inactive_opacity = 1.0,

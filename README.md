@@ -24,8 +24,8 @@ docs/audit.md                 bootstrap hardware/configuration audit
 
 The fixed Catppuccin Latte theme is documented in
 [theme/README.md](theme/README.md). Hyprland borders, Alacritty, Rofi, Waybar,
-SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4 colors, SDDM and hyprlock consume the
-shared palette. Remaining coverage and exceptions are documented there.
+SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4 colors, Plymouth, SDDM and hyprlock
+consume the shared palette. Remaining coverage and exceptions are documented there.
 
 ## Desktop controls
 
@@ -82,11 +82,14 @@ its active special workspace when one is open.
 Other existing controls remain unchanged.
 The left side shows workspaces only. On the right, the tray comes first, followed
 by network, Bluetooth, volume, power mode, battery and notifications. Flat
-controls show icons and useful values, with square backgrounds spanning the bar’s
+controls show icons, with square backgrounds spanning the bar’s
 inner height on hover/press; descriptive text stays in their tooltips.
-Wi-Fi, volume and battery show icons only; their percentages remain in tooltips. Icon accents
-come from shared Latte roles in `theme/default.nix`. The clock uses 12-hour time
+Wi-Fi, Bluetooth, volume and battery show icons only; connection details and
+percentages remain in tooltips. All six status icons share the same minimum width,
+horizontal padding and inter-module gap. Icon accents come from shared Latte
+roles in `theme/default.nix`. The clock uses 12-hour time
 with AM/PM, without a calendar dropdown or hover popup.
+SwayNC uses the same outer spacing as the tiled windows below Waybar.
 Scroll over volume to adjust it in 5% steps. Volume/brightness keys, speaker/mic
 mute keys, and volume scrolling show a compact one-second SwayOSD overlay.
 `desktop-feedback`, declared in `home/jeffreyc/packages.nix`, retains wpctl and
@@ -181,6 +184,23 @@ nix-store --add-fixed sha256 ~/Downloads/CiscoPacketTracer_901_Ubuntu_64bit.deb
 
 ## Desktop integration
 
+Printing uses CUPS for LibreWolf, qpdfview, and other applications' print dialogs.
+Press **Ctrl+P** in LibreWolf or a document viewer, select the printer and print;
+LibreWolf's **Save to PDF** destination also works without a physical printer.
+Turn on a network printer and connect this PC to the same local network for
+automatic discovery. Open **Print Settings** from Rofi (`system-config-printer`)
+to add a printer manually, choose its default settings, or view/cancel jobs.
+PDFs open in qpdfview from Dolphin; use **Ctrl+P** there to print them.
+
+`modules/nixos/hyprland.nix` enables socket-activated CUPS, the boot-started Avahi
+discovery service and cups-browsed queue discovery. The Print Settings GUI starts
+on demand, with its administration helper activated through D-Bus. Avahi opens
+UDP 5353 for mDNS; CUPS keeps its local-only listener and printer sharing stays
+disabled. Modern IPP/AirPrint network printers use driverless printing. Older or
+USB-only models may need a model-specific driver declared in
+`services.printing.drivers`; no manufacturer driver bundle is preinstalled.
+These settings are included in portable bootstrap.
+
 Steam is installed through `programs.steam` in `modules/nixos/hyprland.nix`.
 Launch **Steam** from Rofi or run `steam`, then sign in. The NixOS module supplies
 the runtime, 32-bit graphics/audio support and controller permissions. Steam
@@ -216,6 +236,8 @@ points rather than pixels, without changing display scaling. Web content and
 applications with their own font settings are not forcibly overridden.
 The contrasting Catppuccin Mocha Dark cursor is configured for Hyprland, GTK,
 Qt/KDE and X11 in `home/jeffreyc/desktop.nix`; the rest of the theme stays Latte.
+Shared shell geometry also lives in `theme/default.nix`; adapters reference
+matching borders, corner radii, gaps and padding instead of keeping separate copies.
 
 Frosted glass applies to normal application windows and Rofi.
 `theme/default.nix.material` controls their shared background opacity and
@@ -234,8 +256,9 @@ terminal alpha stays at 1.0 to avoid double transparency. Waybar and SwayNC use 
 fully opaque shared Latte background, independent of window focus. The login screen
 stays opaque.
 Windows have 1px borders: the shared focus color when active and muted border
-color when inactive. The notification-center frame also uses a thin focus-color
-outline to separate it from underlying apps. Rofi's outer frame remains
+color when inactive. The notification-center frame uses the same muted outline,
+background, font and rounding as Waybar tooltips, keeping its roomier control
+spacing. Rofi's outer frame remains
 borderless; useful control outlines and separators remain. This is matte blur,
 without glossy gradients or refraction.
 The existing NixOS generation rollback command below restores the previous
@@ -243,6 +266,16 @@ active configuration; returning the repository to the earlier design is a
 separate Git change, so a future rebuild does not reapply an unwanted trial.
 
 ## GTK, login and lock screens
+
+Plymouth provides the graphical encrypted-disk password prompt before login.
+`modules/nixos/hyprland.nix` enables its native NixOS boot integration and generates
+a plain Latte theme from `theme/`; `dotfiles/plymouth/latte.script` renders the
+prompt and masked input. It uses the shared font and the same field dimensions,
+thin outline and rounding as hyprlock. Plymouth starts during boot and exits
+when boot completes; it adds no desktop background service. Existing disk
+encryption, passphrases and initrd style are preserved, including on portable
+hosts. Escape switches to boot details. Plymouth takes effect on boot after
+activation; successful graphical unlocking is not yet verified.
 
 GTK3 uses `adw-gtk3` for widget structure with generated Latte named colors;
 GTK4/libadwaita keeps its native layout with generated color variables. Both

@@ -1,0 +1,72 @@
+# Render only. Plymouth and the existing initrd handle input and disk unlocking.
+Window.SetBackgroundTopColor(@BACKGROUND@);
+Window.SetBackgroundBottomColor(@BACKGROUND@);
+
+field_image = Image("entry.png");
+field = Sprite(field_image);
+label = Sprite();
+input = Sprite();
+message = Sprite();
+bullet_image = Image.Text("•", @FOREGROUND@, 1, "@FONT@");
+
+fun field_y() {
+    return Window.GetY() + (Window.GetHeight() - @FIELD_HEIGHT@) / 2;
+}
+
+fun text_image(text, max_width) {
+    local.image = Image.Text(text, @FOREGROUND@, 1, "@FONT@");
+    if (image.GetWidth() > max_width)
+        image = image.Scale(max_width, image.GetHeight() * max_width / image.GetWidth());
+    return image;
+}
+
+fun centered(sprite, image, y) {
+    sprite.SetImage(image);
+    sprite.SetPosition(Window.GetX() + (Window.GetWidth() - image.GetWidth()) / 2, y, 1);
+    sprite.SetOpacity(1);
+}
+
+fun display_normal() {
+    field.SetOpacity(0);
+    input.SetOpacity(0);
+    local.image = text_image("Please wait…", Window.GetWidth() - 2 * @INSET@);
+    centered(label, image, Window.GetY() + (Window.GetHeight() - image.GetHeight()) / 2);
+}
+
+fun display_dialog(prompt, text) {
+    if (!prompt) prompt = "Unlock disk";
+    local.prompt_image = text_image(prompt, Window.GetWidth() - 2 * @INSET@);
+    centered(label, prompt_image, field_y() - @INSET@ - prompt_image.GetHeight());
+    centered(field, field_image, field_y());
+    input.SetOpacity(0);
+    if (text != "") {
+        local.input_image = text_image(text, @FIELD_WIDTH@ - 2 * @PADDING@);
+        centered(input, input_image, field_y() + (@FIELD_HEIGHT@ - input_image.GetHeight()) / 2);
+    }
+}
+
+fun display_password(prompt, bullets) {
+    # Bound the rendered mask; the real password is handled entirely by Plymouth.
+    local.max_bullets = Math.Int((@FIELD_WIDTH@ - 2 * @PADDING@) / bullet_image.GetWidth());
+    if (bullets > max_bullets) bullets = max_bullets;
+    local.mask = "";
+    local.index;
+    for (index = 0; index < bullets; index++) mask += "•";
+    display_dialog(prompt, mask);
+}
+
+fun display_message(text) {
+    local.image = text_image(text, Window.GetWidth() - 2 * @INSET@);
+    centered(message, image, field_y() + @FIELD_HEIGHT@ + @INSET@);
+}
+
+fun hide_message(text) {
+    message.SetOpacity(0);
+}
+
+Plymouth.SetDisplayNormalFunction(display_normal);
+Plymouth.SetDisplayPasswordFunction(display_password);
+Plymouth.SetDisplayQuestionFunction(display_dialog);
+Plymouth.SetDisplayMessageFunction(display_message);
+Plymouth.SetHideMessageFunction(hide_message);
+display_normal();

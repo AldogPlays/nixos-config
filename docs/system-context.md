@@ -81,6 +81,16 @@ override takes precedence over the declared timeout, so clear an old override
 with `sudo bootctl set-timeout ''` after activating the configuration. This does
 not change disk-unlock or login authentication.
 
+Plymouth's graphical disk-unlock prompt is declared in the shared desktop module,
+using the native script plugin and a small theme generated from `theme/`.
+`dotfiles/plymouth/latte.script` only renders the prompt and password mask;
+the existing initrd/password agent continues to unlock the disks. It preserves
+the initrd style, LUKS devices, keys and passphrases. The NixOS module supplies
+the `splash` kernel parameter and boot/shutdown units, without a desktop daemon.
+Escape switches to boot details; earlier generations remain available through
+the existing boot menu. Actual boot rendering and successful graphical unlocking
+remain unverified pending an actual boot/unlock test.
+
 Root is LUKS-encrypted Btrfs, mounted at the top level. `/home` and `/nix` are
 separate subvolumes sharing its capacity. `/boot` is a separate EFI partition;
 swap is a separate encrypted 8.8 GiB partition. There is no declared resume device,
@@ -141,14 +151,18 @@ SwayNC keeps only its title, do-not-disturb switch and notification list. Its
 content-sized panel, compact spacing, small icons and flat controls are declared
 in `home/jeffreyc/desktop.nix`, consuming shared theme colors and font from
 `theme/default.nix`. Panel and popup backgrounds are fully opaque, matching
-Waybar; their layer surfaces do not request blur. The panel uses the shared main background and
-a thin focus-color outline to separate it from applications underneath.
+Waybar; their layer surfaces do not request blur. The panel and Waybar tooltips
+share the main background, muted border, font and rounding. The larger panel
+retains its control spacing; blue focus outlines remain on keyboard-focused controls.
 Notification cards and controls have thin outlines, with explicit keyboard-focus indication.
 Clear All uses explicit label colors without GTK's additional dimming; when
 disabled on an empty list, it keeps readable muted text on the alternate background.
-The panel and popups are inset 12px below the usable screen edge and from the
-right edge, separating them from tiled-window corners. Layer-shell accounts for
-Waybar's reserved space; popup CSS supplies the same inset as the panel margins.
+The panel and popups use the shared outer tile gap below the usable screen edge
+and from the right edge, aligning their outer borders with tiled windows.
+Layer-shell accounts for Waybar's reserved space; popup CSS supplies the same
+inset as the panel margins. Waybar tooltip CSS offsets GTK’s fixed box margins
+to provide the same right-edge inset and align the top with the tile border;
+GTK retains its native placement around the hovered module.
 The existing session service provides notifications; no extra theme service is
 needed. Reload SwayNC's config and CSS after activation to update a running process.
 
@@ -161,6 +175,7 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Lock screen | hyprlock, Super+L | Home Manager theme, NixOS PAM service; no idle-lock service |
 | Terminal and files | Alacritty, Super+T; Dolphin, Super+E | Home Manager programs/packages; Hyprland bindings |
 | Browser | LibreWolf | Home Manager `programs.librewolf` in `home/jeffreyc/programs.nix`; session variables |
+| Printing | CUPS, cups-browsed, Avahi; Print Settings | `modules/nixos/hyprland.nix`; application Ctrl+P, `system-config-printer` for administration |
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
@@ -193,10 +208,12 @@ the existing power daemon nor adds TLP or another hardware tuning stack.
 
 Waybar uses its native power-profiles-daemon module for live profile display and
 click-to-cycle. Workspaces are the only left-side module; the tray starts the
-right group. Flat controls show accented icons and useful numeric values;
-their descriptions stay in tooltips, while the battery is a plain readout.
-Control icon accents are semantic roles in `theme/default.nix`; value text stays
-in the normal foreground. The 12-hour clock has no calendar dropdown or tooltip.
+right group. Status modules show accented icons with connection details and
+percentages in tooltips, including Bluetooth without its old device-count label.
+The six status modules share a minimum icon width, horizontal padding and gap;
+the tray arrow uses the same width and padding. Control icon accents and shared
+shell geometry come from `theme/default.nix`. The 12-hour clock has no calendar
+dropdown or tooltip.
 Calendar/Nextcloud integration remains a future choice. Existing Hyprland
 visibility events and TUI launchers stay in use.
 
@@ -205,8 +222,8 @@ Hover opens temporarily; Meta+Shift+T pins it open or closes it. The existing
 Lua visibility policy keeps the bar visible while pinned on an empty workspace.
 `packages/waybar-tray/` adds a small signal-controlled arrow to the native drawer;
 it reuses the existing StatusNotifier tray, menus and process without a separate
-window or service. Wi-Fi, volume and battery display icons only, with percentages in
-tooltips. The plugged-in/charging battery uses a green battery-with-lightning icon,
+window or service. Wi-Fi, Bluetooth, volume and battery display icons only, with
+details in tooltips. The plugged-in/charging battery uses a green battery-with-lightning icon,
 distinguishing it from Performance mode's standalone lightning bolt.
 Appearance remains driven by shared theme roles.
 
@@ -237,6 +254,23 @@ LibreWolf's package policies default downloads to the XDG Downloads folder and
 disable the per-download location prompt. Home Manager supplies the browser
 through `programs.librewolf`; existing browser profiles remain unmanaged. After
 activation, fully quit and reopen LibreWolf to load the policies.
+
+Printing is enabled in the shared NixOS desktop module, including portable hosts.
+CUPS starts through its socket for application print dialogs. Avahi and
+cups-browsed start at boot to discover network printers and expose local queues
+across applications. Avahi enables IPv4 `.local` resolution and opens mDNS UDP
+5353; CUPS remains local-only with sharing disabled. Print Settings
+(`system-config-printer`) is an on-demand GTK administration/queue GUI, with its
+D-Bus/udev integration enabled through the NixOS program module. CUPS supplies
+its existing polkit helper, so no new custom authorization rules are needed.
+Prefer driverless IPP/AirPrint; add manufacturer drivers only for a confirmed
+model that needs them. Individual printer queues/defaults remain user-managed;
+the general printing stack is reproducible. On 2026-10-21, activation discovered
+an HP OfficeJet Pro 8030 series over Wi-Fi and created an enabled, accepting queue.
+The printer answered IPP capability queries and accepted driverless raster job
+validation; the local CUPS queue accepted PDF job validation, and Print Settings
+opened successfully. This did not send a document or establish successful paper
+output.
 
 Desktop integration lives in `home/jeffreyc/default.nix`: managed XDG user
 directories (including existing Projects), explicit MIME defaults for
@@ -411,7 +445,7 @@ leaving a readable, muted “No notifications” label.
   Waybar and SwayNC are fully opaque, using the shared background role independently
   of the glass opacity and window focus.
   Rofi's outer frame remains borderless. The notification-center frame uses a
-  thin focus-color outline for separation from underlying apps; input/control
+  thin muted outline matching Waybar tooltips; input/control
   outlines, separators and status indicators remain useful and are not removed.
   No shader, refraction plugin, highlight gradient, shadow or new service is added.
 - Fonts share the family and point size in `theme/default.nix` across terminal,

@@ -7,7 +7,13 @@
 
 let
   theme = import ../../theme;
-  inherit (theme) palette roles typography;
+  inherit (theme)
+    palette
+    roles
+    typography
+    geometry
+    ;
+  px = value: "${toString value}px";
   # Rasi uses #rrggbbaa; keep canonical colors opaque and translate alpha here.
   glassBackground =
     roles.background
@@ -215,13 +221,13 @@ in
           selected-urgent-background: ${roles.error};
           selected-urgent-foreground: ${roles.background};
           separatorcolor: ${roles.border};
-          spacing: 2px;
+          spacing: ${px (geometry.spacing / 2)};
         }
-        window { background-color: @background; border: 0px; border-radius: 4px; padding: 6px; }
-        element { padding: 3px; border: 0px; }
+        window { background-color: @background; border: 0px; border-radius: ${px geometry.radius}; padding: ${px geometry.padding}; }
+        element { padding: ${px geometry.spacing}; border: 0px; }
         element-text, element-icon { background-color: transparent; text-color: inherit; }
         entry { placeholder-color: ${roles.foregroundMuted}; }
-        listview, message, sidebar { border: 1px 0px 0px; border-color: ${roles.border}; }
+        listview, message, sidebar { border: ${px geometry.borderWidth} 0px 0px; border-color: ${roles.border}; }
         num-filtered-rows, num-rows, textbox-num-sep { text-color: ${roles.foregroundMuted}; }
       ''
     );
@@ -294,8 +300,8 @@ in
         size = typography.size;
       };
       window.padding = {
-        x = 4;
-        y = 4;
+        x = geometry.spacing;
+        y = geometry.spacing;
       };
       # Hyprland applies focus-dependent terminal opacity. Avoid multiplying it
       # with Alacritty's native alpha, which would make the background too faint.

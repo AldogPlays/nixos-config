@@ -1,8 +1,66 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
   theme = import ../../theme;
-  inherit (theme) roles typography cursor;
+  inherit (theme)
+    roles
+    typography
+    cursor
+    geometry
+    ;
+  # Plymouth's native script plugin accepts normalized RGB channels.
+  plymouthRGB =
+    color:
+    lib.concatMapStringsSep ", "
+      (offset: toString (lib.fromHexString (builtins.substring offset 2 color) / 255.0))
+      [
+        1
+        3
+        5
+      ];
+  plymouthTheme =
+    pkgs.runCommand "plymouth-jeffrey-latte"
+      {
+        nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.pillow ])) ];
+        script = pkgs.replaceVars ../../dotfiles/plymouth/latte.script {
+          BACKGROUND = plymouthRGB roles.background;
+          FOREGROUND = plymouthRGB roles.foreground;
+          FONT = "${typography.family} ${toString typography.size}";
+          FIELD_WIDTH = toString geometry.passwordWidth;
+          FIELD_HEIGHT = toString geometry.passwordHeight;
+          INSET = toString geometry.overlayInset;
+          PADDING = toString geometry.padding;
+        };
+      }
+      ''
+        themeDir="$out/share/plymouth/themes/jeffrey-latte"
+        mkdir -p "$themeDir"
+        cp "$script" "$themeDir/latte.script"
+        cat > "$themeDir/jeffrey-latte.plymouth" <<EOF
+        [Plymouth Theme]
+        Name=Jeffrey Latte
+        Description=Shared-theme disk unlock
+        ModuleName=script
+
+        [script]
+        ImageDir=$themeDir
+        ScriptFile=$themeDir/latte.script
+        EOF
+        export themeDir
+        python3 <<'PY'
+        import os
+        from PIL import Image, ImageDraw
+
+        width, height = ${toString geometry.passwordWidth}, ${toString geometry.passwordHeight}
+        image = Image.new("RGBA", (width, height))
+        ImageDraw.Draw(image).rounded_rectangle(
+            (0, 0, width - 1, height - 1), radius=${toString geometry.radius},
+            fill="${roles.backgroundAlt}", outline="${roles.borderFocused}",
+            width=${toString geometry.borderWidth},
+        )
+        image.save(os.path.join(os.environ["themeDir"], "entry.png"))
+        PY
+      '';
   loginTheme =
     (pkgs.where-is-my-sddm-theme.override {
       variants = [ "qt6" ];
@@ -12,7 +70,7 @@ let
         passwordTextColor = roles.foreground;
         passwordInputBackground = roles.backgroundAlt;
         passwordCursorColor = roles.accent;
-        passwordInputRadius = 4;
+        passwordInputRadius = geometry.radius;
         passwordInputWidth = 0.2;
         passwordFontSize = typography.size;
         usersFontSize = typography.size;
@@ -35,13 +93,22 @@ let
             --replace-fail 'selectedTextColor: "#000000"' 'selectedTextColor: "${roles.foreground}"' \
             --replace-fail 'selectionColor: textColor' 'selectionColor: "${roles.selection}"' \
             --replace-fail 'border.color: "#ff3117"' 'border.color: "${roles.error}"' \
-            --replace-fail 'backgroundBorder.border.width = 5;' 'backgroundBorder.border.width = 1;' \
-            --replace-fail 'NumberAnimation { from: 5; to: 10; duration: 700 }' 'NumberAnimation { from: 1; to: 1; duration: 700 }' \
-            --replace-fail 'NumberAnimation { from: 10; to: 5;  duration: 400 }' 'NumberAnimation { from: 1; to: 1; duration: 400 }'
+            --replace-fail 'backgroundBorder.border.width = 5;' 'backgroundBorder.border.width = ${toString geometry.borderWidth};' \
+            --replace-fail 'NumberAnimation { from: 5; to: 10; duration: 700 }' 'NumberAnimation { from: ${toString geometry.borderWidth}; to: ${toString geometry.borderWidth}; duration: 700 }' \
+            --replace-fail 'NumberAnimation { from: 10; to: 5;  duration: 400 }' 'NumberAnimation { from: ${toString geometry.borderWidth}; to: ${toString geometry.borderWidth}; duration: 400 }'
         '';
       });
 in
 {
+  # The NixOS module wires Plymouth into the existing initrd and password agent.
+  # No initrd-style, storage, keyfile or encryption changes are needed.
+  boot.plymouth = {
+    enable = true;
+    theme = "jeffrey-latte";
+    themePackages = [ plymouthTheme ];
+    font = "${pkgs.monaspace.static}/share/fonts/opentype/MonaspaceNeon-Regular.otf";
+  };
+
   programs.hyprland = {
     enable = true;
     withUWSM = true;
@@ -50,6 +117,20 @@ in
 
   # Supplies Steam's runtime, 32-bit graphics/audio and controller udev rules.
   programs.steam.enable = true;
+
+  # CUPS serves application print dialogs; cups-browsed creates local queues for
+  # discovered network printers, including apps that cannot list temporary ones.
+  services.printing = {
+    enable = true;
+    browsed.enable = true;
+  };
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    openFirewall = true;
+  };
+  # Small on-demand printer/queue GUI, with the module's D-Bus/udev integration.
+  programs.system-config-printer.enable = true;
 
   services.xserver.enable = true;
   services.displayManager.sddm = {
@@ -95,7 +176,7 @@ in
   ];
 
   fonts.fontconfig.defaultFonts.monospace = [
-    "Monaspace Neon"
-    "Symbols Nerd Font Mono"
+    typography.family
+    typography.symbolsFamily
   ];
 }
