@@ -3,6 +3,10 @@
 This is a personal NixOS configuration with a portable bootstrap path. Changes
 should stay small, reproducible and consistent with the existing modules.
 
+When using a coding assistant, have it read [AGENTS.md](AGENTS.md) before starting.
+The guide covers project direction, validation, activation, Git and documentation
+upkeep. Tools that do not load it automatically need an explicit instruction.
+
 ## Bug reports
 
 Include the project revision (`git rev-parse HEAD`), NixOS version

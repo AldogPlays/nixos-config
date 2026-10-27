@@ -130,7 +130,7 @@ Performance profiles and the existing low-battery brightness policy are separate
 The firmware preset's [Lenovo documentation](https://download.lenovo.com/pccbbs/pubs/ideapad_slim5_14_16/ug/html_en/en/intro_battery_mode_conservation.html)
 describes the expected range; selecting the mode does not by itself verify the
 actual charging cutoff on a particular battery. Before removing this policy,
-select `full` if normal charging is wanted: firmware settings can persist
+select `full` to restore normal charging: firmware settings can persist
 independently of NixOS generation rollback.
 
 ### Audio and pointer
@@ -275,9 +275,9 @@ background, font and rounding as Waybar tooltips, keeping its roomier control
 spacing. Rofi's outer frame remains
 borderless; useful control outlines and separators remain. This is matte blur,
 without glossy gradients or refraction.
-The existing NixOS generation rollback command below restores the previous
-active configuration; returning the repository to the earlier design is a
-separate Git change, so a future rebuild does not reapply an unwanted trial.
+The [generation rollback command](maintenance.md#recovery) restores the previous
+active configuration. Reverting the repository is a separate Git change; keep
+the source consistent with the chosen generation before rebuilding.
 
 ## GTK, login and lock screens
 
@@ -357,7 +357,6 @@ Existing windows are not force-closed. A fresh login also picks up the declarati
 Qt session settings.
 
 ## Shell workflow
-
 
 Starship supplies a minimal single-line Bash prompt: directory, Git branch/status
 when applicable, and an arrow that changes color after a failed command. Its

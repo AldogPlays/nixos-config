@@ -44,9 +44,10 @@ Both are declared from the pinned unstable input; the Linux desktop launcher is
 Cisco Packet Tracer is supplied by pinned nixpkgs, launched as `packettracer9` or
 through its desktop entry. The package selects XWayland locally. Cisco's matching
 installer is a separately downloaded input: bootstrap verifies and imports it
-from `~/Downloads` when absent from the store. See README for the exact version
-and manual import command; binaries, license state and Cisco credentials stay
-outside the repository.
+from `~/Downloads` when absent from the store. See the
+[desktop guide](desktop.md#cisco-packet-tracer) for the exact version and manual
+import command; binaries, license state and Cisco credentials stay outside the
+repository.
 
 Joplin Desktop is declared in `home/jeffreyc/packages.nix` from the pinned unstable
 input for a version newer than 3.7.0; stable nixpkgs supplies 3.5.13.

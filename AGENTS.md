@@ -3,6 +3,9 @@
 This file gives agents working direction. Keep system inventory, configuration
 values, decisions, progress notes, and completed work out of this file.
 
+These instructions apply throughout the repository. Read this guide before
+starting work; open it explicitly if the tool does not load `AGENTS.md` itself.
+
 ## Owner's direction
 
 - Build a clean, slim, reproducible NixOS and Hyprland setup managed through Git
@@ -32,6 +35,9 @@ values, decisions, progress notes, and completed work out of this file.
 ## Start here
 
 - Read `README.md`, `docs/system-context.md`, and the modules relevant to the task.
+- Read the relevant component guide: `theme/README.md` for theming,
+  `docs/installation.md` for bootstrap, `docs/wallpapers.md` for wallpapers,
+  and package-local README files for patched components.
 - Check `git status --short --branch` and the existing diff before editing.
   Preserve unrelated user changes.
 - Treat the checked-in configuration and `flake.lock` as the source for intended
@@ -99,7 +105,13 @@ adding modules; do not misdiagnose an omitted file as a Nix configuration error.
 Use the repository formatter and pinned options instead of hand-editing the lock
 file or broadly updating inputs to make an unrelated change work.
 
-When the user requests applying the configuration, activate the verified result:
+The `.#nixos` target is specific to the reference Lenovo. Never apply its account
+or hardware configuration on another computer. For bootstrap-generated hosts,
+follow [maintenance](docs/maintenance.md#apply-the-configuration) and use the
+generated host under `/etc/nixos`.
+
+When the user requests applying the configuration on the reference Lenovo,
+activate the verified result:
 
 ```bash
 sudo nixos-rebuild switch --flake .#nixos

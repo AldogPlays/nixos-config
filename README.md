@@ -56,6 +56,7 @@ host instead.
 | [System context](docs/system-context.md) | Reference-host architecture and configuration decisions |
 | [Bootstrap audit](docs/audit.md) | Historical observations from the initial migration |
 | [Contributing](CONTRIBUTING.md) | Bug reports, changes and local checks |
+| [Agent guide](AGENTS.md) | Repository workflow and rules for coding assistants |
 | [Security](SECURITY.md) | Sensitive reports and information to omit from public logs |
 | [Publishing](docs/public-release.md) | Final checks and the separate visibility change |
 
