@@ -98,7 +98,7 @@ hl.window_rule({
 -- Both keyboard and Waybar launches use these dedicated Alacritty app IDs.
 hl.window_rule({
     name = "float-system-controls",
-    match = { class = "^(wlctl|bluetui|wiremix)$" },
+    match = { class = "^(wlctl|bluetui|wiremix|theme-switch)$" },
     float = true,
 })
 
@@ -274,6 +274,8 @@ hl.bind(mainMod .. " + K", hl.dsp.layout("togglesplit"),
     { description = "Toggle focused tile split: top/bottom or side-by-side" })
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
+hl.bind(mainMod .. " + CTRL + T", hl.dsp.exec_cmd("uwsm app -- theme-menu"),
+    { description = "Choose a desktop theme" })
 hl.bind(mainMod .. " + SHIFT + T", function()
     waybarTrayPinned = not waybarTrayPinned
     scheduleWaybarVisibility()

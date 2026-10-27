@@ -2,11 +2,13 @@
   config,
   lib,
   pkgs,
+  desktopTheme,
+  themeConfiguration,
   ...
 }:
 
 let
-  theme = import ../../theme;
+  theme = desktopTheme;
   inherit (theme)
     roles
     typography
@@ -18,12 +20,36 @@ let
   wallpaperCacheMiB = 512;
   hyprmosaic = pkgs.callPackage ../../packages/hyprmosaic { };
   wallpaperPython = pkgs.python3.withPackages (p: [ p.pillow ]);
+  themeMenuConfig = pkgs.writeText "theme-menu.json" (
+    builtins.toJSON {
+      configuration = themeConfiguration;
+      defaultSelection = import ../../theme/selection.nix;
+      presets = builtins.mapAttrs (_: preset: { inherit (preset) name; }) (
+        import ../../theme/presets.nix
+      );
+    }
+  );
+  themeMenu = pkgs.writeShellApplication {
+    name = "theme-menu";
+    runtimeInputs = [
+      pkgs.python3
+      pkgs.rofi
+      pkgs.alacritty
+      pkgs.nix
+      pkgs.nixos-rebuild
+      pkgs.coreutils
+    ];
+    text = ''
+      exec python3 ${../../scripts/theme-menu.py} --config ${themeMenuConfig} "$@"
+    '';
+  };
   workspaceWallpapers = pkgs.writeShellScript "workspace-wallpapers" ''
     exec ${wallpaperPython}/bin/python3 ${../../dotfiles/hypr/workspace-wallpapers.py} \
       --directory ${lib.escapeShellArg "${config.xdg.userDirs.pictures}/Wallpapers"} \
       --hyprctl ${pkgs.hyprland}/bin/hyprctl \
       --cache-directory ${lib.escapeShellArg "${config.xdg.cacheHome}/workspace-wallpapers"} \
       --cache-limit ${toString (wallpaperCacheMiB * 1024 * 1024)} \
+      --color-mode ${lib.escapeShellArg theme.wallpaper.mode} \
       --interval ${toString wallpaperInterval} "$@"
   '';
   kdeFont = "${typography.family},${fontSize},-1,5,50,0,0,0,0,0";
@@ -267,6 +293,7 @@ in
   };
   # Expose the icon theme already in Dolphin's closure to the user's Qt apps.
   home.packages = [
+    themeMenu
     (lib.getAttrFromPath theme.icons.qt.package pkgs)
     # GTK's default symbolic icons, used by the OSD and notification controls.
     (lib.getAttrFromPath theme.icons.gtk.package pkgs)

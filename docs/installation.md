@@ -113,6 +113,10 @@ project revision to adopt later project changes; ordinary rebuilds keep the
 previously selected source. Reruns recognize the generated host and back up its
 current configuration again.
 
+The theme menu stores generated-host preferences as `themeSelection` in
+`/etc/nixos/project-host.json`. Bootstrap reruns preserve those preferences;
+theme changes do not require editing the pinned project snapshot.
+
 ## Supported layouts and limits
 
 Bootstrap stops rather than guessing when the installed release or compatibility

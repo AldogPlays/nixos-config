@@ -4,20 +4,78 @@ Status: native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
 SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4, Plymouth, SDDM and hyprlock. This is not
 yet a claim that the entire desktop is themed.
 
-Catppuccin Latte remains the selected theme. The adapter contract uses semantic
+Catppuccin Latte is selected by default; a dark Monochrome preset is also available.
+The adapter contract uses semantic
 roles, standard terminal slots and syntax purposes rather than Catppuccin keys.
-Theme data stays plain Nix, with no additional flake inputs, runtime switching,
-generated runtime state or background services. App adapters may install their
+Theme data stays plain Nix, with no additional flake inputs or background
+switching service. An on-demand Rofi menu changes the selection through a normal
+NixOS rebuild. App adapters may install their
 native styling plugins.
+
+## Choose a theme
+
+Press **Meta+Ctrl+T** to open the Rofi theme menu. **Active** identifies the
+running system's theme, independently of unapplied file edits. Escape cancels;
+selecting the active theme makes no change. Selecting another theme opens
+Alacritty for the build and normal sudo authentication. The rebuild includes
+other saved configuration edits. It does not commit, push or reboot.
+
+The helper runs only when invoked. It builds before activation, prevents duplicate
+switches, and restores the previous selection after a failed build or cancelled
+authentication while the old theme remains active. Concurrent edits are left
+untouched. If activation starts but fails, inspect the terminal output before
+retrying; configuration restoration does not undo partially restarted services.
+
+On the reference host the menu updates [selection.nix](selection.nix), preserving
+the wallpaper override and comments. Manual selection uses the same file:
+
+```nix
+{
+  preset = "monochrome"; # "latte" or "monochrome"
+  wallpaperMode = "theme";
+}
+```
+
+`wallpaperMode = "theme"` uses color wallpapers for Latte and grayscale for
+Monochrome. Set it to `"color"` or `"grayscale"` to choose independently of the
+desktop preset. The setting affects prepared wallpaper copies; original images
+are never edited. No automatic theme schedule or resident switching service is installed.
+
+Validate and rebuild through the normal [maintenance workflow](../docs/maintenance.md).
+Changing this file alone does not update the desktop. Reopen applications that
+cache their appearance. A fresh login or reboot refreshes the whole session;
+Plymouth uses the selected theme on the next boot. A reboot is not performed by
+the rebuild command.
+
+On a bootstrap-generated host, the menu updates `themeSelection` in
+`/etc/nixos/project-host.json` and rebuilds that host. Manual selection uses the
+same two fields in that JSON object. Missing overrides default to the pinned
+project's selection. Bootstrap reruns preserve this local choice. A normal
+`/etc/nixos` rebuild keeps the pinned project snapshot; do not edit the Nix store.
+
+Monochrome keeps the same typography, spacing, borders and blur settings, with
+charcoal backgrounds, gray surfaces and white/gray foregrounds. Its terminal and
+syntax slots are grayscale too. The pointer uses the small `vanilla-dmz` asset
+package's DMZ White theme. Packaged artwork, website content and applications listed
+under coverage limits can still contain color. Status meanings retain their
+icons and labels; their shared theme colors are shades of gray.
 
 ## Source of truth
 
+- `selection.nix` chooses the preset and optional wallpaper override.
+- `presets.nix` registers the available theme IDs and their data. The menu's
+  choices are generated from this registry. `load.nix` resolves a selection;
+  `default.nix` supplies the reference-host default.
+- `latte.nix` and `monochrome.nix` define preset colors, appearance, cursor and
+  default wallpaper mode. `common.nix` holds shared typography, icon assets,
+  geometry and material settings.
 - `palettes/latte.nix` contains all 26 official Latte colors from
   [Catppuccin palette v1.8.0](https://github.com/catppuccin/palette/blob/v1.8.0/palette.json).
   The upstream project uses the [MIT license](https://github.com/catppuccin/palette/blob/v1.8.0/LICENSE).
   Values are stored locally and versioned in Git; builds do not fetch a palette.
 - `default.nix` is the public entry point. Its adapter contract is `appearance`,
-  `roles`, `terminal`, `syntax`, `typography`, `cursor`, `icons`, `geometry` and
+  `roles`, `terminal`, `syntax`, `typography`, `cursor`, `icons`, `geometry`,
+  `wallpaper` and
   `material`. Every color is an opaque lowercase `#rrggbb` string. `name` and
   `variant` identify the selected theme; the exported `palette` is reference data,
   not an adapter dependency. A replacement theme need not expose Catppuccin keys.
@@ -25,7 +83,10 @@ native styling plugins.
   not an official Catppuccin application theme. Adjust a shared role here instead
   of changing the upstream palette or copying hex values into app configuration.
 
-| Role | Palette entry | Intended use |
+The following table describes Latte's role assignments; Monochrome supplies the
+same roles with neutral colors.
+
+| Role | Latte palette entry | Intended use |
 | --- | --- | --- |
 | `background` | `base` | Main background |
 | `backgroundAlt` | `mantle` | Alternate background |
@@ -51,18 +112,22 @@ native styling plugins.
 
 ## Adapters
 
-Each component's existing Nix module imports this directory and translates
-the shared roles into the app's native settings:
+The flake resolves the selection once and passes `desktopTheme` to the existing
+NixOS and Home Manager modules. They translate its roles into native settings:
 
 ```nix
+{ desktopTheme, ... }:
 let
-  theme = import ../../theme;
+  theme = desktopTheme;
 in
-  theme.roles.background
+{
+  # Use theme.roles.background in the component's native configuration.
+}
 ```
 
-The relative import above matches the Home Manager modules two directories below
-the repository root.
+Importing `theme/` directly still returns the default selection as plain data.
+The portable-host override passes through the flake rather than modifying those
+source files.
 
 Adapters consume `roles` for common UI colors, `terminal.normal`/`bright` for
 standard ANSI slots, `terminal.indexed` for explicit indexed overrides, and
@@ -85,7 +150,7 @@ these identifiers does not change the selected Latte styling.
 
 Keep alpha separate from the canonical colors. An adapter can strip `#`, append
 an alpha channel, or generate the required syntax; it should not invent a second
-set of Latte values. Document unavoidable exceptions, including packaged assets
+set of theme values. Document unavoidable exceptions, including packaged assets
 that cannot consume individual colors. Check readability for each actual use;
 membership in the palette alone does not establish sufficient text contrast.
 
@@ -111,7 +176,8 @@ with no additional per-icon margins. Its border inset matches the border width.
 Notification panel/popups share the outer tile gap; small inner rounding is
 derived from the outer radius where needed.
 Integrations follow normal rebuild and app reload/restart behavior.
-No runtime refresh or switching mechanism is planned.
+The selection menu initiates the same build/activation workflow; no daemon
+coordinates application refreshes.
 
 ## Integration references
 
@@ -170,7 +236,7 @@ always equal the canonical palette. No gloss gradients, refraction, distortion,
 shader plugins or new services are used. Geometry stays in the existing modules.
 Some ANSI colors are intentionally faint
 for terminal compatibility, not intended as default body-text colors.
-The shared secondary-text and selection roles use `subtext1` and `surface0`:
+In Latte, the shared secondary-text and selection roles use `subtext1` and `surface0`:
 primary text on the selection background is about 5.17:1, rather than the
 starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
@@ -179,15 +245,18 @@ Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette,
 LibreWolf, Joplin, ChatGPT/Codex, Steam, Modrinth, Packet Tracer, and app-specific
 TUI themes (wlctl, Bluetui, Wiremix and Codex CLI). Lutris and Print Settings may
 inherit generic GTK styling; app-specific overrides are not covered.
-Personal wallpaper images are deliberately independent of the palette; see
+Personal wallpaper assignments are independent of the palette; an optional
+grayscale preparation mode follows the selected theme by default. See
 [workspace wallpapers](../docs/wallpapers.md). Terminal apps inherit Alacritty's
 ANSI palette where they use terminal colors; apps emitting their own truecolor
 values need separate research. A terminal palette alone does not establish full application coverage.
 
 Gwenview and Ark reuse the KDE adapter. The cursor is an explicit packaged-asset
-exception: [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark
+exception: Latte uses [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark
 from the pinned nixpkgs package, selected for contrast on the light desktop.
-The same package contains native Hyprcursor and Xcursor assets; Home Manager
+That package contains native Hyprcursor and Xcursor assets; Monochrome uses
+DMZ White's Xcursor assets instead, using Hyprland's
+[Xcursor fallback](https://wiki.hypr.land/hypr-ecosystem/user/hyprcursor/). Home Manager
 also sets GTK/X11 defaults and KDE's `kcminputrc`. `cursor` supplies its shared
 package/name/size to both the user session and greeter. No application Mocha palette
 or runtime theme coordinator is introduced. Sandboxed applications that cannot

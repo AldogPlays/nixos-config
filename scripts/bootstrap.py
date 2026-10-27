@@ -93,6 +93,14 @@ def check_destination(destination):
             )
 
 
+def preserve_theme_selection(configuration, host):
+    marker = configuration.parent / "project-host.json"
+    if marker.exists():
+        previous = json.loads(marker.read_text())
+        if previous.get("bootstrapSchema") == 1 and "themeSelection" in previous:
+            host["themeSelection"] = previous["themeSelection"]
+
+
 def privileged(*arguments):
     prefix = [] if os.geteuid() == 0 else ["/run/wrappers/bin/sudo", "--"]
     run([*prefix, *map(str, arguments)])
@@ -218,6 +226,7 @@ def main(argv=None):
         homeStateVersion="26.05",
     )
     validate_host(host)
+    preserve_theme_selection(configuration, host)
     print(f"Target: {host['hostName']} / {host['username']} / {host['homeDirectory']}")
     print(
         f"Preserving system.stateVersion={host['stateVersion']}, existing disks/encryption and bootloader."

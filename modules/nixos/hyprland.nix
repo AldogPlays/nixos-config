@@ -1,7 +1,14 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  desktopTheme,
+  themeConfiguration,
+  themeSelection,
+  ...
+}:
 
 let
-  theme = import ../../theme;
+  theme = desktopTheme;
   inherit (theme)
     roles
     typography
@@ -100,6 +107,12 @@ let
       });
 in
 {
+  environment.etc."desktop-theme.json".text = builtins.toJSON {
+    preset = themeSelection.preset;
+    inherit (theme) name;
+    wallpaperMode = theme.wallpaper.mode;
+    configuration = themeConfiguration;
+  };
   # The NixOS module wires Plymouth into the existing initrd and password agent.
   # No initrd-style, storage, keyfile or encryption changes are needed.
   boot.plymouth = {

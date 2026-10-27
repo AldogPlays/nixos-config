@@ -2,11 +2,12 @@
   config,
   lib,
   pkgs,
+  desktopTheme,
   ...
 }:
 
 let
-  theme = import ../../theme;
+  theme = desktopTheme;
   inherit (theme)
     terminal
     syntax
@@ -214,7 +215,7 @@ in
           separatorcolor: ${roles.border};
           spacing: ${px (geometry.spacing / 2)};
         }
-        window { background-color: @background; border: 0px; border-radius: ${px geometry.radius}; padding: ${px geometry.padding}; }
+        window { background-color: @background; border: ${px geometry.borderWidth}; border-color: ${roles.borderFocused}; border-radius: ${px geometry.radius}; padding: ${px geometry.padding}; }
         element { padding: ${px geometry.spacing}; border: 0px; }
         element-text, element-icon { background-color: transparent; text-color: inherit; }
         entry { placeholder-color: ${roles.foregroundMuted}; }

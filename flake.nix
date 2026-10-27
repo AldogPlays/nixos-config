@@ -43,10 +43,26 @@
           username ? "jeffreyc",
           homeDirectory ? "/home/${username}",
           homeStateVersion ? "26.05",
+          themeSelection ? import ./theme/selection.nix,
+          themeConfiguration ? {
+            kind = "checkout";
+            directory = "/home/${username}/Projects/nixos-config";
+          },
         }:
+        let
+          desktopTheme = import ./theme/load.nix themeSelection;
+        in
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs pkgsUnstable; };
+          specialArgs = {
+            inherit
+              inputs
+              pkgsUnstable
+              desktopTheme
+              themeConfiguration
+              themeSelection
+              ;
+          };
 
           modules = modules ++ [
             home-manager.nixosModules.home-manager
@@ -55,7 +71,14 @@
                 useGlobalPkgs = true;
                 useUserPackages = true;
                 backupFileExtension = "hm-backup";
-                extraSpecialArgs = { inherit inputs pkgsUnstable; };
+                extraSpecialArgs = {
+                  inherit
+                    inputs
+                    pkgsUnstable
+                    desktopTheme
+                    themeConfiguration
+                    ;
+                };
                 users.${username} = {
                   imports = [ ./home/jeffreyc ];
                   home = {
@@ -78,9 +101,19 @@
           username,
           homeDirectory,
           homeStateVersion ? "26.05",
+          themeSelection ? import ./theme/selection.nix,
         }:
         mkSystem {
-          inherit username homeDirectory homeStateVersion;
+          inherit
+            username
+            homeDirectory
+            homeStateVersion
+            themeSelection
+            ;
+          themeConfiguration = {
+            kind = "portable";
+            directory = "/etc/nixos";
+          };
           modules = [
             hardwareModule
             hostModule
@@ -106,6 +139,13 @@
       };
 
       checks.${system} = {
+        theme-menu = pkgs.runCommand "theme-menu-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          export PYTHONDONTWRITEBYTECODE=1
+          cp -r ${./scripts} scripts
+          cp -r ${./tests} tests
+          python3 -m unittest discover -s tests -p test_theme_menu.py -v
+          touch "$out"
+        '';
         screenshot-selector = pkgs.callPackage ./packages/slurp { };
         power-source-profile =
           pkgs.runCommand "power-source-profile-checks"
@@ -159,7 +199,7 @@
         portable-hosts =
           let
             fixture =
-              name: bios: driver:
+              name: bios: driver: themeSelection:
               let
                 data = {
                   username = "alex";
@@ -200,7 +240,7 @@
                 );
               in
               (inputs.self.lib.mkPortableSystem {
-                inherit hostModule;
+                inherit hostModule themeSelection;
                 inherit (data) username homeDirectory homeStateVersion;
                 hardwareModule = {
                   fileSystems = {
@@ -216,9 +256,14 @@
                   boot.kernelModules = [ (if bios then "kvm-amd" else "kvm-intel") ];
                 };
               }).config;
-            intel = fixture "portable-intel" false "modesetting";
-            bios = fixture "portable-bios" true "modesetting";
-            nvidia = fixture "portable-nvidia" false "nvidia";
+            intel = fixture "portable-intel" false "modesetting" (import ./theme/selection.nix);
+            bios = fixture "portable-bios" true "modesetting" (import ./theme/selection.nix);
+            nvidia = fixture "portable-nvidia" false "nvidia" (import ./theme/selection.nix);
+            monochrome = fixture "portable-monochrome" false "modesetting" {
+              preset = "monochrome";
+              wallpaperMode = "color";
+            };
+            monochromeIdentity = builtins.fromJSON monochrome.environment.etc."desktop-theme.json".text;
             readFixture =
               extras:
               import ./scripts/read-host.nix {
@@ -261,11 +306,16 @@
           assert readIntel.graphics.extraPackageNames32 == [ "intel-media-driver" ];
           assert !readIntel.unsupportedGraphics;
           assert readCustom.unsupportedGraphics;
+          assert monochrome.home-manager.users.alex.gtk.colorScheme == "dark";
+          assert monochromeIdentity.preset == "monochrome";
+          assert monochromeIdentity.wallpaperMode == "color";
+          assert monochromeIdentity.configuration.kind == "portable";
           pkgs.runCommand "portable-host-checks" { } ''
             # Force complete generation evaluation, including module assertions.
             echo ${builtins.unsafeDiscardStringContext intel.system.build.toplevel.drvPath} > "$out"
             echo ${builtins.unsafeDiscardStringContext bios.system.build.toplevel.drvPath} >> "$out"
             echo ${builtins.unsafeDiscardStringContext nvidia.system.build.toplevel.drvPath} >> "$out"
+            echo ${builtins.unsafeDiscardStringContext monochrome.system.build.toplevel.drvPath} >> "$out"
           '';
       };
 

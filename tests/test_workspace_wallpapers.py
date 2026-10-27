@@ -55,10 +55,29 @@ class WallpaperTests(unittest.TestCase):
             return json.dumps([{"id": 1}])
         self.fail(f"Unexpected command: {args}")
 
-    def reconcile(self, now=9000):
+    def reconcile(self, now=9000, color_mode="color"):
         return wallpapers.reconcile(
-            self.images, self.state, 900, self.fake_command, now
+            self.images, self.state, 900, self.fake_command, now, color_mode=color_mode
         )
+
+    def test_color_mode_change_preserves_assignments_and_updates_manifest(self):
+        original = self.reconcile()
+        original_paths = original["prepared"]["eDP-1"]
+        source_bytes = {
+            path: Path(path).read_bytes() for path in original["assignments"].values()
+        }
+        gray = self.reconcile(9100, color_mode="grayscale")
+        self.assertEqual(gray["assignments"], original["assignments"])
+        self.assertNotEqual(gray["prepared"], original["prepared"])
+        for path in gray["prepared"]["eDP-1"].values():
+            with Image.open(path) as image:
+                self.assertEqual(image.mode, "RGB")
+                red, green, blue = image.split()
+                self.assertEqual(red.tobytes(), green.tobytes())
+                self.assertEqual(red.tobytes(), blue.tobytes())
+        self.assertEqual(self.reconcile(9200)["prepared"]["eDP-1"], original_paths)
+        for path, contents in source_bytes.items():
+            self.assertEqual(Path(path).read_bytes(), contents)
 
     def test_switch_and_reload_remember_empty_workspaces(self):
         original = self.reconcile()
@@ -188,7 +207,7 @@ class WallpaperTests(unittest.TestCase):
         attempts = {}
         rejected = None
 
-        def fail_one_source(source, size, directory):
+        def fail_one_source(source, size, directory, *args, **kwargs):
             nonlocal rejected
             identity = (source, size)
             attempts[identity] = attempts.get(identity, 0) + 1
@@ -196,7 +215,7 @@ class WallpaperTests(unittest.TestCase):
                 rejected = source
             if source == rejected:
                 raise OSError("Unusable source")
-            return prepare(source, size, directory)
+            return prepare(source, size, directory, *args, **kwargs)
 
         with mock.patch.object(
             wallpapers, "prepare_image", side_effect=fail_one_source
@@ -219,9 +238,9 @@ class WallpaperTests(unittest.TestCase):
     def test_preparation_never_applies_a_stale_workspace_snapshot(self):
         prepare = wallpapers.prepare_image
 
-        def switch_and_prepare(*args):
+        def switch_and_prepare(*args, **kwargs):
             self.monitors[0]["activeWorkspace"]["id"] = 2
-            return prepare(*args)
+            return prepare(*args, **kwargs)
 
         with mock.patch.object(
             wallpapers, "prepare_image", side_effect=switch_and_prepare
@@ -234,9 +253,9 @@ class WallpaperTests(unittest.TestCase):
         original = self.reconcile()
         prepare = wallpapers.prepare_image
 
-        def inspect_and_prepare(*args):
+        def inspect_and_prepare(*args, **kwargs):
             self.assertEqual(json.loads(self.state.read_text()), original)
-            return prepare(*args)
+            return prepare(*args, **kwargs)
 
         with mock.patch.object(
             wallpapers, "prepare_image", side_effect=inspect_and_prepare
@@ -298,14 +317,44 @@ class PreparedCacheTests(unittest.TestCase):
         self.cache = wallpapers.PreparedCache(self.disk)
         self.size = (80, 50)
 
-    def prepare(self, session, size=None, cache=True):
+    def prepare(self, session, size=None, cache=True, color_mode="color"):
         runtime = self.root / session
         runtime.mkdir(exist_ok=True)
         return Path(
             wallpapers.prepare_image(
-                self.source, size or self.size, runtime, self.cache if cache else None
+                self.source, size or self.size, runtime, self.cache if cache else None,
+                color_mode=color_mode,
             )
         )
+
+    def test_grayscale_and_color_have_independent_reusable_caches(self):
+        color = self.prepare("color")
+        gray = self.prepare("gray", color_mode="grayscale")
+        self.assertNotEqual(color.name, gray.name)
+        self.assertNotEqual(color.read_bytes(), gray.read_bytes())
+        self.assertTrue((self.disk / color.name).is_file())
+        self.assertTrue((self.disk / gray.name).is_file())
+        with Image.open(gray) as image:
+            self.assertEqual(image.size, self.size)
+            red, green, blue = image.split()
+            self.assertEqual(red.tobytes(), green.tobytes())
+            self.assertEqual(red.tobytes(), blue.tobytes())
+        with mock.patch.object(Image, "open", side_effect=AssertionError("decoded")):
+            self.assertEqual(
+                self.prepare("gray-next", color_mode="grayscale").read_bytes(),
+                gray.read_bytes(),
+            )
+            self.assertEqual(
+                self.prepare("color-next").read_bytes(), color.read_bytes()
+            )
+
+    def test_invalid_color_mode_does_not_publish_or_change_source(self):
+        original = self.source.read_bytes()
+        with self.assertRaisesRegex(ValueError, "Unsupported wallpaper color mode"):
+            self.prepare("invalid", color_mode="sepia")
+        self.assertEqual(self.source.read_bytes(), original)
+        self.assertFalse(list((self.root / "invalid").iterdir()))
+        self.assertFalse(self.disk.exists())
 
     def test_new_session_reuses_exact_pixels_without_decoding_original(self):
         baseline = self.prepare("reference", cache=False).read_bytes()

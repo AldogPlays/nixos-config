@@ -298,7 +298,7 @@ discarded. Gwenview supplies image viewing and quick editing. Dedicated media
 player/mail/office/general GUI editor choices remain pending; do not install a
 bundle to fill those roles.
 
-Dolphin uses native KDE colors generated from the shared Latte palette in
+Dolphin uses native KDE colors generated from the selected theme roles in
 `home/jeffreyc/desktop.nix`, plus the Qt6 KDE platform plugin, Breeze widget style,
 and Breeze icons. Package selections override Home Manager's larger KDE defaults
 so this does not add System Settings or a Plasma session. Qt environment settings
@@ -324,7 +324,7 @@ that index, Dolphin/KIO can return no PDF handlers despite a correct mimeapps
 default. The menu indexes installed desktop entries; it adds no panel or daemon.
 The pinned package is built with `qt6Packages` through its existing toolkit
 override, sharing Gwenview’s KDE platform plugin, Breeze style, and generated
-Latte colors. No Qt5 theme adapter or new service is added. It launches on demand;
+theme colors. No Qt5 theme adapter or new service is added. It launches on demand;
 its normal preferences and document history remain unmanaged.
 
 Ark is the archive viewer and supplies Dolphin's native extraction/compression
@@ -428,17 +428,31 @@ leaving a readable, muted “No notifications” label.
   heuristics or Bitwarden-specific exceptions; the separate browser PiP rule
   below uses its known dedicated title. Unmarked extension windows may need
   separate inspection if this baseline does not catch them.
-- Catppuccin Latte remains selected, with its existing colors, fonts, assets and
-  geometry. Adapters consume generic semantic roles, terminal slots and syntax
+- Catppuccin Latte remains the default, preserving its existing colors, fonts,
+  assets and geometry. `theme/selection.nix` selects Latte or dark Monochrome at
+  rebuild time. Shared typography, icons, geometry and material settings live in
+  `theme/common.nix`; preset colors and cursor assets live in their own files.
+  The wallpaper mode follows the preset (color for Latte, grayscale for Monochrome)
+  unless overridden in the selection file. Preparation changes only cached copies
+  and keeps color/grayscale cache identities separate. No new service or renderer
+  change is required. Adapters consume generic semantic roles, terminal slots and syntax
   purposes rather than Catppuccin palette keys. Shared appearance drives GTK
   preferences/structural variant and Delta; font/icon/cursor package selections
   also live in the plain theme data. Generated Rofi, KDE and Plymouth names are
-  stable across themes. Runtime switching, a refresh coordinator and a theme daemon
-  are not configured. See `theme/README.md` for the contract and coverage limits.
+  stable across themes. Theme changes use normal rebuild activation; no refresh
+  coordinator or theme daemon is configured. Meta+Ctrl+T opens the
+  existing Rofi as a theme selector; the tray toggle uses Meta+Shift+T. The on-demand
+  `scripts/theme-menu.py` helper opens Alacritty for builds and sudo, without a
+  new background service or automatic reboot. Available themes come from
+  `theme/presets.nix`; active identity comes from the running generation's
+  `etc/desktop-theme.json`. The flake passes resolved theme data to both NixOS and
+  Home Manager so bootstrapped hosts can retain their selection in
+  `/etc/nixos/project-host.json`; bootstrap reruns preserve it. See `theme/README.md`
+  for the contract and coverage limits.
 - The material direction is matte frosted glass, not liquid/glossy/refractive
   glass. Normal application windows (including LibreWolf and Dolphin) and Rofi
   use Hyprland background blur. Shared opacity and blur controls
-  live under `theme/default.nix.material`. Normal windows use a native
+  live under `theme/common.nix.material`. Normal windows use a native
   Hyprland rule for fully opaque focus, 95% opaque unfocused state, and fully opaque
   fullscreen. Their whole surfaces, including text, follow that opacity; native
   Alacritty alpha stays at 1.0 to avoid multiplying two transparency settings.
@@ -457,22 +471,23 @@ leaving a readable, muted “No notifications” label.
   floating. No polling helper or background service is used.
   Windows and Waybar have thin 1px borders using the shared border roles;
   focused windows use the distinct focus-border role. The login surface remains
-  opaque. Hyprlock uses a solid, opaque shared Latte background, without a
+  opaque. Hyprlock uses a solid, opaque shared theme background, without a
   background screenshot, blur or transparency. Session-lock xray is disabled;
   authentication stays unchanged. Keep the pinned Hyprland version rather than
   upgrading or maintaining a compositor patch for lock-screen effects.
   Waybar and SwayNC are fully opaque, using the shared background role independently
   of the glass opacity and window focus.
-  Rofi's outer frame remains borderless. The notification-center frame uses a
+  Both Rofi menus use the shared focused-window border color, width and rounding.
+  The notification-center frame uses a
   thin muted outline matching Waybar tooltips; input/control
   outlines, separators and status indicators remain useful and are not removed.
   No shader, refraction plugin, highlight gradient, shadow or new service is added.
-- Fonts share the family and point size in `theme/default.nix` across terminal,
+- Fonts share the family and point size in `theme/common.nix` across terminal,
   launcher, bar, notifications, GTK defaults and KDE UI roles. CSS uses `pt`, not
   `px`, to avoid unit mismatches. Web content and app-specific overrides are not
   forced. Display scaling remains unchanged.
-- The cursor intentionally uses packaged Catppuccin Mocha Dark assets for
-  contrast on Latte. Its package/name/size come from the shared theme for both
+- Latte uses packaged Catppuccin Mocha Dark cursor assets for contrast. Monochrome
+  uses DMZ White from the small `vanilla-dmz` cursor package. Its package/name/size come from the shared theme for both
   Home Manager and SDDM. Home Manager configures Hyprcursor, Xcursor, GTK and KDE;
   this is an asset exception, not a second application palette or theme switcher.
 - Generic GTK3 styling uses pinned `adw-gtk3` as widget structure, with generated
@@ -487,7 +502,7 @@ leaving a readable, muted “No notifications” label.
   display-manager replacement or new session service is introduced. Activation
   leaves the running display manager alone; the new configuration takes effect
   when SDDM next starts, normally on the next boot.
-- Hyprlock has a generated minimal Latte config and a normal NixOS PAM entry.
+- Hyprlock has a generated minimal theme config and a normal NixOS PAM entry.
   Configure PAM directly rather than enabling the NixOS hyprlock module, which
   implicitly enables hypridle in this pinned release. No idle daemon, auto-lock
   timer, grace period or authentication bypass is configured. Parser checks and

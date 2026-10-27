@@ -22,6 +22,7 @@ for rebuilds and recovery.
 | Resize focused window | Meta+Shift+Arrow; 20 px steps, hold to repeat |
 | File browser (Dolphin) | Meta+E |
 | App launcher (Rofi) | Meta+A |
+| Theme selector (Rofi) | Meta+Ctrl+T |
 | Notification center (SwayNC) | Super+N or click the bar's notification icon |
 | Do not disturb | Right-click the notification icon |
 | Wi-Fi (wlctl) | Super+Shift+N or click the bar's network module |
@@ -63,8 +64,8 @@ controls show icons, with square backgrounds spanning the bar’s
 inner height on hover/press; descriptive text stays in their tooltips.
 Wi-Fi, Bluetooth, volume and battery show icons only; connection details and
 percentages remain in tooltips. All six status icons share the same minimum width,
-horizontal padding and inter-module gap. Icon accents come from shared Latte
-roles in `theme/default.nix`. The clock uses 12-hour time
+horizontal padding and inter-module gap. Icon accents come from the selected
+theme roles in `theme/`. The clock uses 12-hour time
 with AM/PM, without a calendar dropdown or hover popup.
 SwayNC uses the same outer spacing as the tiled windows below Waybar.
 Scroll over volume to adjust it in 5% steps. Volume/brightness keys, speaker/mic
@@ -197,6 +198,23 @@ nix-store --add-fixed sha256 ~/Downloads/CiscoPacketTracer_901_Ubuntu_64bit.deb
 
 ## Desktop integration
 
+### Theme selection
+
+Meta+Ctrl+T opens the existing Rofi launcher as a theme menu, with **Active**
+beside the running system's theme. Escape and selecting the active theme leave
+the configuration alone. Choosing another opens a floating Alacritty terminal
+for build output and normal sudo authentication. The rebuild applies the current
+saved configuration, including other edits. It does not commit, push or reboot.
+
+`scripts/theme-menu.py` is installed as the on-demand `theme-menu` command through
+`home/jeffreyc/desktop.nix`. It uses the existing Rofi styling and Alacritty;
+there is no background service. The shared NixOS desktop module writes the theme
+identity into each generation, which the menu reads through `/run/current-system`.
+See [theme settings](../theme/README.md#choose-a-theme) for persistence, wallpaper
+preferences and application refresh behavior.
+
+### Applications and appearance
+
 Printing uses CUPS for LibreWolf, qpdfview, and other applications' print dialogs.
 Press **Ctrl+P** in LibreWolf or a document viewer, select the printer and print;
 LibreWolf's **Save to PDF** destination also works without a physical printer.
@@ -243,18 +261,18 @@ screen sharing, authentication prompts, and removable-drive support. No desktop
 bundle or automounter is added. Media-player, mail, office, and general GUI editor
 choices remain open; they are not silently filled by extra packages.
 
-`theme/default.nix` defines the shared Monaspace Neon font and point size.
+`theme/common.nix` defines the shared Monaspace Neon font and point size.
 Alacritty, Rofi, Waybar, SwayNC, GTK defaults and KDE UI fonts consume it. CSS uses
 points rather than pixels, without changing display scaling. Web content and
 applications with their own font settings are not forcibly overridden.
-The contrasting Catppuccin Mocha Dark cursor is configured for Hyprland, GTK,
-Qt/KDE and X11. Its package/name/size are selected in `theme/default.nix` and
-consumed by the existing desktop modules; the rest of the theme stays Latte.
-Shared shell geometry also lives in `theme/default.nix`; adapters reference
+Cursor settings apply to Hyprland, GTK, Qt/KDE and X11. Latte uses the contrasting
+Catppuccin Mocha Dark pointer; Monochrome uses DMZ White from `vanilla-dmz`.
+Each preset supplies its package, name and size to the existing desktop modules.
+Shared shell geometry lives in `theme/common.nix`; adapters reference
 matching borders, corner radii, gaps and padding instead of keeping separate copies.
 
 Frosted glass applies to normal application windows and Rofi.
-`theme/default.nix.material` controls their shared background opacity and
+`theme/common.nix.material` controls their shared background opacity and
 Hyprland blur settings. `material.focusedOpacity` makes focused windows fully
 opaque; unfocused windows use `material.unfocusedOpacity` (95% opacity), and
 fullscreen is fully opaque. Rofi's backplate uses `material.opacity` (90%).
@@ -267,13 +285,13 @@ additional verified identifiers. Unmarked dialogs cannot be identified
 generically by this rule.
 Hyprland affects the whole surface, including text, images and video; native
 terminal alpha stays at 1.0 to avoid double transparency. Waybar and SwayNC use a
-fully opaque shared Latte background, independent of window focus. The login screen
+fully opaque shared theme background, independent of window focus. The login screen
 stays opaque.
 Windows have 1px borders: the shared focus color when active and muted border
 color when inactive. The notification-center frame uses the same muted outline,
 background, font and rounding as Waybar tooltips, keeping its roomier control
-spacing. Rofi's outer frame remains
-borderless; useful control outlines and separators remain. This is matte blur,
+spacing. Both Rofi menus use the shared focused-window border color, width and
+rounding; useful control outlines and separators remain. This is matte blur,
 without glossy gradients or refraction.
 The [generation rollback command](maintenance.md#recovery) restores the previous
 active configuration. Reverting the repository is a separate Git change; keep
@@ -283,7 +301,7 @@ the source consistent with the chosen generation before rebuilding.
 
 Plymouth provides the graphical encrypted-disk password prompt before login.
 `modules/nixos/hyprland.nix` enables its native NixOS boot integration and generates
-a plain Latte theme from `theme/`; `dotfiles/plymouth/theme.script` renders the
+a plain theme from `theme/`; `dotfiles/plymouth/theme.script` renders the
 prompt and masked input. It uses the shared font and the same field dimensions,
 thin outline and rounding as hyprlock. Plymouth starts during boot and exits
 when boot completes; it adds no desktop background service. Existing disk
@@ -291,7 +309,7 @@ encryption, passphrases and initrd style are preserved, including on portable
 hosts. Escape switches to boot details. Plymouth takes effect on boot after
 activation; successful graphical unlocking is not yet verified.
 
-GTK3 uses `adw-gtk3` for widget structure with generated Latte named colors;
+GTK3 uses `adw-gtk3` for widget structure with generated theme colors;
 GTK4/libadwaita keeps its native layout with generated color variables. Both
 adapters live in `home/jeffreyc/desktop.nix`. The shared appearance preference
 selects the matching GTK3 variant and GTK/Home Manager light/dark settings;
@@ -308,7 +326,7 @@ shortcuts are F10 suspend, F11 power off and F12 reboot. The new greeter takes
 effect when SDDM next starts, normally on your next boot; do not restart the
 display manager mid-session just to preview it.
 
-Meta+L runs hyprlock with a solid, opaque Latte background, username and
+Meta+L runs hyprlock with a solid, opaque theme background, username and
 thin-bordered password field. No background screenshot, blur or transparency is
 configured. Live session-lock xray remains disabled.
 Authentication is unchanged. The generated config is in `~/.config/hypr/hyprlock.conf`;
@@ -334,19 +352,19 @@ previews, and `ffmpegthumbs` adds video previews. Toggle **Show Previews** with 
 individual types remain configurable in Dolphin's preview preferences. Existing
 per-folder view settings are preserved.
 
-Gwenview is the default image viewer and quick editor, using the same KDE Latte
+Gwenview is the default image viewer and quick editor, using the same KDE
 theme. It supports crop, resize, rotate, flip, annotation and basic adjustments;
 save a copy when preserving an original. It launches on demand, not as a daemon.
 
 qpdfview is the default PDF viewer. It is built against the same pinned Qt6
-toolkit and uses the existing KDE Latte palette, Breeze controls, icons, and fonts
+toolkit and uses the selected KDE palette, Breeze controls, icons, and fonts
 without a separate theme configuration. Open PDFs from Dolphin or launch
 **qpdfview** from Rofi. It starts on demand and adds no background service.
 
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;
 select files/folders and use **Compress to…** to create an archive. These are
-Ark's upstream service menus, not custom shell actions. Ark shares the KDE Latte
+Ark's upstream service menus, not custom shell actions. Ark shares the KDE
 theme. The maintained 7-Zip backend provides both `7zz` and the `7z` name required
 by this pinned Ark version. ZIP and tar formats use Ark's native libraries;
 7z uses the external backend. No archive daemon is added. Archives from untrusted

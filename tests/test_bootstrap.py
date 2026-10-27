@@ -57,6 +57,21 @@ def host_data():
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_generated_host_theme_selection_survives_bootstrap_rerun(self):
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            selection = {"preset": "monochrome", "wallpaperMode": "color"}
+            (directory / "project-host.json").write_text(json.dumps({
+                "bootstrapSchema": 1, "themeSelection": selection, "ignored": "private"
+            }))
+            host = {"username": "tester"}
+            bootstrap.preserve_theme_selection(directory / "configuration.nix", host)
+            self.assertEqual(host, {"username": "tester", "themeSelection": selection})
+            (directory / "project-host.json").write_text('{"bootstrapSchema":2,"themeSelection":{}}')
+            host = {"username": "tester"}
+            bootstrap.preserve_theme_selection(directory / "configuration.nix", host)
+            self.assertEqual(host, {"username": "tester"})
+
     def setUp(self):
         nixos = mock.patch.object(bootstrap, "running_nixos", return_value=True)
         nixos.start()

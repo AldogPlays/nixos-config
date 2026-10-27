@@ -18,7 +18,9 @@ wallpaper daemon, or polling controller.
 - Existing numbered bindings, native horizontal swipes, and workspace scrolling
   stay unchanged. No grid navigation, parallax, blurred margins, or desktop
   windows are added. The workspace easing is chosen for motion, not fade timing.
-- The shared Latte theme and opaque lock screen remain independent. The shared
+- The selected desktop theme and opaque lock screen remain independent of image
+  assignments. The theme's wallpaper mode selects color or grayscale prepared
+  copies, with an override in `theme/selection.nix`. The shared
   background color is the fallback when an image is unavailable.
 
 PNG, JPEG and WebP originals are considered, preserving the existing collection
@@ -65,6 +67,11 @@ not start any wallpaper process or read/decode an image.
 
 `dotfiles/hypr/workspace-wallpapers.py` discovers files, remembers assignments,
 and prepares RGB BMPs using EXIF orientation and Lanczos cover resizing. It
+optionally converts the resized copy to grayscale and back to RGB for the existing
+renderer. Original files are never changed. Color mode is part of the preparation
+identity, so switching modes cannot reuse the other mode's cached pixels. Returning
+to color can reuse existing color cache entries. Conversion happens during
+preparation, without adding work to ordinary workspace switches. The helper
 queries Hyprland's physical output dimensions, not a wallpaper daemon. Once all
 images are ready it atomically publishes `workspace-wallpapers.json`; unchanged
 state is not rewritten. It never applies a potentially stale active-workspace
@@ -78,7 +85,7 @@ A second cache keeps exact prepared BMPs across logins and later refreshes under
 `$XDG_CACHE_HOME/workspace-wallpapers` (`~/.cache/workspace-wallpapers` by default).
 The wrapper declares its location and 512 MiB budget in `desktop.nix`; there is
 no separate daemon, initial import, or manual warm-up step. Entries are populated
-on demand and keyed by processing version, source path/size/mtime and output
+on demand and keyed by processing version/color mode, source path/size/mtime and output
 dimensions. Existing session images also seed the disk cache without decoding
 their originals again. Least-recently-used generated files are evicted when the
 budget is exceeded; a single image larger than the budget is not stored.

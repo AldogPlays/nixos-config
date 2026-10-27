@@ -158,10 +158,15 @@ def command(executable, *args):
     )
 
 
-def prepare_image(source, size, directory, persistent_cache=None):
+def prepare_image(source, size, directory, persistent_cache=None, color_mode="color"):
+    if color_mode not in ("color", "grayscale"):
+        raise ValueError(f"Unsupported wallpaper color mode: {color_mode}")
     source = Path(source)
     stat = source.stat()
     identity = f"lanczos-cover-v1:{source}:{stat.st_size}:{stat.st_mtime_ns}:{size}"
+    # Preserve existing color cache entries; grayscale has its own processing key.
+    if color_mode == "grayscale":
+        identity += ":grayscale-v1"
     target = directory / (hashlib.sha256(identity.encode()).hexdigest() + ".bmp")
     if not target.exists():
         if persistent_cache is not None and persistent_cache.restore(target, size):
@@ -170,6 +175,8 @@ def prepare_image(source, size, directory, persistent_cache=None):
         with Image.open(source) as image:
             image = ImageOps.exif_transpose(image).convert("RGB")
             image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+            if color_mode == "grayscale":
+                image = ImageOps.grayscale(image).convert("RGB")
             temporary = target.with_suffix(".tmp")
             image.save(temporary, format="BMP")
             temporary.replace(target)
@@ -178,7 +185,11 @@ def prepare_image(source, size, directory, persistent_cache=None):
     return str(target)
 
 
-def reconcile(directory, state_path, interval, run, now=None, persistent_cache=None):
+def reconcile(
+    directory, state_path, interval, run, now=None, persistent_cache=None, color_mode="color"
+):
+    if color_mode not in ("color", "grayscale"):
+        raise ValueError(f"Unsupported wallpaper color mode: {color_mode}")
     now = time.time() if now is None else now
     epoch = int(now // interval)
     try:
@@ -247,14 +258,10 @@ def reconcile(directory, state_path, interval, run, now=None, persistent_cache=N
                 try:
                     identity = (image, size)
                     if identity not in prepared_images:
-                        if persistent_cache is None:
-                            prepared_images[identity] = prepare_image(
-                                image, size, cache
-                            )
-                        else:
-                            prepared_images[identity] = prepare_image(
-                                image, size, cache, persistent_cache
-                            )
+                        prepared_images[identity] = prepare_image(
+                            image, size, cache, persistent_cache,
+                            color_mode=color_mode,
+                        )
                     rendered[key] = prepared_images[identity]
                 except (OSError, ValueError, Image.DecompressionBombError):
                     rejected.add(image)
@@ -309,6 +316,7 @@ def main():
     parser.add_argument("--interval", type=int, default=900)
     parser.add_argument("--cache-directory", type=Path, required=True)
     parser.add_argument("--cache-limit", type=int, default=CACHE_LIMIT)
+    parser.add_argument("--color-mode", choices=("color", "grayscale"), default="color")
     args = parser.parse_args()
     if args.interval <= 0:
         parser.error("interval must be positive")
@@ -326,6 +334,7 @@ def main():
             args.interval,
             lambda *parts: command(args.hyprctl, *parts),
             persistent_cache=PreparedCache(args.cache_directory, args.cache_limit),
+            color_mode=args.color_mode,
         )
 
 
