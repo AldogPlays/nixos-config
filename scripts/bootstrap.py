@@ -238,7 +238,7 @@ def main(argv=None):
         if args.apply:
             install(stage, Path("/etc/nixos"), host)
             print(
-                "Applied. Use rebuild for updates and log into the Hyprland session. No reboot was requested."
+                "Applied. Use rebuild for updates and log into the Hyprland session. No reboot was performed."
             )
         elif args.output:
             output = args.output.expanduser().resolve()

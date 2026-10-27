@@ -33,8 +33,9 @@ user, disk/encryption, initrd, bootloader and graphics selections. Shared hardwa
 services now live in `modules/nixos/hardware.nix`; CPU/disk details stay in host
 modules. The original Lenovo target retains its settings. Generated hosts pin a
 project source snapshot and rebuild through `/etc/nixos`; rerun bootstrap from a
-new project revision to update that snapshot. See README for authentication,
-supported layouts, recovery and the remaining fresh-install deployment test.
+new project revision to update that snapshot. See the [installation guide](installation.md)
+for authentication, supported layouts and the remaining deployment test, and
+[maintenance](maintenance.md) for recovery.
 
 The official ChatGPT desktop app provides graphical Codex alongside the Codex CLI.
 Both are declared from the pinned unstable input; the Linux desktop launcher is
@@ -48,7 +49,7 @@ and manual import command; binaries, license state and Cisco credentials stay
 outside the repository.
 
 Joplin Desktop is declared in `home/jeffreyc/packages.nix` from the pinned unstable
-input to meet the requested version above 3.7.0; stable nixpkgs supplies 3.5.13.
+input for a version newer than 3.7.0; stable nixpkgs supplies 3.5.13.
 It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart service or sync
 account is configured. Notes and application preferences remain user-managed.
 
@@ -83,7 +84,7 @@ not change disk-unlock or login authentication.
 
 Plymouth's graphical disk-unlock prompt is declared in the shared desktop module,
 using the native script plugin and a small theme generated from `theme/`.
-`dotfiles/plymouth/latte.script` only renders the prompt and password mask;
+`dotfiles/plymouth/theme.script` only renders the prompt and password mask;
 the existing initrd/password agent continues to unlock the disks. It preserves
 the initrd style, LUKS devices, keys and passphrases. The NixOS module supplies
 the `splash` kernel parameter and boot/shutdown units, without a desktop daemon.
@@ -128,9 +129,6 @@ symbols. It does not supply image thumbnails or interactive content previews.
 Hyprland handles cursor hiding with its native inactivity timeout, without an
 idle daemon. Meta+K uses Dwindle's `togglesplit` for the focused tile's parent
 split, with split preservation enabled; it is not a whole-workspace rotation.
-
-These are declared choices, subject to Jeffrey's review rather than a commitment
-to keep every bootstrap component.
 
 On 2026-10-20 at 14:47, the kernel reported exhausted RAM and all 8.8 GiB of
 swap, then killed a browser content process using about 5.7 GiB resident RAM
@@ -179,7 +177,7 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Network controls | NetworkManager, wlctl | Click Waybar network or Super+Shift+N to open wlctl in Alacritty |
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
-| Audio | PipeWire, WirePlumber; Jeffrey’s Wiremix fork, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys use desktop-feedback around wpctl |
+| Audio | PipeWire, WirePlumber; the Wiremix fork, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys use desktop-feedback around wpctl |
 | Portals | Hyprland and GTK backends | Hyprland's NixOS module supplies its portal; GTK is added explicitly |
 | Screenshots and clipboard | slurp, grim, wl-clipboard | Print or Meta+Shift+S starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
 | Brightness and media | brightnessctl, playerctl, SwayOSD | desktop-feedback preserves the brightness curve; Home Manager starts swayosd.service with the graphical session |
@@ -206,6 +204,23 @@ tuning within the selected profile, rather than replacing this selection policy.
 The service reconnects after backend failure by restarting; it neither replaces
 the existing power daemon nor adds TLP or another hardware tuning stack.
 
+Battery conservation is a separate firmware setting, independent of performance
+profiles and the low-battery policy. The shared hardware module installs the
+on-demand `battery-charge` command and one root `battery-charge-limit.service`.
+That oneshot selects `Long_Life` at boot and initial activation, then exits; the
+firmware enforces its preset without a resident controller or polling loop.
+The helper discovers batteries exposing both `Long_Life` and `Standard`, verifies
+the selected mode after writing, and skips unsupported hardware on portable hosts.
+It uses the kernel's `charge_types` interface, which switches conservation and
+rapid charging together instead of potentially enabling both through legacy
+controls. The Lenovo preset is documented around 75–80%; the actual cutoff still
+requires a plugged-in charging observation. `battery-charge full` selects
+`Standard` for travel, and `protect` restores conservation; changes require sudo.
+Full charging lasts until `protect` or reboot. The oneshot remains active after
+exit and is not restarted on definition changes during rebuilds, preserving an
+intentional override. Read-only `status` and usage are documented in the
+[desktop guide](desktop.md#power-profiles-and-battery).
+
 Waybar uses its native power-profiles-daemon module for live profile display and
 click-to-cycle. Workspaces are the only left-side module; the tray starts the
 right group. Status modules show accented icons with connection details and
@@ -227,7 +242,7 @@ details in tooltips. The plugged-in/charging battery uses a green battery-with-l
 distinguishing it from Performance mode's standalone lightning bolt.
 Appearance remains driven by shared theme roles.
 
-Wiremix now comes from Jeffrey's published `AldogPlays/wiremix` fork on
+Wiremix comes from the public `AldogPlays/wiremix` fork on
 `codex/ui-match`, pinned in `flake.lock` and following the system nixpkgs.
 `home/jeffreyc/packages.nix` selects the fork instead of stock Wiremix, retaining
 the `wiremix` command and desktop entry for both existing floating launchers.
@@ -245,9 +260,9 @@ nm-applet, Blueman, and pavucontrol are no longer declared as front ends.
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.
 Tailscale DNS and MagicDNS are required; preserve them when diagnosing network
-reliability. The tailnet currently supplies a DNS resolver on Jeffrey's TrueNAS
-server, managed outside this repository. Investigate resolver/tunnel timeouts
-rather than bypassing this DNS setup with Wi-Fi or public resolvers.
+reliability. The reference tailnet supplies a DNS resolver managed outside this
+repository. Investigate resolver/tunnel timeouts rather than bypassing this DNS
+setup with Wi-Fi or public resolvers.
 No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
 
 LibreWolf's package policies default downloads to the XDG Downloads folder and
@@ -322,7 +337,7 @@ Ark follows the shared Qt/KDE theme and starts on demand, without a new daemon.
 
 hyprmosaic is the sole wallpaper renderer, built as a wallpaper-only backport
 against the pinned Hyprland 0.55.4. `packages/hyprmosaic/` pins upstream source
-and retains its license; the local C++ adaptation uses the old API and our
+and retains its license; the local C++ adaptation uses the old API and the project's
 per-output manifest, omitting grid navigation and blurred margins. Wallpaper
 textures follow native workspace animation progress. Interrupted horizontal
 slides preserve their last rendered positions as a joined strip instead of
@@ -350,10 +365,9 @@ wl-clipboard. After capture and clipboard success, libnotify sends a three-secon
 SwayNC confirmation with the saved image as its thumbnail. Cancellation stays
 silent. No editor, OCR, or screenshot daemon is added. This replaces Snap's capture UI.
 Fn+Prt Sc sends Print on this Lenovo. Bare screenshot hotkeys on Lenovo can
-send Meta+Shift+S. Print and Meta+Shift+S now launch the same picker; Jeffrey
-confirmed the shortcut fix works. The conflicting example scratchpad bindings
-are removed. Only the monitor's active workspace (or open special workspace),
-plus visible pinned windows, is offered.
+send Meta+Shift+S. Print and Meta+Shift+S launch the same picker. Example
+scratchpad bindings are disabled to avoid shortcut conflicts. Only the monitor's
+active workspace (or open special workspace), plus visible pinned windows, is offered.
 Captures crop visible screen pixels rather than reconstructing obscured windows;
 slurp's smallest-rectangle selection can be ambiguous for overlapping floating
 windows. The same helper and pinned packages are included in portable bootstrap.
@@ -381,7 +395,7 @@ GTK’s default symbolic icons without adding a theme service. Styling uses the 
 pinned-package UI substitution hides its hardcoded 96px empty-state icon,
 leaving a readable, muted “No notifications” label.
 
-- The requested look uses 1.0 scaling, compact gaps, thin window frames, restrained
+- The desktop uses 1.0 scaling, compact gaps, thin window frames, restrained
   corners, and no window shadows. Exact geometry lives in the Hyprland and
   Home Manager desktop configurations.
 - Ctrl+Meta+Arrow changes focus directionally through Hyprland's native focus
@@ -413,9 +427,13 @@ leaving a readable, muted “No notifications” label.
   heuristics or Bitwarden-specific exceptions; the separate browser PiP rule
   below uses its known dedicated title. Unmarked extension windows may need
   separate inspection if this baseline does not catch them.
-- The theme direction is fixed Catppuccin Latte, with locally versioned official
-  palette values and shared semantic roles. No switching, refresh coordinator,
-  or theme daemon is wanted. See `theme/README.md` for the data contract.
+- Catppuccin Latte remains selected, with its existing colors, fonts, assets and
+  geometry. Adapters consume generic semantic roles, terminal slots and syntax
+  purposes rather than Catppuccin palette keys. Shared appearance drives GTK
+  preferences/structural variant and Delta; font/icon/cursor package selections
+  also live in the plain theme data. Generated Rofi, KDE and Plymouth names are
+  stable across themes. Runtime switching, a refresh coordinator and a theme daemon
+  are not configured. See `theme/README.md` for the contract and coverage limits.
 - The material direction is matte frosted glass, not liquid/glossy/refractive
   glass. Normal application windows (including LibreWolf and Dolphin) and Rofi
   use Hyprland background blur. Shared opacity and blur controls
@@ -453,7 +471,8 @@ leaving a readable, muted “No notifications” label.
   `px`, to avoid unit mismatches. Web content and app-specific overrides are not
   forced. Display scaling remains unchanged.
 - The cursor intentionally uses packaged Catppuccin Mocha Dark assets for
-  contrast on Latte. Home Manager configures Hyprcursor, Xcursor, GTK and KDE;
+  contrast on Latte. Its package/name/size come from the shared theme for both
+  Home Manager and SDDM. Home Manager configures Hyprcursor, Xcursor, GTK and KDE;
   this is an asset exception, not a second application palette or theme switcher.
 - Generic GTK3 styling uses pinned `adw-gtk3` as widget structure, with generated
   semantic colors from the shared theme. GTK4/libadwaita uses named colors and
@@ -470,7 +489,7 @@ leaving a readable, muted “No notifications” label.
 - Hyprlock has a generated minimal Latte config and a normal NixOS PAM entry.
   Configure PAM directly rather than enabling the NixOS hyprlock module, which
   implicitly enables hypridle in this pinned release. No idle daemon, auto-lock
-  timer, grace period or authentication bypass is requested. Parser checks and
+  timer, grace period or authentication bypass is configured. Parser checks and
   login-screen test mode do not establish successful real authentication.
 - Native theme adapters consume the shared definitions for Hyprland borders,
   Alacritty, Rofi, Waybar, SwayNC, and Dolphin/KDE Qt colors. Keep app-specific syntax in the existing
@@ -479,9 +498,8 @@ leaving a readable, muted “No notifications” label.
   boundary. Their displayed tint now intentionally depends on the blurred content
   behind them. See `theme/README.md` for
   researched integration details and the remaining unthemed components.
-- GitHub Actions workflows were deliberately removed. Validation stays local
-  unless CI is requested. Repository visibility and remote settings need direct
-  verification when relevant.
+- Validation runs locally; no GitHub Actions workflow is configured. Repository
+  visibility and remote settings are managed separately from the system configuration.
 
 ## Repository map
 
@@ -491,9 +509,9 @@ leaving a readable, muted “No notifications” label.
 - `modules/nixos/`: core OS, AMD/laptop support, and system desktop integration.
 - `home/jeffreyc/`: user identity/session variables, packages, programs, desktop.
 - `dotfiles/hypr/`: managed Hyprland Lua configuration.
-- `theme/`: shared Latte data and adapter contract.
-- `tests/`: wallpaper policy and Lua scheduling regression tests.
-- `packages/`: local packages for requested tools missing from the pinned nixpkgs.
-- `README.md`: setup, rebuild, and maintenance commands.
+- `theme/`: selected theme data and theme-agnostic adapter contract.
+- `tests/`: bootstrap, portable-host, power, charging, screenshot and wallpaper checks.
+- `packages/`: local package overrides, compositor adaptation and utility patches.
+- `README.md`: project overview, quick start and documentation index.
 - `AGENTS.md`: instructions for how agents should work.
 - `docs/wallpapers.md`: wallpaper implementation, cache, and troubleshooting.

@@ -19,10 +19,10 @@ let
         5
       ];
   plymouthTheme =
-    pkgs.runCommand "plymouth-jeffrey-latte"
+    pkgs.runCommand "plymouth-jeffrey-theme"
       {
         nativeBuildInputs = [ (pkgs.python3.withPackages (p: [ p.pillow ])) ];
-        script = pkgs.replaceVars ../../dotfiles/plymouth/latte.script {
+        script = pkgs.replaceVars ../../dotfiles/plymouth/theme.script {
           BACKGROUND = plymouthRGB roles.background;
           FOREGROUND = plymouthRGB roles.foreground;
           FONT = "${typography.family} ${toString typography.size}";
@@ -33,18 +33,18 @@ let
         };
       }
       ''
-        themeDir="$out/share/plymouth/themes/jeffrey-latte"
+        themeDir="$out/share/plymouth/themes/jeffrey-theme"
         mkdir -p "$themeDir"
-        cp "$script" "$themeDir/latte.script"
-        cat > "$themeDir/jeffrey-latte.plymouth" <<EOF
+        cp "$script" "$themeDir/theme.script"
+        cat > "$themeDir/jeffrey-theme.plymouth" <<EOF
         [Plymouth Theme]
-        Name=Jeffrey Latte
+        Name=Jeffrey Theme
         Description=Shared-theme disk unlock
         ModuleName=script
 
         [script]
         ImageDir=$themeDir
-        ScriptFile=$themeDir/latte.script
+        ScriptFile=$themeDir/theme.script
         EOF
         export themeDir
         python3 <<'PY'
@@ -90,7 +90,7 @@ let
         # Upstream exposes most colors as settings, but hardcodes selection/failure.
         postInstall = (old.postInstall or "") + ''
           substituteInPlace "$out/share/sddm/themes/where_is_my_sddm_theme/Main.qml" \
-            --replace-fail 'selectedTextColor: "#000000"' 'selectedTextColor: "${roles.foreground}"' \
+            --replace-fail 'selectedTextColor: "#000000"' 'selectedTextColor: "${roles.selectionForeground}"' \
             --replace-fail 'selectionColor: textColor' 'selectionColor: "${roles.selection}"' \
             --replace-fail 'border.color: "#ff3117"' 'border.color: "${roles.error}"' \
             --replace-fail 'backgroundBorder.border.width = 5;' 'backgroundBorder.border.width = ${toString geometry.borderWidth};' \
@@ -104,9 +104,9 @@ in
   # No initrd-style, storage, keyfile or encryption changes are needed.
   boot.plymouth = {
     enable = true;
-    theme = "jeffrey-latte";
+    theme = "jeffrey-theme";
     themePackages = [ plymouthTheme ];
-    font = "${pkgs.monaspace.static}/share/fonts/opentype/MonaspaceNeon-Regular.otf";
+    font = "${lib.getAttrFromPath typography.package pkgs}/${typography.bootFontFile}";
   };
 
   programs.hyprland = {
@@ -146,13 +146,13 @@ in
     };
   };
   # Make cursor assets available to the separate greeter account as well.
-  environment.systemPackages = [ pkgs.catppuccin-cursors.mochaDark ];
+  environment.systemPackages = [ (lib.getAttrFromPath cursor.package pkgs) ];
 
   security = {
     polkit.enable = true;
     rtkit.enable = true;
     # Declare authentication directly: the NixOS hyprlock module also enables
-    # an idle service, which is not requested. Home Manager supplies the locker.
+    # an idle service. Keep locking manual; Home Manager supplies the locker.
     pam.services.hyprlock = { };
   };
 
@@ -169,8 +169,8 @@ in
   };
 
   fonts.packages = with pkgs; [
-    monaspace.static
-    nerd-fonts.symbols-only
+    (lib.getAttrFromPath typography.package pkgs)
+    (lib.getAttrFromPath typography.symbolsPackage pkgs)
     noto-fonts
     noto-fonts-color-emoji
   ];

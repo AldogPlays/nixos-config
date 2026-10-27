@@ -9,7 +9,6 @@ let
   theme = import ../../theme;
   inherit (theme)
     roles
-    palette
     typography
     geometry
     ;
@@ -32,19 +31,19 @@ let
   gtkColors = {
     accent_color = roles.accent;
     accent_bg_color = roles.accent;
-    accent_fg_color = roles.background;
+    accent_fg_color = roles.onAccent;
     destructive_color = roles.error;
     destructive_bg_color = roles.error;
-    destructive_fg_color = roles.background;
+    destructive_fg_color = roles.onError;
     success_color = roles.success;
     success_bg_color = roles.success;
-    success_fg_color = roles.background;
+    success_fg_color = roles.onSuccess;
     warning_color = roles.foreground;
     warning_bg_color = roles.warning;
-    warning_fg_color = roles.foreground;
+    warning_fg_color = roles.onWarning;
     error_color = roles.error;
     error_bg_color = roles.error;
-    error_fg_color = roles.background;
+    error_fg_color = roles.onError;
     window_bg_color = roles.background;
     window_fg_color = roles.foreground;
     view_bg_color = roles.background;
@@ -83,13 +82,13 @@ let
     theme_base_color = roles.background;
     theme_text_color = roles.foreground;
     theme_selected_bg_color = roles.selection;
-    theme_selected_fg_color = roles.foreground;
+    theme_selected_fg_color = roles.selectionForeground;
     theme_unfocused_bg_color = roles.background;
     theme_unfocused_fg_color = roles.foreground;
     theme_unfocused_base_color = roles.background;
     theme_unfocused_text_color = roles.foreground;
     theme_unfocused_selected_bg_color = roles.selection;
-    theme_unfocused_selected_fg_color = roles.foreground;
+    theme_unfocused_selected_fg_color = roles.selectionForeground;
   };
   gtkNamedColors = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (name: value: "@define-color ${name} ${value};") gtkColors
@@ -112,7 +111,7 @@ let
     ForegroundInactive = rgb roles.foregroundMuted;
     ForegroundActive = rgb roles.accent;
     ForegroundLink = rgb roles.accent;
-    ForegroundVisited = rgb palette.mauve;
+    ForegroundVisited = rgb roles.linkVisited;
     ForegroundNegative = rgb roles.error;
     ForegroundNeutral = rgb roles.foregroundMuted;
     ForegroundPositive = rgb roles.success;
@@ -147,15 +146,15 @@ let
           "ForegroundNegative"
           "ForegroundNeutral"
           "ForegroundPositive"
-        ] (_: rgb roles.foreground))
+        ] (_: rgb roles.selectionForeground))
         // {
           BackgroundNormal = rgb roles.selection;
           BackgroundAlternate = rgb roles.selection;
         };
       "ColorEffects:Inactive".Enable = false;
       General = {
-        Name = "Jeffrey Latte";
-        ColorScheme = "JeffreyLatte";
+        Name = "Jeffrey Theme";
+        ColorScheme = "JeffreyTheme";
         shadeSortColumn = false;
       };
     };
@@ -163,10 +162,10 @@ in
 {
   gtk = {
     enable = true;
-    colorScheme = "light";
+    colorScheme = theme.appearance;
     gtk3 = {
       theme = {
-        name = "adw-gtk3";
+        name = "adw-gtk3" + lib.optionalString (theme.appearance == "dark") "-dark";
         package = pkgs.adw-gtk3;
       };
       extraCss = gtkNamedColors;
@@ -189,7 +188,7 @@ in
     };
   };
   home.pointerCursor = {
-    package = pkgs.catppuccin-cursors.mochaDark;
+    package = lib.getAttrFromPath theme.cursor.package pkgs;
     inherit (theme.cursor) name size;
     gtk.enable = true;
     x11.enable = true;
@@ -268,12 +267,12 @@ in
   };
   # Expose the icon theme already in Dolphin's closure to the user's Qt apps.
   home.packages = [
-    pkgs.kdePackages.breeze-icons
+    (lib.getAttrFromPath theme.icons.qt.package pkgs)
     # GTK's default symbolic icons, used by the OSD and notification controls.
-    pkgs.adwaita-icon-theme
+    (lib.getAttrFromPath theme.icons.gtk.package pkgs)
   ];
-  xdg.dataFile."color-schemes/JeffreyLatte.colors".source =
-    (pkgs.formats.ini { }).generate "JeffreyLatte.colors"
+  xdg.dataFile."color-schemes/JeffreyTheme.colors".source =
+    (pkgs.formats.ini { }).generate "JeffreyTheme.colors"
       kdeScheme;
   xdg.configFile."kdeglobals".source = (pkgs.formats.ini { }).generate "kdeglobals" (
     kdeScheme
@@ -289,7 +288,7 @@ in
         TerminalService = "Alacritty.desktop";
         BrowserApplication = "librewolf.desktop";
       };
-      Icons.Theme = "breeze";
+      Icons.Theme = theme.icons.qt.name;
       KDE.widgetStyle = "Breeze";
     }
   );

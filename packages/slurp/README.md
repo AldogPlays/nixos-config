@@ -1,7 +1,7 @@
 # Screenshot selector
 
 Pinned Slurp already supports rectangle clicks and free dragging together.
-Our screenshot helper passes visible windows on stdin and `-o` for displays,
+The screenshot helper passes visible windows on stdin and `-o` for displays,
 without `-r` (which would prohibit dragging).
 
 The small patch preserves a hovered click target until the pointer moves at

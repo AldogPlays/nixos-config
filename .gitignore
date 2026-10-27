@@ -7,3 +7,14 @@ __pycache__/
 *.swp
 *.swo
 *~
+
+# Local credentials, generated hosts and workspace metadata.
+/.aws/
+/.agents/
+/.codex/
+/project-host.json
+/project-host.nix
+/project-hardware.nix
+*.hm-backup
+.env
+.env.*

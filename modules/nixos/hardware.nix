@@ -2,6 +2,13 @@
 
 let
   powerPython = pkgs.python3.withPackages (p: [ p.pygobject3 ]);
+  batteryCharge = pkgs.writeShellApplication {
+    name = "battery-charge";
+    runtimeInputs = [ pkgs.python3 ];
+    text = ''
+      exec python3 ${../../scripts/battery-charge.py} "$@"
+    '';
+  };
 in
 {
   hardware = {
@@ -19,7 +26,35 @@ in
     upower.enable = true;
   };
 
-  environment.systemPackages = [ pkgs.libva-utils ];
+  environment.systemPackages = [
+    pkgs.libva-utils
+    batteryCharge
+  ];
+
+  # Apply a firmware preset once, then exit; manual full charging lasts to reboot.
+  systemd.services.battery-charge-limit = {
+    description = "Enable firmware battery conservation where supported";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-udev-trigger.service" ];
+    # Driver extensions attach the charge_types attribute during device discovery.
+    preStart = ''
+      if ! ${pkgs.systemd}/bin/udevadm settle --timeout=10; then
+        echo "Device discovery is still busy; checking available battery controls."
+      fi
+    '';
+    # A routine rebuild must not undo an intentional full-charge override.
+    restartIfChanged = false;
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${batteryCharge}/bin/battery-charge protect";
+      RemainAfterExit = true;
+      NoNewPrivileges = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      PrivateTmp = true;
+      RestrictAddressFamilies = [ "AF_UNIX" ];
+    };
+  };
 
   # Event-driven profiles and low-battery backlight cap; no polling or new daemon.
   systemd.services.power-source-profile = {

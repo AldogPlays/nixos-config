@@ -4,9 +4,11 @@ Status: native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
 SwayNC, Dolphin/KDE Qt colors, GTK3/GTK4, Plymouth, SDDM and hyprlock. This is not
 yet a claim that the entire desktop is themed.
 
-This is a fixed Catppuccin Latte theme. The palette is plain Nix data with no
-additional flake inputs, selectors, generated runtime state, or background
-services. App adapters may install their native styling plugins.
+Catppuccin Latte remains the selected theme. The adapter contract uses semantic
+roles, standard terminal slots and syntax purposes rather than Catppuccin keys.
+Theme data stays plain Nix, with no additional flake inputs, runtime switching,
+generated runtime state or background services. App adapters may install their
+native styling plugins.
 
 ## Source of truth
 
@@ -14,10 +16,12 @@ services. App adapters may install their native styling plugins.
   [Catppuccin palette v1.8.0](https://github.com/catppuccin/palette/blob/v1.8.0/palette.json).
   The upstream project uses the [MIT license](https://github.com/catppuccin/palette/blob/v1.8.0/LICENSE).
   Values are stored locally and versioned in Git; builds do not fetch a palette.
-- `default.nix` is the public entry point. It exports `name`, `variant`,
-  `appearance`, `palette`, `roles`, `typography`, `cursor`, `geometry`, and
-  `material`. Every color is an opaque lowercase `#rrggbb` string.
-- `roles` assigns colors to purposes. These assignments are our starting choices,
+- `default.nix` is the public entry point. Its adapter contract is `appearance`,
+  `roles`, `terminal`, `syntax`, `typography`, `cursor`, `icons`, `geometry` and
+  `material`. Every color is an opaque lowercase `#rrggbb` string. `name` and
+  `variant` identify the selected theme; the exported `palette` is reference data,
+  not an adapter dependency. A replacement theme need not expose Catppuccin keys.
+- `roles` assigns colors to purposes. These assignments describe the selected desktop colors,
   not an official Catppuccin application theme. Adjust a shared role here instead
   of changing the upstream palette or copying hex values into app configuration.
 
@@ -32,6 +36,11 @@ services. App adapters may install their native styling plugins.
 | `border` | `surface1` | Unfocused borders and separators |
 | `borderFocused` | `blue` | Focus indication |
 | `selection` | `surface0` | Selection background |
+| `selectionForeground` | `text` | Text on selections |
+| `onAccent`, `onSuccess`, `onError` | `base` | Text on the corresponding filled color |
+| `onWarning` | `text` | Text on warning fills |
+| `onForegroundMuted` | `base` | Text on muted-text-colored search fills |
+| `linkVisited` | `mauve` | Visited KDE links |
 | `success` | `green` | Success indication |
 | `warning` | `yellow` | Warning indication |
 | `error` | `red` | Error indication |
@@ -55,10 +64,24 @@ in
 The relative import above matches the Home Manager modules two directories below
 the repository root.
 
-Adapters should consume `roles` for common UI colors. Use `palette` directly
-when a feature needs named colors, such as syntax highlighting. Keep shared role
-assignments here and app-specific formatting in the adapter. Add reusable format
-helpers only when an actual integration needs them.
+Adapters consume `roles` for common UI colors, `terminal.normal`/`bright` for
+standard ANSI slots, `terminal.indexed` for explicit indexed overrides, and
+`terminal.viCursor`/`onViCursor` for the terminal's vi-mode cursor. `syntax`
+provides `variable`, `parameter` and `function` colors. Map these purposes to the
+selected palette here; keep app-specific formatting in the adapter. Do not read
+`palette` directly from an application module. Unspecified indexed colors and
+application-defined truecolor values remain outside this contract.
+
+`appearance` is `light` or `dark`. It drives GTK's appearance preference, the
+matching adw-gtk3 structural variant and Delta's light-mode flag. It does not
+calculate a new palette: a dark theme must also supply suitable role values.
+Foreground/background pairs are explicit so a future theme can choose readable
+text independently of its main background; verify contrast for each new palette.
+
+Generated integration identifiers stay stable: Rofi uses `desktop.rasi`, KDE
+uses `JeffreyTheme.colors`/`JeffreyTheme`, and Plymouth uses `jeffrey-theme` with
+`dotfiles/plymouth/theme.script`. Their names do not select colors. Renaming
+these identifiers does not change the selected Latte styling.
 
 Keep alpha separate from the canonical colors. An adapter can strip `#`, append
 an alpha channel, or generate the required syntax; it should not invent a second
@@ -66,9 +89,16 @@ set of Latte values. Document unavoidable exceptions, including packaged assets
 that cannot consume individual colors. Check readability for each actual use;
 membership in the palette alone does not establish sufficient text contrast.
 
-`typography` holds the shared UI font family, monospace symbol fallback and point
-size. Alacritty, Rofi, Waybar, SwayNC, GTK defaults and KDE UI font roles translate these into native
-settings; CSS uses `pt` rather than `px`. Website fonts and independent app
+`typography` holds the shared UI font family, monospace symbol fallback, point
+size, font package paths and boot font file. Package paths such as
+`[ "monaspace" "static" ]` are resolved with `lib.getAttrFromPath` against pinned
+`pkgs`, keeping the theme import evaluable as plain JSON. Cursor package/name/size
+and Qt icon package/name plus GTK symbolic-icon assets are selected here too.
+The GTK icon theme is not newly forced; supplying its existing assets preserves
+current defaults. Toolkit widget structures (Breeze and adw-gtk3) remain adapter
+dependencies rather than independent application palettes.
+Alacritty, Rofi, Waybar, SwayNC, GTK defaults and KDE UI font roles translate these
+into native settings; CSS uses `pt` rather than `px`. Website fonts and independent app
 overrides are not forced. `geometry` supplies common shell border width, rounding,
 spacing, padding, overlay insets, icon size and compact control height in logical
 pixels. Hyprland, Waybar, Rofi, SwayNC, SwayOSD, GTK4 and the authentication
@@ -83,11 +113,11 @@ derived from the outer radius where needed.
 Integrations follow normal rebuild and app reload/restart behavior.
 No runtime refresh or switching mechanism is planned.
 
-## Integration research (2026-10-16)
+## Integration references
 
-Reference ports were inspected outside the repository under `/tmp`; they are not
-vendored, imported, added to the lock file, or used as build dependencies. These
-links document research, not an instruction to fetch themes during activation.
+Adapters generate native application configuration from the shared theme data.
+The references below describe the relevant formats and integration choices.
+Reference ports are not build dependencies or fetched during activation.
 
 | Component | Native integration and reference |
 | --- | --- |
@@ -98,10 +128,10 @@ links document research, not an instruction to fetch themes during activation.
 | Waybar | `desktop.nix`: native GTK3 CSS; [upstream styling manual](https://github.com/Alexays/Waybar/blob/master/man/waybar-styles.5.scd.in) and [reference port](https://github.com/catppuccin/waybar/tree/ee8ed32b4f63e9c417249c109818dcc05a2e25da). Colors are interpolated directly, without importing a second palette file. |
 | SwayNC | `desktop.nix`: GTK4 custom properties from the pinned 0.12.6 package's default stylesheet, plus compact widget/card spacing, small icons, flat buttons, DND and keyboard-focus styling. The panel fits its content; panel and popups share the outer tile gap below the usable screen edge and from the right edge, aligning with tiled windows; notification cards use thin borders, while the panel shares Waybar tooltips’ main background, muted outline, font and rounding, retaining its roomier control spacing. Colors and typography come from this directory; panel and popup backgrounds are opaque like Waybar. The [reference port](https://github.com/catppuccin/swaync/tree/f09852bfa35d50e763ae967c26dbe524b9e9f305) informs state coverage, not a copied replacement stylesheet. [Upstream project](https://github.com/ErikReider/SwayNotificationCenter) documents native styling. Default structural CSS remains loaded by SwayNC. |
 | Hyprland | `desktop.nix` renders role colors into the Lua source's explicit placeholders, using the pinned 0.55.4 parser/API and the [Lua reference port](https://github.com/catppuccin/hyprland/tree/9f03f26fc10a00e00ec6b2ac2a41e44d16297548) for color-format guidance. Placeholders must not be substituted with a generic variable expander: audio bindings contain unrelated `@DEFAULT_AUDIO_SINK@` tokens. |
-| Dolphin/KDE Qt | `desktop.nix` generates KDE RGB color groups in `kdeglobals` and `color-schemes/JeffreyLatte.colors`. Group coverage was researched from the [KDE reference port](https://github.com/catppuccin/kde/tree/6606b5179cfc1e9ba5c3b6b70e15c468e2dddca2); behavior/terminal keys were checked against pinned Dolphin 26.04.3/KIO 6.26.0 sources and the [Dolphin handbook](https://docs.kde.org/trunk_kf6/en/dolphin/dolphin/configuring-dolphin.html). Selection uses our readable shared selection/text roles rather than the port's separate accent/white palette choice. The Qt platform plugin and Breeze widget style are native rendering dependencies, not a second Latte palette. |
+| Dolphin/KDE Qt | `desktop.nix` generates KDE RGB color groups in `kdeglobals` and `color-schemes/JeffreyTheme.colors`. Group coverage was researched from the [KDE reference port](https://github.com/catppuccin/kde/tree/6606b5179cfc1e9ba5c3b6b70e15c468e2dddca2); behavior/terminal keys were checked against pinned Dolphin 26.04.3/KIO 6.26.0 sources and the [Dolphin handbook](https://docs.kde.org/trunk_kf6/en/dolphin/dolphin/configuring-dolphin.html). Selection uses the shared selection/text roles rather than the port's separate accent/white palette choice. The Qt platform plugin and Breeze widget style are native rendering dependencies, not a second Latte palette. |
 | GTK3/GTK4 | `desktop.nix` translates one semantic color map into GTK named colors and GTK4 CSS variables. Pinned [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) provides GTK3 structure; GTK4/libadwaita retains its native layout. [Libadwaita's CSS-variable documentation](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/css-variables.html) and the pinned adw-gtk3 CSS determine coverage. The [archived Catppuccin GTK port](https://github.com/catppuccin/gtk) was researched but is not installed or vendored. |
 | SDDM | `modules/nixos/hyprland.nix` uses the pinned [where-is-my-sddm-theme](https://github.com/stepanzubkov/where-is-my-sddm-theme/tree/v1.12.0) layout and native settings, with fail-fast substitutions for hardcoded selection/failure colors and a static thin error outline. [SDDM's theming API](https://github.com/sddm/sddm/wiki/Theming) and the [Catppuccin reference port](https://github.com/catppuccin/sddm) informed research; the latter is not a build dependency. |
-| Plymouth | `modules/nixos/hyprland.nix` generates a theme for the pinned native script plugin; `dotfiles/plymouth/latte.script` renders prompt, mask and messages. Colors are normalized from shared roles, the initrd includes Monaspace Neon, and the plain field image is generated at build time from shared geometry. Pillow is a build dependency only. No separate Catppuccin theme package, logo or animation is installed. [Plymouth's documentation](https://www.freedesktop.org/wiki/Software/Plymouth/) describes its early-boot role. Boot rendering and successful graphical unlocking still require validation after authorized activation/boot. |
+| Plymouth | `modules/nixos/hyprland.nix` generates a theme for the pinned native script plugin; `dotfiles/plymouth/theme.script` renders prompt, mask and messages. Colors are normalized from shared roles, the initrd includes Monaspace Neon, and the plain field image is generated at build time from shared geometry. Pillow is a build dependency only. No separate Catppuccin theme package, logo or animation is installed. [Plymouth's documentation](https://www.freedesktop.org/wiki/Software/Plymouth/) describes its early-boot role. Boot rendering and successful graphical unlocking still require validation after activation and boot. |
 | Hyprlock | Home Manager generates native settings from roles and typography, checked against pinned 0.9.5 source, [upstream documentation](https://wiki.hypr.land/Hypr-Ecosystem/hyprlock/) and the [Catppuccin reference](https://github.com/catppuccin/hyprlock). No copied palette, wallpaper reader, command-driven clock or refresh service is needed. PAM is declared separately in the NixOS desktop module. |
 
 `material` supplies focused/unfocused opacity values and Hyprland blur parameters
@@ -146,19 +176,20 @@ starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
 
 Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette,
-LibreWolf, Snap, and app-specific TUI themes. Personal wallpaper images are
-deliberately independent of the palette; see
+LibreWolf, Joplin, ChatGPT/Codex, Steam, Modrinth, Packet Tracer, and app-specific
+TUI themes (wlctl, Bluetui, Wiremix and Codex CLI). Lutris and Print Settings may
+inherit generic GTK styling; app-specific overrides are not covered.
+Personal wallpaper images are deliberately independent of the palette; see
 [workspace wallpapers](../docs/wallpapers.md). Terminal apps inherit Alacritty's
 ANSI palette where they use terminal colors; apps emitting their own truecolor
-values need separate research. Do not call those apps fully themed just because
-their terminal is.
+values need separate research. A terminal palette alone does not establish full application coverage.
 
 Gwenview and Ark reuse the KDE adapter. The cursor is an explicit packaged-asset
 exception: [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark
 from the pinned nixpkgs package, selected for contrast on the light desktop.
 The same package contains native Hyprcursor and Xcursor assets; Home Manager
 also sets GTK/X11 defaults and KDE's `kcminputrc`. `cursor` supplies its shared
-name/size to both the user session and greeter. No application Mocha palette
+package/name/size to both the user session and greeter. No application Mocha palette
 or runtime theme coordinator is introduced. Sandboxed applications that cannot
 read host settings and apps with their own CSS may not follow the GTK adapter.
 

@@ -21,6 +21,8 @@ values, decisions, progress notes, and completed work out of this file.
   Do not add features, dependencies, or visual effects just because they are
   common in other Hyprland setups.
 - Prefer compact spacing, thin borders, and restrained decoration.
+- Write reader-facing documentation and GitHub text as direct project
+  documentation. Keep conversation history and task narration out of it.
 - Keep persistent customization in this repository so it survives rebuilds and
   can be reproduced from the pinned inputs. Explain what was applied live and
   what still requires activation.

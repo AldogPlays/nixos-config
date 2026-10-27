@@ -8,7 +8,8 @@
 let
   theme = import ../../theme;
   inherit (theme)
-    palette
+    terminal
+    syntax
     roles
     typography
     geometry
@@ -18,16 +19,6 @@ let
   glassBackground =
     roles.background
     + lib.fixedWidthString 2 "0" (lib.toHexString (builtins.floor (theme.material.opacity * 255)));
-  ansi = {
-    black = palette.surface1;
-    red = palette.red;
-    green = palette.green;
-    yellow = palette.yellow;
-    blue = palette.blue;
-    magenta = palette.pink;
-    cyan = palette.teal;
-    white = palette.subtext1;
-  };
 in
 {
   programs.librewolf = {
@@ -52,18 +43,18 @@ in
             bleopt complete_auto_delay=200
             bleopt editor=nano
             ble-face auto_complete='fg=${roles.foregroundMuted},italic'
-            ble-face region='fg=${roles.foreground},bg=${roles.selection}'
+            ble-face region='fg=${roles.selectionForeground},bg=${roles.selection}'
             ble-face disabled='fg=${roles.foregroundMuted}'
             ble-face syntax_error='fg=${roles.error},underline'
             ble-face syntax_command='fg=${roles.accent}'
             ble-face syntax_comment='fg=${roles.foregroundMuted}'
             ble-face syntax_quoted='fg=${roles.success}'
             ble-face syntax_quotation='fg=${roles.success},bold'
-            ble-face syntax_varname='fg=${palette.mauve}'
-            ble-face syntax_param_expansion='fg=${palette.mauve}'
+            ble-face syntax_varname='fg=${syntax.variable}'
+            ble-face syntax_param_expansion='fg=${syntax.parameter}'
             ble-face command_builtin='fg=${roles.accent}'
             ble-face command_alias='fg=${roles.info}'
-            ble-face command_function='fg=${palette.mauve}'
+            ble-face command_function='fg=${syntax.function}'
             ble-face command_file='fg=${roles.accent}'
             ble-face filename_directory='fg=${roles.accent},underline'
             ble-face filename_link='fg=${roles.info},underline'
@@ -110,7 +101,7 @@ in
     enable = true;
     enableGitIntegration = true;
     options = {
-      light = true;
+      light = theme.appearance == "light";
       line-numbers = true;
       navigate = true;
       # Native diff highlighting, not a separately cached bat syntax palette.
@@ -194,7 +185,7 @@ in
     ];
     # Native Rasi; reference port informs selectors, not a second color source.
     theme = toString (
-      pkgs.writeText "latte.rasi" ''
+      pkgs.writeText "desktop.rasi" ''
         @theme "default"
         * {
           background: ${glassBackground};
@@ -207,19 +198,19 @@ in
           alternate-normal-background: transparent;
           alternate-normal-foreground: @foreground;
           selected-normal-background: ${roles.selection};
-          selected-normal-foreground: @foreground;
+          selected-normal-foreground: ${roles.selectionForeground};
           active-background: transparent;
           active-foreground: ${roles.accent};
           alternate-active-background: transparent;
           alternate-active-foreground: ${roles.accent};
           selected-active-background: ${roles.accent};
-          selected-active-foreground: ${roles.background};
+          selected-active-foreground: ${roles.onAccent};
           urgent-background: transparent;
           urgent-foreground: ${roles.error};
           alternate-urgent-background: transparent;
           alternate-urgent-foreground: ${roles.error};
           selected-urgent-background: ${roles.error};
-          selected-urgent-foreground: ${roles.background};
+          selected-urgent-foreground: ${roles.onError};
           separatorcolor: ${roles.border};
           spacing: ${px (geometry.spacing / 2)};
         }
@@ -244,24 +235,24 @@ in
           bright_foreground = roles.foreground;
         };
         cursor = {
-          text = roles.background;
+          text = roles.onAccent;
           cursor = roles.accent;
         };
         vi_mode_cursor = {
-          text = roles.background;
-          cursor = palette.lavender;
+          text = terminal.onViCursor;
+          cursor = terminal.viCursor;
         };
         selection = {
-          text = roles.foreground;
+          text = roles.selectionForeground;
           background = roles.selection;
         };
         search = {
           matches = {
-            foreground = roles.background;
+            foreground = roles.onForegroundMuted;
             background = roles.foregroundMuted;
           };
           focused_match = {
-            foreground = roles.background;
+            foreground = roles.onAccent;
             background = roles.accent;
           };
         };
@@ -271,7 +262,7 @@ in
         };
         hints = {
           start = {
-            foreground = roles.background;
+            foreground = roles.onAccent;
             background = roles.accent;
           };
           end = {
@@ -279,21 +270,9 @@ in
             background = roles.surface;
           };
         };
-        normal = ansi;
-        bright = ansi // {
-          black = palette.surface2;
-          white = palette.subtext0;
-        };
-        indexed_colors = [
-          {
-            index = 16;
-            color = palette.peach;
-          }
-          {
-            index = 17;
-            color = palette.rosewater;
-          }
-        ];
+        normal = terminal.normal;
+        bright = terminal.bright;
+        indexed_colors = terminal.indexed;
       };
       font = {
         normal.family = typography.family;
