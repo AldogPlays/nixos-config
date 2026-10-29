@@ -88,6 +88,23 @@ or session service is started. Appearance and group configuration live in
 `home/jeffreyc/desktop.nix`; the shortcut and existing bar visibility policy live
 in `dotfiles/hypr/hyprland.lua`.
 
+### Photo editing with darktable
+
+Open **Darktable** from Rofi or run `darktable`. It starts on demand, with no
+background service. `home/jeffreyc/programs.nix` installs the pinned application
+and generates `~/.config/darktable/themes/desktop.css` from the shared theme.
+The launcher selects this stylesheet and the system font through temporary
+`--conf` overrides; other preferences, catalogues and edits remain user-managed.
+Restart darktable after switching the desktop theme. Neutral image surrounds,
+graphs and functional color swatches retain the native stylesheet's colors.
+Gwenview remains the default image viewer.
+
+Mesa's OpenCL driver in `modules/nixos/hardware.nix` supplies GPU processing.
+The darktable launcher enables its Rusticl platform and defaults
+`RUSTICL_ENABLE` to `radeonsi` for AMD GPUs; an existing environment setting takes
+precedence. Other graphics hardware can fall back to CPU processing or use its
+own configured OpenCL driver. Darktable's normal OpenCL preference remains writable.
+
 ### Android apps and photo uploads
 
 For Android applications and Dolphin's **Waydroid** sidebar entry, see

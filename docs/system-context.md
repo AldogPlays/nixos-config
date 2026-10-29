@@ -54,6 +54,18 @@ input for a version newer than 3.7.0; stable nixpkgs supplies 3.5.13.
 It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart service or sync
 account is configured. Notes and application preferences remain user-managed.
 
+Darktable is declared in `home/jeffreyc/programs.nix` from pinned stable nixpkgs.
+Its CLI and desktop launcher select a generated native GTK stylesheet using
+temporary `--conf` overrides. Interface colors and typography follow the shared
+theme; image surrounds, graphs and functional color swatches retain native
+colors for photo assessment. Catalogues, edits and other preferences stay
+user-managed. It starts on demand, with no new service or default image association.
+Mesa's separate OpenCL output supplies the compute driver without a ROCm stack.
+The application wrapper enables its Rusticl platform and defaults the AMD device
+selector for this laptop, while preserving an explicit environment override.
+On 2026-10-29, darktable-cltest compiled its kernels and initialized the Radeon
+860M through Rusticl successfully; this does not validate every photo operation.
+
 Steam is enabled through the NixOS module in `modules/nixos/hyprland.nix`.
 That module supplies its runtime and `steam-run`, enables 32-bit graphics/audio,
 and adds controller udev rules plus the `uinput` kernel module. Steam launches

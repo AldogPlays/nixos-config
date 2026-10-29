@@ -13,7 +13,11 @@ in
 {
   hardware = {
     enableRedistributableFirmware = true;
-    graphics.enable = true;
+    graphics = {
+      enable = true;
+      # Mesa's OpenCL output supplies GPU photo processing without a ROCm stack.
+      extraPackages = [ pkgs.mesa.opencl ];
+    };
     # Match SDR++'s V4-capable driver; install USB rules and block DVB claiming it.
     rtl-sdr = {
       enable = true;

@@ -20,8 +20,76 @@ let
   glassBackground =
     roles.background
     + lib.fixedWidthString 2 "0" (lib.toHexString (builtins.floor (theme.material.opacity * 255)));
+  darktable = pkgs.symlinkJoin {
+    name = "darktable-desktop-${pkgs.darktable.version}";
+    paths = [ pkgs.darktable ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      rm "$out/bin/darktable"
+      makeWrapper ${lib.getExe' pkgs.darktable "darktable"} "$out/bin/darktable" \
+        --set-default RUSTICL_ENABLE radeonsi \
+        --add-flags '--conf ui_last/theme=desktop --conf use_system_font=true --conf clplatform_rusticl=true'
+      desktop="$out/share/applications/org.darktable.darktable.desktop"
+      cp --remove-destination ${pkgs.darktable}/share/applications/org.darktable.darktable.desktop "$desktop"
+      substituteInPlace "$desktop" --replace-fail '${pkgs.darktable}/bin/darktable' "$out/bin/darktable"
+    '';
+    meta = pkgs.darktable.meta;
+  };
 in
 {
+  home.packages = [ darktable ];
+
+  # Only the stylesheet is managed; preferences, catalogues and edits stay writable.
+  # Native --conf overrides select it without rewriting darktablerc on exit.
+  xdg.configFile."darktable/themes/desktop.css".text = ''
+    @import url("${pkgs.darktable}/share/darktable/themes/darktable.css");
+
+    @define-color selected_bg_color ${roles.selection};
+    @define-color border_color ${roles.border};
+    @define-color bg_color ${roles.background};
+    @define-color fg_color ${roles.foreground};
+    @define-color base_color ${roles.foreground};
+    @define-color text_color ${roles.foreground};
+    @define-color placeholder_text_color ${roles.foregroundMuted};
+    @define-color disabled_fg_color alpha(${roles.foreground}, 0.4);
+    @define-color scroll_bar_inactive ${roles.border};
+    @define-color scroll_bar_active ${roles.accent};
+    @define-color scroll_bar_bg ${roles.backgroundAlt};
+    @define-color plugin_bg_color ${roles.backgroundAlt};
+    @define-color section_label ${roles.foreground};
+    @define-color plugin_label_color ${roles.foregroundMuted};
+    @define-color collapsible_bg_color ${roles.surface};
+    @define-color bauhaus_bg ${roles.background};
+    @define-color bauhaus_fg ${roles.foreground};
+    @define-color bauhaus_border ${roles.border};
+    @define-color bauhaus_indicator_border ${roles.border};
+    @define-color bauhaus_fill ${roles.accent};
+    @define-color bauhaus_bg_hover ${roles.selection};
+    @define-color bauhaus_fg_hover ${roles.selectionForeground};
+    @define-color bauhaus_fg_selected ${roles.selectionForeground};
+    @define-color bauhaus_fg_insensitive alpha(${roles.foreground}, 0.4);
+    @define-color button_bg ${roles.surface};
+    @define-color button_fg ${roles.foreground};
+    @define-color button_border ${roles.border};
+    @define-color button_hover_bg ${roles.selection};
+    @define-color button_hover_fg ${roles.selectionForeground};
+    @define-color field_bg ${roles.background};
+    @define-color field_fg ${roles.foreground};
+    @define-color field_active_bg ${roles.backgroundAlt};
+    @define-color field_active_fg ${roles.foreground};
+    @define-color field_selected_bg ${roles.selection};
+    @define-color field_selected_fg ${roles.selectionForeground};
+    @define-color field_hover_bg ${roles.selection};
+    @define-color field_hover_fg ${roles.selectionForeground};
+    @define-color tooltip_bg_color ${roles.background};
+    @define-color tooltip_fg_color ${roles.foreground};
+    @define-color really_dark_bg_color ${roles.backgroundAlt};
+    @define-color log_fg_color ${roles.foreground};
+
+    /* Preserve native neutral image surrounds, graphs and functional color swatches. */
+    * { font-family: "${typography.family}"; }
+  '';
+
   programs.librewolf = {
     enable = true;
     policies = {

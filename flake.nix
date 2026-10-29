@@ -291,6 +291,7 @@
                 '';
               };
             readIntel = readFixture "pkgs.intel-media-driver";
+            readMesa = readFixture "pkgs.mesa.opencl pkgs.intel-media-driver";
             readCustom = readFixture "pkgs.hello";
           in
           assert intel.fileSystems."/".device == "/dev/disk/by-label/new-root";
@@ -301,8 +302,12 @@
           assert intel.home-manager.users.alex.home.homeDirectory == "/home/alex";
           assert intel.system.stateVersion == "25.11";
           assert intel.hardware.graphics.enable32Bit;
-          assert
-            (builtins.head intel.hardware.graphics.extraPackages).drvPath == pkgs.intel-media-driver.drvPath;
+          assert builtins.any (
+            p: p.outPath == pkgs.intel-media-driver.outPath
+          ) intel.hardware.graphics.extraPackages;
+          assert builtins.any (
+            p: p.outPath == pkgs.mesa.opencl.outPath
+          ) intel.hardware.graphics.extraPackages;
           assert intel.environment.etc."nixos-project-source".source == inputs.self.outPath;
           assert bios.boot.loader.grub.enable && !bios.boot.loader.systemd-boot.enable;
           assert bios.boot.loader.grub.devices == [ "/dev/disk/by-id/fixture" ];
@@ -312,6 +317,8 @@
           assert readIntel.graphics.extraPackageNames == [ "intel-media-driver" ];
           assert readIntel.graphics.extraPackageNames32 == [ "intel-media-driver" ];
           assert !readIntel.unsupportedGraphics;
+          assert readMesa.graphics.extraPackageNames == [ "intel-media-driver" ];
+          assert !readMesa.unsupportedGraphics;
           assert readCustom.unsupportedGraphics;
           assert monochrome.home-manager.users.alex.gtk.colorScheme == "dark";
           assert monochromeIdentity.preset == "monochrome";

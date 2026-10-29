@@ -22,7 +22,12 @@ let
     lib.findFirst (
       name: builtins.hasAttr name packageSet && packageSet.${name}.drvPath == package.drvPath
     ) null graphicsNames;
-  graphicsExtras = map (identifyGraphics evaluated.pkgs) config.hardware.graphics.extraPackages;
+  # The shared hardware module supplies Mesa OpenCL on every adopted host.
+  graphicsExtras = map (identifyGraphics evaluated.pkgs) (
+    builtins.filter (
+      package: package.outPath != evaluated.pkgs.mesa.opencl.outPath
+    ) config.hardware.graphics.extraPackages
+  );
   graphicsExtras32 = map (identifyGraphics evaluated.pkgs.pkgsi686Linux) config.hardware.graphics.extraPackages32;
 in
 {
