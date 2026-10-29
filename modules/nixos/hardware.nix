@@ -64,7 +64,8 @@ in
   # Event-driven profiles and low-battery backlight cap; no polling or new daemon.
   systemd.services.power-source-profile = {
     description = "Select a power profile from AC and battery state";
-    wantedBy = [ "multi-user.target" ];
+    # The packaged power daemon starts after multi-user.target.
+    wantedBy = [ "graphical.target" ];
     wants = [
       "upower.service"
       "power-profiles-daemon.service"

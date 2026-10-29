@@ -18,6 +18,8 @@ its own account, disks, encryption, bootloader and graphics settings.
 - Terminal-based Wi-Fi, Bluetooth and audio controls.
 - Automatic power profiles, low-battery brightness handling and firmware battery
   conservation on supported hardware.
+- Memory-pressure safeguards, compressed swap caching on hosts with disk swap,
+  and Nix build limits that leave room for desktop applications.
 - Portable bootstrap with a preview, a full build before activation and a backup
   of the existing `/etc/nixos` configuration.
 
@@ -76,6 +78,8 @@ Meta/Super is the Windows or logo key.
 | Lock screen | Meta+L |
 
 The [desktop guide](docs/desktop.md) lists the complete controls and behavior.
+The [maintenance guide](docs/maintenance.md#desktop-memory-safeguards) covers live
+memory checks and garbage collection that preserves existing rollback generations.
 
 ## Theme choice
 

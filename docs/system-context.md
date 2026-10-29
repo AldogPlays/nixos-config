@@ -100,6 +100,21 @@ snapshot policy, or Btrfs compression setting. Recovery tooling requires a desig
 appropriate to this layout. Weekly Nix garbage collection retains according to
 `--delete-older-than 30d`; it is not a personal-data backup.
 
+The shared core module enables zswap when the host has disk swap and does not
+use zram. It caches swapped pages with zstd compression in a bounded, on-demand
+RAM pool, then falls back to the existing swap device. Kernel parameters cover
+boot and NixOS's sysfs setters apply the same settings live; no new resident
+daemon is added. The pinned `boot.zswap` module still configures a `zpool` sysfs
+attribute removed by the selected kernel, so `modules/nixos/core.nix` uses the
+supported kernel-parameter and sysfs options directly. Hosts without disk swap
+keep their existing layout rather than gaining a swap partition or file.
+
+Nix build concurrency is limited in the shared core module to leave memory and
+CPU headroom for desktop applications. Packages that honor Nix's core setting
+use the per-build limit; these settings do not impose a hard memory cap. Large
+source builds can take longer. Command-line overrides remain available for an
+intentional foreground build.
+
 Home Manager's conflicting-file backup suffix is `.hm-backup`. The current editor
 is Nano, shell is Bash, locale is `en_US.UTF-8`, and timezone is
 `America/Los_Angeles`.
@@ -144,7 +159,16 @@ separate units. Rofi itself and short-lived compositor helpers stay direct.
 Existing app processes retain their original units until normally closed;
 they are not forcibly moved or restarted. This limits session-wide fallout,
 but does not cure a browser memory leak or guarantee responsiveness after all
-memory is exhausted. No extra daemon or storage/swap change is introduced.
+memory is exhausted.
+
+The existing systemd-oomd monitors the user manager's `app.slice` for sustained
+memory pressure and nearly exhausted swap. It can terminate an entire application
+unit, including unsaved work, to release memory before prolonged system stalls.
+Hyprland and core session services in `session.slice` are outside this monitoring
+scope. This is declared in `modules/nixos/core.nix` and starts through systemd;
+no second OOM daemon or arbitrary per-app RAM cap is installed. Pressure thresholds
+measure time stalled on memory, not the percentage of RAM occupied. This policy
+does not guarantee recovery from every allocation burst or kernel OOM.
 
 SwayNC keeps only its title, do-not-disturb switch and notification list. Its
 content-sized panel, compact spacing, small icons and flat controls are declared
@@ -187,7 +211,11 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
 power-profiles-daemon, and UPower. `power-source-profile.service`, declared in
-`modules/nixos/hardware.nix`, runs the repository's Python policy at system boot.
+`modules/nixos/hardware.nix`, runs the repository's Python policy at graphical boot.
+It is wanted by `graphical.target`, since the packaged power daemon starts after
+`multi-user.target`; attaching the helper to that earlier target creates a boot
+ordering cycle. Activation can reload this dependency without restarting the
+helper and resetting an intentional manual profile.
 It listens for UPower and power-profile D-Bus changes without polling. Automatic
 selection is Performance on AC, Balanced on battery, and Power Saver at or below
 20%. A manual profile change stays in effect until the power source changes;
@@ -267,9 +295,14 @@ setup with Wi-Fi or public resolvers.
 No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
 
 LibreWolf's package policies default downloads to the XDG Downloads folder and
-disable the per-download location prompt. Home Manager supplies the browser
-through `programs.librewolf`; existing browser profiles remain unmanaged. After
-activation, fully quit and reopen LibreWolf to load the policies.
+disable the per-download location prompt. They also enable automatic low-memory
+tab unloading by default; the pinned Linux build disables it. The preference is
+unlocked, allowing a profile override. Home Manager supplies the browser through
+`programs.librewolf` in `home/jeffreyc/programs.nix`; existing browser profiles
+remain unmanaged. This uses the browser's built-in tab unloader without an
+extension or service. After activation, fully quit and reopen LibreWolf to load
+the policies. Unloading inactive tabs can reduce memory pressure, but cannot
+guarantee recovery from a rapidly growing active tab.
 
 Printing is enabled in the shared NixOS desktop module, including portable hosts.
 CUPS starts through its socket for application print dialogs. Avahi and

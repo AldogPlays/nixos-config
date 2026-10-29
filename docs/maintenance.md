@@ -89,6 +89,49 @@ Weekly garbage collection removes generations according to the declared retentio
 policy. Keep independent backups; retained generations are not a data backup.
 Inspect `.hm-backup` files before removing them after Home Manager activation.
 
+To collect only unreferenced Nix store paths while preserving existing profile
+generations:
+
+```bash
+sudo nix-store --gc
+```
+
+This does not prune generations. The weekly retention policy remains separate;
+pruning a generation removes that rollback choice and can make its unique store
+paths collectible. Inspect project build caches and Git worktrees separately
+before removing them, since they may contain active or uncommitted work. Disk
+usage totals can count shared Btrfs extents more than once; use `df -h /` to
+measure space actually recovered.
+
+## Desktop memory safeguards
+
+`modules/nixos/core.nix` declares bounded zswap caching for hosts with disk swap,
+application-only systemd-oomd monitoring, and conservative Nix build concurrency.
+These shared settings also apply to bootstrap-generated hosts. Zswap uses the
+existing swap device and NixOS sysfs setters, without a new resident daemon.
+Hosts without disk swap or using zram skip zswap.
+
+The OOM policy can forcibly close a whole application unit and lose unsaved work.
+It monitors `app.slice`; Hyprland's `session.slice` is outside that scope.
+The memory-pressure percentage measures stalled time rather than RAM usage.
+Zswap trades CPU work and some RAM for reduced disk swapping. Nix concurrency
+limits reduce build contention, but cannot bound every build's memory use.
+
+After activation, check the live policy without inducing memory exhaustion:
+
+```bash
+oomctl --no-pager
+systemctl --user show app.slice -p ManagedOOMMemoryPressure -p ManagedOOMSwap
+cat /sys/module/zswap/parameters/enabled
+cat /sys/module/zswap/parameters/max_pool_percent
+nix config show | rg '^(max-jobs|cores) ='
+```
+
+Kernel parameters also preserve zswap settings on subsequent boots. Changing the
+power-policy target fixes its boot ordering; a successful activation does not
+establish that a fresh boot has been tested. No reboot is needed for the live
+memory settings.
+
 ## Diagnostics
 
 ```bash

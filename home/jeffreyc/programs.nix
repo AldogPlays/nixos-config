@@ -27,6 +27,11 @@ in
     policies = {
       DefaultDownloadDirectory = config.xdg.userDirs.download;
       PromptForDownloadLocation = false;
+      # The pinned Linux build disables automatic low-memory tab unloading.
+      Preferences."browser.tabs.unloadOnLowMemory" = {
+        Value = true;
+        Status = "default";
+      };
     };
   };
 

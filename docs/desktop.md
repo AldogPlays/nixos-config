@@ -88,6 +88,25 @@ or session service is started. Appearance and group configuration live in
 `home/jeffreyc/desktop.nix`; the shortcut and existing bar visibility policy live
 in `dotfiles/hypr/hyprland.lua`.
 
+### LibreWolf memory usage
+
+LibreWolf defaults to unloading inactive tabs when system memory runs low.
+Tabs remain in the tab bar and reload when selected; tabs playing media, using
+picture-in-picture or WebRTC are excluded. The built-in unloader keeps its normal
+inactivity rules, so it cannot guarantee protection against a rapidly growing
+active page. The default is declared through package policies in
+`home/jeffreyc/programs.nix`, without an extension or background service. Fully
+quit and reopen LibreWolf after activation to load changed policies.
+
+Open `about:processes` and sort by Memory to identify growing processes and their
+tabs. Right-click an unused tab and choose **Unload Tab** to release its contents
+while keeping the tab open. `about:unloads` shows automatic unloading priorities
+and offers manual unloading. Unloading reloads the page on its next visit; save
+unfinished work first. The `browser.tabs.unloadOnLowMemory` preference remains
+editable in `about:config`; set it to `false` if automatic unloading causes
+unwanted reloads. Linux memory detection can trigger unnecessary unloading,
+which is why upstream disables this default.
+
 ### Power profiles and battery
 
 Power mode defaults to Performance on AC, Balanced on battery, and Power Saver
