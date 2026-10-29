@@ -8,6 +8,12 @@ __pycache__/
 *.swo
 *~
 
+# Android application binaries and private APK signing identities.
+*.apk
+*.apkm
+*.keystore
+*.jks
+
 # Local credentials, generated hosts and workspace metadata.
 /.aws/
 /.agents/

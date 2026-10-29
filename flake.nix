@@ -127,15 +127,23 @@
           ];
         };
 
-      apps.${system}.bootstrap = {
-        type = "app";
-        meta.description = "Preview or adopt an installed x86-64 NixOS system";
-        program = nixpkgs.lib.getExe (
-          pkgs.callPackage ./packages/bootstrap.nix {
-            projectSource = inputs.self.outPath;
-            nixpkgsSource = nixpkgs.outPath;
-          }
-        );
+      apps.${system} = {
+        bootstrap = {
+          type = "app";
+          meta.description = "Preview or adopt an installed x86-64 NixOS system";
+          program = nixpkgs.lib.getExe (
+            pkgs.callPackage ./packages/bootstrap.nix {
+              projectSource = inputs.self.outPath;
+              nixpkgsSource = nixpkgs.outPath;
+            }
+          );
+        };
+
+        instagram-reels-patch = {
+          type = "app";
+          meta.description = "Build the pinned Instagram Reels-only clone from local original APKs";
+          program = nixpkgs.lib.getExe (pkgs.callPackage ./packages/instagram-reels { });
+        };
       };
 
       checks.${system} = {

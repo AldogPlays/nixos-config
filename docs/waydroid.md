@@ -26,6 +26,24 @@ installed from Aurora's Google Play catalog; sign in to Instagram inside Android
 Some Android apps only ship ARM binaries and require translation on this x86-64
 host. Compatibility must be checked against the actual downloaded app.
 
+## Instagram without the Reels tab
+
+The reference laptop also has **Instagram (no Reels)**, a separately signed,
+version-pinned clone built from the original x86-64 APKs. It hides the Reels
+navigation item and disables endless Reels swiping and pull-to-refresh. It does
+not remove every video or direct Reel link. The unchanged **Instagram** app and
+its account data remain available for recovery; the clone may need a separate
+sign-in. Both share the existing Android media folder.
+
+The source, pinned tools, exact inputs and manual update/recovery workflow are in
+[the Instagram package guide](../packages/instagram-reels/README.md).
+The clone is not delivered by normal Play/Aurora updates, and its APK-install
+request operation is denied. The original app is excluded in Aurora's Blacklist
+manager. This does not disable updates for other applications or NixOS.
+On a fresh installation, bootstrap supplies Waydroid and the repository supplies
+the build command; original APKs, sign-in and Android update preferences are
+separate setup steps. No proprietary Instagram APK is distributed by this flake.
+
 ## Photos
 
 **Waydroid** in Dolphin's Places sidebar opens `~/Waydroid`, a view of Android's

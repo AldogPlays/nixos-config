@@ -15,7 +15,8 @@ its own account, disks, encryption, bootloader and graphics settings.
   typography and cursor assets. Theme-specific palette names stay inside `theme/`.
 - Workspace-linked wallpapers, window/area screenshots and clipboard integration.
 - Dolphin, darktable, image/PDF/archive tools, LibreWolf, Joplin and gaming applications.
-- On-demand Waydroid with Aurora Store and a Dolphin photo-upload folder.
+- On-demand Waydroid with Aurora Store, a Dolphin photo-upload folder and a
+  version-pinned Instagram Reels-only patch command for locally supplied APKs.
 - Terminal-based Wi-Fi, Bluetooth and audio controls.
 - Automatic power profiles, low-battery brightness handling and firmware battery
   conservation on supported hardware.

@@ -98,12 +98,19 @@ The launcher selects this stylesheet and the system font through temporary
 Restart darktable after switching the desktop theme. Neutral image surrounds,
 graphs and functional color swatches retain the native stylesheet's colors.
 Gwenview remains the default image viewer.
+The general focus-dependent window opacity still applies; keep darktable focused
+while judging image colors.
 
 Mesa's OpenCL driver in `modules/nixos/hardware.nix` supplies GPU processing.
 The darktable launcher enables its Rusticl platform and defaults
 `RUSTICL_ENABLE` to `radeonsi` for AMD GPUs; an existing environment setting takes
 precedence. Other graphics hardware can fall back to CPU processing or use its
 own configured OpenCL driver. Darktable's normal OpenCL preference remains writable.
+The separate headless tools are unchanged. To test the AMD driver explicitly:
+
+```bash
+RUSTICL_ENABLE=radeonsi darktable-cltest --conf clplatform_rusticl=true
+```
 
 ### Android apps and photo uploads
 

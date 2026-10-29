@@ -12,6 +12,7 @@ software fetched and installed through Nix.
 | `theme/palettes/latte.nix` | [Catppuccin palette v1.8.0](https://github.com/catppuccin/palette/tree/v1.8.0) | MIT; [complete notice](theme/palettes/LICENSE) |
 | `packages/slurp/click-drag-threshold.patch` and the Slurp-based selection test | [emersion/slurp v1.5.0](https://github.com/emersion/slurp/tree/v1.5.0) | MIT; [upstream notice](packages/slurp/LICENSE) |
 | `packages/waybar-tray/tray-popup.patch` | [Alexays/Waybar 0.15.0](https://github.com/Alexays/Waybar/tree/0.15.0) | MIT; [upstream notice](packages/waybar-tray/LICENSE) |
+| `packages/instagram-reels/Reels.kt` | Fingerprints and scrolling hook adapted from [ReVanced Instagram patches, revision 015fe10](https://gitlab.com/ReVanced/revanced-patches/-/tree/015fe10a23ea5b919a3fda6e7da2c176517ae75d/patches/src/main/kotlin/app/revanced/patches/instagram); local navigation filter and version guards | GPL-3.0-only; [complete license](packages/instagram-reels/LICENSE) |
 
 The wallpaper package also installs upstream's license notice with its compiled
 plugin. The local adaptation changes wallpaper behavior and compositor API

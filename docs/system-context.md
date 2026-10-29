@@ -5,6 +5,14 @@ The Nix configuration is authoritative for exact values. This document does not
 establish what is currently activated or running; inspect the host when needed.
 Git history records changes. The bootstrap observations in `audit.md` are historical.
 
+The reference host was checked against the checkout on 2026-10-29: both selected
+and running kernels were 7.2.10, the active desktop theme was Latte, and no system
+or user services were failed. The live compositor service had `OOMPolicy=continue`
+in `session.slice`; `app.slice` had memory-pressure and swap killing enabled.
+Zswap was enabled with zstd and a 20% pool limit. Declared Nix build limits were
+two concurrent builds and two cores per build. These observations are a dated
+verification, not a guarantee about later sessions.
+
 ## Machine and configuration
 
 The host is `nixos`, an `x86_64-linux` Lenovo IdeaPad 5 2-in-1 14AKP10, with primary
@@ -55,7 +63,7 @@ It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart ser
 account is configured. Notes and application preferences remain user-managed.
 
 Darktable is declared in `home/jeffreyc/programs.nix` from pinned stable nixpkgs.
-Its CLI and desktop launcher select a generated native GTK stylesheet using
+The `darktable` command and desktop launcher select a generated native GTK stylesheet using
 temporary `--conf` overrides. Interface colors and typography follow the shared
 theme; image surrounds, graphs and functional color swatches retain native
 colors for photo assessment. Catalogues, edits and other preferences stay
@@ -63,6 +71,8 @@ user-managed. It starts on demand, with no new service or default image associat
 Mesa's separate OpenCL output supplies the compute driver without a ROCm stack.
 The application wrapper enables its Rusticl platform and defaults the AMD device
 selector for this laptop, while preserving an explicit environment override.
+The separate `darktable-cli` and `darktable-cltest` commands remain upstream tools;
+the GUI launcher's theme and environment overrides do not wrap those commands.
 On 2026-10-29, darktable-cltest compiled its kernels and initialized the Radeon
 860M through Rusticl successfully; this does not validate every photo operation.
 
@@ -120,6 +130,16 @@ The Android controller restarts when its image derivation changes. Stop Android
 before image updates. Native buffer tests and Instagram startup were verified
 on 2026-10-29, and the owner confirmed normal video/Reels playback. A complete
 photo upload remains a manual check.
+
+The reference laptop also has a separately signed **Instagram (no Reels)** clone.
+`packages/instagram-reels/` contains two small local hooks and a pinned build
+command; only Piko's generic package-cloning patch is reused. Original APKs,
+signing keys and account data remain outside Git and the Nix store. The clone
+has no normal Play/Aurora update target, its APK-install request operation is
+denied, and Aurora excludes the original Instagram from updates. Updates are
+manual, with source/input review and runtime checks. The clone does not globally
+block every Reel/video. See the [package guide](../packages/instagram-reels/README.md)
+for supported inputs, exact validation limits, recovery and fresh-install steps.
 
 The systemd-boot menu is hidden for normal startup; hold Space during firmware
 startup to open it and select an earlier generation. A persistent EFI menu-timeout
@@ -220,7 +240,7 @@ in `home/jeffreyc/desktop.nix`, consuming shared theme colors and font from
 `theme/default.nix`. Panel and popup backgrounds are fully opaque, matching
 Waybar; their layer surfaces do not request blur. The panel and Waybar tooltips
 share the main background, muted border, font and rounding. The larger panel
-retains its control spacing; blue focus outlines remain on keyboard-focused controls.
+retains its control spacing; theme-colored focus outlines remain on keyboard-focused controls.
 Notification cards and controls have thin outlines, with explicit keyboard-focus indication.
 Clear All uses explicit label colors without GTK's additional dimming; when
 disabled on an empty list, it keeps readable muted text on the alternate background.

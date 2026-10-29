@@ -66,6 +66,10 @@ upgrades: they are compatibility baselines, not release selectors.
 NixOS and Home Manager should have compatible branches. Native APIs, package
 patches and the compositor plugin need review when their pinned versions change.
 
+Instagram's separately signed Android clone has its own manual update workflow,
+original-APK backups and private signing key. It is not updated by `nix flake
+update` or a routine system switch. See the [Instagram package guide](../packages/instagram-reels/README.md).
+
 ## Recovery
 
 Select an earlier generation from the boot menu, or roll back a running system:
