@@ -241,8 +241,24 @@ overlay, tuning daemon or Steam-specific firewall opening is configured.
 
 SDR++ is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs. Launch
 **SDR++** from Rofi or run `sdrpp`. It starts on demand; receiver settings and
-recordings remain user-managed. USB receivers may require device-specific udev
-rules and driver configuration; no receiver model is assumed by this setup.
+recordings remain user-managed.
+
+RTL-SDR Blog V4 support uses the same pinned Osmocom driver as SDR++.
+`modules/nixos/hardware.nix` enables NixOS's RTL-SDR integration: USB udev rules,
+the `rtl_test`/`rtl_sdr` tools, and a blacklist for conflicting DVB TV drivers.
+The desktop account belongs to `plugdev` on the reference host and portable
+installations. No receiver daemon is started. This follows the manufacturer's
+[V4 Linux driver guidance](https://www.rtl-sdr.com/v4/).
+
+The blacklist prevents future driver loads. If the TV driver was already loaded,
+release it once with `sudo modprobe -r dvb_usb_rtl28xxu rtl2832_sdr rtl2832`, or
+reboot when convenient. Reconnect the receiver if its USB permissions are stale.
+Group membership takes effect at the next login; an active
+local session may already have USB access through systemd's device permissions.
+In SDR++, select **RTL-SDR**, refresh the device list and select **Blog V4**.
+For HF, leave direct sampling disabled: the V4 switches its upconverter
+automatically. With SDR++ stopped, `rtl_test -t` checks device/tuner detection;
+only one application can claim the receiver at a time.
 
 Lutris is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs, including
 its NixOS-compatible game runtime. Launch **Lutris** from Rofi or run `lutris`.

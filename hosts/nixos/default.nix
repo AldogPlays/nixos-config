@@ -17,6 +17,7 @@
     description = "Jeffrey Conton";
     extraGroups = [
       "networkmanager"
+      "plugdev"
       "wheel"
     ];
   };

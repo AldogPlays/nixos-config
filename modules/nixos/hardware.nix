@@ -14,6 +14,11 @@ in
   hardware = {
     enableRedistributableFirmware = true;
     graphics.enable = true;
+    # Match SDR++'s V4-capable driver; install USB rules and block DVB claiming it.
+    rtl-sdr = {
+      enable = true;
+      package = pkgs.rtl-sdr-osmocom;
+    };
     bluetooth = {
       enable = true;
       powerOnBoot = true;
