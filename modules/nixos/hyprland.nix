@@ -107,6 +107,8 @@ let
       });
 in
 {
+  imports = [ ./waydroid.nix ];
+
   environment.etc."desktop-theme.json".text = builtins.toJSON {
     preset = themeSelection.preset;
     inherit (theme) name;

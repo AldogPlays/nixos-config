@@ -10,6 +10,7 @@
     ./packages.nix
     ./programs.nix
     ./desktop.nix
+    ./waydroid.nix
   ];
 
   home = {

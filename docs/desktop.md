@@ -88,6 +88,12 @@ or session service is started. Appearance and group configuration live in
 `home/jeffreyc/desktop.nix`; the shortcut and existing bar visibility policy live
 in `dotfiles/hypr/hyprland.lua`.
 
+### Android apps and photo uploads
+
+For Android applications and Dolphin's **Waydroid** sidebar entry, see
+[Waydroid and photo uploads](waydroid.md). Android starts on demand; stop its
+session when finished to release its memory.
+
 ### LibreWolf memory usage
 
 LibreWolf defaults to unloading inactive tabs when system memory runs low.

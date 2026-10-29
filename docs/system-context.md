@@ -77,6 +77,38 @@ The kernel selection is `pkgs.linuxPackages_latest` from the stable input. Recen
 hardware support is a consideration when reviewing that choice, but a specific
 requirement for this kernel has not been established.
 
+Waydroid is declared in `modules/nixos/waydroid.nix` using the pinned nftables
+package and Nix-managed VANILLA Android images. Its root D-Bus controller runs
+on demand. A guarded initialization oneshot prepares images during
+activation or boot; Home Manager owns one on-demand Android session.
+Aurora Store is a pinned, normal Android app installed through `waydroid-setup`.
+Android apps, permissions and accounts remain user-managed data. No Google
+services, root-management, camera or location-forwarding stack is installed.
+The running Lenovo kernel has Binder IPC and Binderfs built in, so this setup
+does not require a different kernel.
+
+`~/Waydroid` provides writable access to Android's shared media storage, including
+Pictures and DCIM, through an on-access bindfs mount. A root preparation oneshot
+creates missing directories; bindfs maps desktop access and preserves Android
+media ownership for new files. Home Manager adds **Waydroid** to Dolphin Places
+through a preserving XBEL helper, backing up the original first. Existing
+bookmarks and Dolphin state remain user-managed.
+An event-driven systemd path unit watches direct changes to Pictures, DCIM and
+Download and runs an Android media-index scan only while the container is running.
+This handles host writes that bypass Android's emulated-storage notifications;
+existing nested directories require a manual scan.
+Images and the Aurora APK are pinned in `packages/waydroid/default.nix`; no APKs,
+Android images or account data are committed to Git. See [Waydroid](waydroid.md)
+for setup, stopping Android, updates and runtime validation limits.
+The vendor image includes a small YV12 layout adapter for Instagram's native
+graphics crash, preserving GPU acceleration. It corrects video-plane metadata
+around the pinned minigbm backend. The repair lives in the immutable vendor
+image so switching generations can remove it; Android user data stays separate.
+The Android controller restarts when its image derivation changes. Stop Android
+before image updates. Native buffer tests and Instagram startup were verified
+on 2026-10-29, and the owner confirmed normal video/Reels playback. A complete
+photo upload remains a manual check.
+
 The systemd-boot menu is hidden for normal startup; hold Space during firmware
 startup to open it and select an earlier generation. A persistent EFI menu-timeout
 override takes precedence over the declared timeout, so clear an old override

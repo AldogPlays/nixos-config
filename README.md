@@ -15,6 +15,7 @@ its own account, disks, encryption, bootloader and graphics settings.
   typography and cursor assets. Theme-specific palette names stay inside `theme/`.
 - Workspace-linked wallpapers, window/area screenshots and clipboard integration.
 - Dolphin, image/PDF/archive tools, LibreWolf, Joplin and gaming applications.
+- On-demand Waydroid with Aurora Store and a Dolphin photo-upload folder.
 - Terminal-based Wi-Fi, Bluetooth and audio controls.
 - Automatic power profiles, low-battery brightness handling and firmware battery
   conservation on supported hardware.
@@ -52,6 +53,7 @@ host instead.
 | --- | --- |
 | [Installation](docs/installation.md) | Requirements, preview, activation, supported layouts and limits |
 | [Desktop](docs/desktop.md) | Shortcuts, applications, charging controls and daily use |
+| [Waydroid](docs/waydroid.md) | Android, Aurora Store and photo uploads |
 | [Maintenance and recovery](docs/maintenance.md) | Validation, rebuilds, updates and rollback |
 | [Theme contract](theme/README.md) | Shared roles, native adapters and current coverage |
 | [Workspace wallpapers](docs/wallpapers.md) | Rendering, image preparation, cache and diagnostics |

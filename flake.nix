@@ -139,6 +139,13 @@
       };
 
       checks.${system} = {
+        dolphin-place = pkgs.runCommand "dolphin-place-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          export PYTHONDONTWRITEBYTECODE=1
+          cp -r ${./scripts} scripts
+          cp -r ${./tests} tests
+          python3 -m unittest discover -s tests -p test_dolphin_place.py -v
+          touch "$out"
+        '';
         theme-menu = pkgs.runCommand "theme-menu-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
           export PYTHONDONTWRITEBYTECODE=1
           cp -r ${./scripts} scripts
