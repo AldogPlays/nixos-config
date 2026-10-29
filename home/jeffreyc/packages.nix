@@ -120,6 +120,7 @@ in
     kdePackages.ffmpegthumbs
     cisco-packet-tracer_9
     pkgsUnstable.joplin-desktop
+    sdrpp
     lutris
     modrinth-app
     # Official desktop client, including graphical Codex, from the pinned input.

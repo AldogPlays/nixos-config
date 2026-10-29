@@ -239,6 +239,11 @@ downloads Valve's Proton when needed for Windows games; compatibility can be
 selected per game under **Properties → Compatibility**. No extra gaming
 overlay, tuning daemon or Steam-specific firewall opening is configured.
 
+SDR++ is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs. Launch
+**SDR++** from Rofi or run `sdrpp`. It starts on demand; receiver settings and
+recordings remain user-managed. USB receivers may require device-specific udev
+rules and driver configuration; no receiver model is assumed by this setup.
+
 Lutris is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs, including
 its NixOS-compatible game runtime. Launch **Lutris** from Rofi or run `lutris`.
 It starts on demand; game installations, downloaded runners and account sign-ins
