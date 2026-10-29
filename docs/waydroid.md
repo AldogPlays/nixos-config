@@ -28,7 +28,7 @@ host. Compatibility must be checked against the actual downloaded app.
 
 ## Instagram without Home or Reels
 
-The reference laptop also has **Instagram (no feed)**, a separately signed,
+The reference laptop uses a patched **Instagram**, a separately signed,
 version-pinned clone built from the original x86-64 APKs. It hides the Home and
 Reels navigation items and disables endless Reels swiping and pull-to-refresh.
 Direct, Search, Profile and Create are retained. This navigation restriction
@@ -36,9 +36,21 @@ does not block every video, Reel link or alternate route into feed content.
 Messages is the first tab and the default startup destination.
 Native requests for a hidden Home/Reels tab, including Back from messages, are
 redirected to messages.
-The unchanged **Instagram** app and its account data remain available for recovery;
-the clone may need a separate
-sign-in. Both share the existing Android media folder.
+The original package remains installed but disabled for recovery, with its account
+data retained. The patched package has its own sign-in and uses the existing
+Android media folder.
+
+Only the patched package is visible in the desktop launcher, named **Instagram**.
+The Home Manager activation in `home/jeffreyc/waydroid.nix` runs
+`scripts/waydroid-launcher-policy.py` to set `NoDisplay=true` in the original
+Waydroid desktop entry. It preserves a backup before its first edit and leaves
+the entry writable; Waydroid retains this flag when refreshing its exports.
+On a fresh setup, apply the launcher policy after installing the Android apps.
+The package IDs and recovery commands are in the package guide below.
+
+Android's saved system appearance is light (`adb shell cmd uimode night no`),
+and the patched app was visually verified in light mode on 2026-10-29. This uses
+Instagram's native light appearance, separate from the desktop's GTK/Qt colors.
 
 The source, pinned tools, exact inputs and manual update/recovery workflow are in
 [the Instagram package guide](../packages/instagram-reels/README.md).
@@ -48,6 +60,9 @@ manager. This does not disable updates for other applications or NixOS.
 On a fresh installation, bootstrap supplies Waydroid and the repository supplies
 the build command; original APKs, sign-in and Android update preferences are
 separate setup steps. No proprietary Instagram APK is distributed by this flake.
+
+Keep the existing tiling behavior. No phone-shaped aspect-ratio lock or portrait
+resolution override is configured.
 
 ## Volume and scrolling
 

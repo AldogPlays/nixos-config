@@ -30,11 +30,11 @@ The generic Clone patch's older compatibility metadata requires `--force`, but
 the local hooks independently check the version and version code, and the wrapper
 checks the original APK hashes. This is not support for arbitrary app versions.
 
-The result is **Instagram (no feed)**, package `com.instagram.android.piko`.
+The result is **Instagram**, package `com.instagram.android.piko`.
 It installs alongside the original app. Their Android data and account sessions
 are separate; the clone may need a new sign-in. No account database is copied.
 Native x86-64 libraries and the existing Waydroid YV12 repair are retained.
-Updating the earlier **Instagram (no Reels)** clone uses the same package and
+Updating the earlier **Instagram (no Reels)** or **Instagram (no feed)** clone uses the same package and
 signing key, preserving its Android data without another installation alongside it.
 
 ## Build and install
@@ -75,6 +75,22 @@ Approve any debugging authorization locally in Android. ADB root and disabling
 APK signature checks are not needed. Installation must report **Success**;
 verify the package with `waydroid app list` before opening its launcher.
 
+To use the patched app as the only Instagram launcher, preserve the original app
+but disable it for the Android user, then apply the desktop launcher policy:
+
+```bash
+adb shell pm disable-user --user 0 com.instagram.android
+adb shell cmd uimode night no
+nix shell --inputs-from . nixpkgs#python3 --command python3 \
+  scripts/waydroid-launcher-policy.py ~/.local/share/applications
+```
+
+Run the last command from the repository. Home Manager also reapplies that
+`NoDisplay` policy on activation when the original desktop entry exists.
+Waydroid preserves the flag while refreshing its writable desktop files.
+The theme and enabled-package state are saved Android preferences, separate from
+the APK patch and Nix generation. No account data is removed.
+
 ## Updates and recovery
 
 The clone has a separate package name and signing identity, so normal Play/Aurora
@@ -91,15 +107,18 @@ build, install and signed-in behavior checks. Keep the working APK and original
 splits until the replacement is verified. Do not replace a failed patch with
 `--continue-on-error` or simply remove the input guards.
 
-The unchanged original app remains available as **Instagram**, or through:
+The original app is disabled and hidden on the reference laptop. For recovery,
+temporarily enable it through an authorized ADB connection, then launch it:
 
 ```bash
+adb shell pm enable --user 0 com.instagram.android
 waydroid app launch com.instagram.android
 ```
 
 Removing the clone through Android app settings removes its own account and local
 data, without removing the original app. System-generation rollback alone does
 not uninstall Android apps or undo Aurora preferences.
+Disable the original again after recovery to restore the single active app.
 
 ## Validation boundary
 
@@ -116,3 +135,10 @@ tab-history redirect, two consecutive Android Back presses from the inbox kept
 Direct selected without reopening Home or Reels. Sending messages, Back within
 a conversation, Reel gestures, alternate feed entry points and the complete
 photo-upload flow still require interactive verification.
+
+The plain-name APK update retained the patched package's sign-in and update
+restriction. Android light mode was saved and Instagram's light interface was
+visually verified. The original package was verified disabled with no resolvable
+launcher activity; only the patched desktop entry remained visible. The launcher
+policy was applied live from the repository helper and included in a successful
+system build; it will run automatically on subsequent Home Manager activations.

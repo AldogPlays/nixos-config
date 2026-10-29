@@ -104,4 +104,11 @@ in
       ${lib.escapeShellArg "${config.home.homeDirectory}/Waydroid"} \
       'Waydroid'
   '';
+
+  # Waydroid preserves NoDisplay while refreshing its exported launchers.
+  # Keep the original app installed for recovery; only the patched app is shown.
+  home.activation.waydroidInstagramLauncher = lib.hm.dag.entryAfter [ "createDesktopDirectories" ] ''
+    run ${pkgs.python3}/bin/python3 ${../../scripts/waydroid-launcher-policy.py} \
+      ${lib.escapeShellArg "${config.xdg.dataHome}/applications"}
+  '';
 }

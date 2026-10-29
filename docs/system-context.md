@@ -131,7 +131,8 @@ before image updates. Native buffer tests and Instagram startup were verified
 on 2026-10-29, and the owner confirmed normal video/Reels playback. A complete
 photo upload remains a manual check.
 
-The reference laptop also has a separately signed **Instagram (no feed)** clone.
+The reference laptop uses a separately signed patched **Instagram**,
+package `com.instagram.android.piko`.
 `packages/instagram-reels/` contains local bytecode patches and a pinned build
 command; only Piko's generic package-cloning patch is reused. Original APKs,
 signing keys and account data remain outside Git and the Nix store. The clone
@@ -141,6 +142,12 @@ manual, with source/input review and runtime checks. The clone does not globally
 block every Reel/video or alternate feed entry point. Home and Reels navigation
 are removed while Direct, Search, Profile and Create are retained.
 Direct is the first tab and default startup destination.
+The original package is disabled for recovery with its data retained and its
+desktop entry hidden; the patched app is the sole visible Instagram launcher.
+Android's saved appearance is light, with the app visually verified in light mode.
+Home Manager reapplies the original launcher's `NoDisplay` flag through
+`scripts/waydroid-launcher-policy.py`, preserving Waydroid's writable export.
+Keep the existing tiling behavior; no phone-shaped aspect-ratio lock is requested.
 See the [package guide](../packages/instagram-reels/README.md)
 for supported inputs, exact validation limits, recovery and fresh-install steps.
 
