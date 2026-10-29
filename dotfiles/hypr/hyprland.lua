@@ -95,6 +95,15 @@ hl.window_rule({
     opacity = "1.0 override 1.0 override 1.0 override",
 })
 
+-- Android interprets desktop scroll deltas aggressively. Scope the reduction
+-- to its native app surfaces and full Android UI, leaving other apps unchanged.
+hl.window_rule({
+    name = "waydroid-scroll-speed",
+    match = { class = "^(waydroid[.].*|Waydroid)$" },
+    scroll_mouse = 0.35,
+    scroll_touchpad = 0.35,
+})
+
 -- Both keyboard and Waybar launches use these dedicated Alacritty app IDs.
 hl.window_rule({
     name = "float-system-controls",

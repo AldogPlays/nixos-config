@@ -25,6 +25,13 @@ private object Navigation : Fingerprint(
     ),
 )
 private object ReelPager : Fingerprint(strings = listOf("ClipsViewPagerImpl_getViewAtIndex"))
+private object Startup : Fingerprint(
+    strings = listOf("MainActivityAccountHelper.STARTUP_TAB"),
+    parameters = listOf("Landroid/content/Intent;", "Lcom/instagram/common/session/UserSession;", "Z"),
+    returnType = "V",
+)
+private object TabRouter : Fingerprint(strings = listOf("feed_viewpager_empty_tabs"), returnType = "V")
+private object TabHistory : Fingerprint(strings = listOf("NavigationController.pushTabFragment"), returnType = "V")
 private object ReelRefresh : Fingerprint(
     name = "onInterceptTouchEvent",
     parameters = listOf("Landroid/view/MotionEvent;"),
@@ -34,7 +41,7 @@ private const val SUPPORTED_VERSION = "@INSTAGRAM_VERSION@"
 private const val SUPPORTED_CODE = "@INSTAGRAM_VERSION_CODE@"
 private fun compatibility() = LocalCompatibility.create(SUPPORTED_VERSION)
 
-val hideReels = bytecodePatch(name = "Local hide Reels navigation", default = false) {
+val hideFeeds = bytecodePatch(name = "Local hide Home and Reels navigation", default = false) {
     compatibleWith(compatibility())
     execute {
         require(packageMetadata.versionName == SUPPORTED_VERSION && packageMetadata.versionCode == SUPPORTED_CODE)
@@ -42,16 +49,17 @@ val hideReels = bytecodePatch(name = "Local hide Reels navigation", default = fa
         val method = match.method
         val owner = match.classDef
         println("Verified navigation initializer: $method")
-        require(owner.methods.none { it.name == "nixosWithoutReels" })
+        require(owner.methods.none { it.name == "nixosWithoutFeeds" })
         val helper = MutableMethod(ImmutableMethod(
-            owner.type, "nixosWithoutReels",
+            owner.type, "nixosWithoutFeeds",
             listOf(ImmutableMethodParameter("Ljava/util/List;", emptySet(), null)),
             "Ljava/util/List;", AccessFlags.PUBLIC.value or AccessFlags.STATIC.value,
-            emptySet(), emptySet(), ImmutableMethodImplementation(8, emptyList(), emptyList(), emptyList())
+            emptySet(), emptySet(), ImmutableMethodImplementation(9, emptyList(), emptyList(), emptyList())
         ))
         // Copy the list before filtering, including when Instagram returns an immutable list.
         // Match the semantic fragment ID rather than an obfuscated class/field name.
         helper.addInstructions(0, """
+            const/4 v7, 0x0
             new-instance v0, Ljava/util/ArrayList;
             invoke-direct {v0, p0}, Ljava/util/ArrayList;-><init>(Ljava/util/Collection;)V
             invoke-interface {v0}, Ljava/util/List;->iterator()Ljava/util/Iterator;
@@ -85,14 +93,30 @@ val hideReels = bytecodePatch(name = "Local hide Reels navigation", default = fa
             move-result-object v6
             const-string p0, "fragment_clips"
             invoke-virtual {p0, v6}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
-            move-result v6
-            if-eqz v6, :skip
+            move-result p0
+            if-nez p0, :remove
+            const-string p0, "fragment_feed"
+            invoke-virtual {p0, v6}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result p0
+            if-nez p0, :remove
+            const-string p0, "fragment_direct_tab"
+            invoke-virtual {p0, v6}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result p0
+            if-eqz p0, :skip
+            move-object v7, v2
+            goto :skip
+            :remove
             invoke-interface {v1}, Ljava/util/Iterator;->remove()V
             goto :next
             :skip
             add-int/lit8 v4, v4, 0x1
             goto :field
             :done
+            if-eqz v7, :return
+            invoke-interface {v0, v7}, Ljava/util/List;->remove(Ljava/lang/Object;)Z
+            const/4 v6, 0x0
+            invoke-interface {v0, v6, v7}, Ljava/util/List;->add(ILjava/lang/Object;)V
+            :return
             return-object v0
         """)
         owner.methods.add(helper)
@@ -101,8 +125,73 @@ val hideReels = bytecodePatch(name = "Local hide Reels navigation", default = fa
         for ((index, instruction) in returns.reversed()) {
             val register = (instruction as OneRegisterInstruction).registerA
             require(register < 16)
-            method.replaceInstruction(index, "invoke-static {v$register}, ${owner.type}->nixosWithoutReels(Ljava/util/List;)Ljava/util/List;")
+            method.replaceInstruction(index, "invoke-static {v$register}, ${owner.type}->nixosWithoutFeeds(Ljava/util/List;)Ljava/util/List;")
             method.addInstructions(index + 1, "move-result-object v$register\nreturn-object v$register")
+        }
+        // Instagram can select FEED independently of the visible navigation list.
+        // Use its native startup extra, preserving explicit non-feed destinations.
+        val startup = Startup.matchAll(0..Int.MAX_VALUE).single().method
+        require(!AccessFlags.STATIC.isSet(startup.accessFlags))
+        val registers = requireNotNull(startup.implementation).registerCount
+        require(registers - 4 >= 2 && registers < 16)
+        println("Verified navigation startup: $startup")
+        startup.addInstructions(0, """
+            if-eqz p1, :native_start
+            const-string v0, "MainActivityAccountHelper.STARTUP_TAB"
+            invoke-virtual {p1, v0}, Landroid/content/Intent;->getStringExtra(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v1
+            if-eqz v1, :direct_start
+            const-string v0, "FEED"
+            invoke-virtual {v0, v1}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result v0
+            if-nez v0, :direct_start
+            const-string v0, "CLIPS"
+            invoke-virtual {v0, v1}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result v0
+            if-eqz v0, :native_start
+            :direct_start
+            const-string v0, "MainActivityAccountHelper.STARTUP_TAB"
+            const-string v1, "DIRECT"
+            invoke-virtual {p1, v0, v1}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+            const/4 p3, 0x1
+            :native_start
+            nop
+        """)
+        // The native Back path also requests FEED. Redirect tab selection itself
+        // so it cannot reopen a hidden feed after the startup hook has finished.
+        val router = TabRouter.matchAll(0..Int.MAX_VALUE).single().method
+        val tabType = router.parameterTypes.first().toString()
+        require(!AccessFlags.STATIC.isSet(router.accessFlags))
+        require(router.parameterTypes.map(CharSequence::toString) == listOf(tabType, "Ljava/lang/String;", "Z"))
+        require(requireNotNull(router.implementation).registerCount - 4 >= 2)
+        println("Verified tab-selection router: $router")
+        val history = TabHistory.matchAll(0..Int.MAX_VALUE).single().method
+        require(!AccessFlags.STATIC.isSet(history.accessFlags))
+        require(history.parameterTypes.map(CharSequence::toString) == listOf(tabType, tabType, "Z", "Z"))
+        require(requireNotNull(history.implementation).registerCount - 5 >= 2)
+        println("Verified tab-history router: $history")
+        for ((target, parameter) in listOf(router to "p1", history to "p2")) {
+          target.addInstructions(0, """
+            move-object/from16 v0, $parameter
+            if-eqz v0, :native_tab
+            invoke-virtual {v0}, Ljava/lang/Enum;->name()Ljava/lang/String;
+            move-result-object v0
+            const-string v1, "FEED"
+            invoke-virtual {v1, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result v1
+            if-nez v1, :direct_tab
+            const-string v1, "CLIPS"
+            invoke-virtual {v1, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+            move-result v1
+            if-eqz v1, :native_tab
+            :direct_tab
+            const-string v0, "DIRECT"
+            invoke-static {v0}, $tabType->valueOf(Ljava/lang/String;)$tabType
+            move-result-object v0
+            move-object/16 $parameter, v0
+            :native_tab
+            nop
+        """)
         }
     }
 }

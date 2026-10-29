@@ -1,4 +1,4 @@
-# Instagram Reels-only patch
+# Instagram Home and Reels patch
 
 This on-demand tool patches local original APKs for the reference Waydroid
 installation. It adds no desktop service or Android root manager. `supported.json`
@@ -9,11 +9,18 @@ Unknown inputs are rejected before patching.
 
 The local GPL-3.0 patches in `Reels.kt` adapt fingerprints and the scrolling hook
 from [ReVanced's Instagram patches](https://gitlab.com/ReVanced/revanced-patches/-/tree/015fe10a23ea5b919a3fda6e7da2c176517ae75d/patches/src/main/kotlin/app/revanced/patches/instagram).
-They hide only the `fragment_clips` navigation item and disable the Reels pager's
-swipe and pull-to-refresh handlers. Navigation is filtered through a mutable copy
-of the returned list, matching the fragment ID rather than an obfuscated field
-name. Other navigation items, including Create, remain available. Individual Reel
-links and videos elsewhere in Instagram are not globally blocked.
+They hide the Home (`fragment_feed`) and Reels (`fragment_clips`) navigation items
+and disable the Reels pager's swipe and pull-to-refresh handlers.
+Navigation is filtered through a mutable copy of the returned list, matching the
+fragment ID rather than an obfuscated field
+name. Other navigation items, including Direct, Search, Profile and Create, are
+retained. Direct is placed first and the native startup intent selects it when
+no destination is specified or Home/Reels is requested. Explicit other startup
+destinations are preserved. Native tab-selection and tab-history requests for
+Home/Reels are redirected to Direct, including Android Back from the inbox.
+Individual Reel links and videos elsewhere in
+Instagram are not globally blocked; this is a navigation restriction, not a
+network content filter.
 
 `default.nix` pins and verifies Morphe Desktop 1.19.1 and Piko 3.10.0. Only Piko's
 generic **Clone** patch is enabled; its settings, ads, analytics and other feature
@@ -23,10 +30,12 @@ The generic Clone patch's older compatibility metadata requires `--force`, but
 the local hooks independently check the version and version code, and the wrapper
 checks the original APK hashes. This is not support for arbitrary app versions.
 
-The result is **Instagram (no Reels)**, package `com.instagram.android.piko`.
+The result is **Instagram (no feed)**, package `com.instagram.android.piko`.
 It installs alongside the original app. Their Android data and account sessions
 are separate; the clone may need a new sign-in. No account database is copied.
 Native x86-64 libraries and the existing Waydroid YV12 repair are retained.
+Updating the earlier **Instagram (no Reels)** clone uses the same package and
+signing key, preserving its Android data without another installation alongside it.
 
 ## Build and install
 
@@ -98,6 +107,12 @@ On 2026-10-29, the original reference-laptop x86-64 splits were preserved, the
 local hooks matched uniquely, and the pinned Nix workflow built the signed clone.
 Installation, native ABI selection and startup were verified. Aurora's original
 Instagram exclusion and the clone's denied APK-install operation were verified
-separately. The owner confirmed that the signed-in app opens and Reels controls
-are absent. Reel gestures, DMs and the photo-upload flow still require interactive
-verification.
+separately. The owner confirmed that the initial signed-in Reels-only clone opens
+and Reels controls are absent. The Home-removal update was installed with the
+same signing key and retained the sign-in. A cold start selected Direct, showed
+its inbox, omitted Home/Reels navigation and had no Home feed UI markers. Search,
+Activity, Create and Profile controls remained present. After adding the native
+tab-history redirect, two consecutive Android Back presses from the inbox kept
+Direct selected without reopening Home or Reels. Sending messages, Back within
+a conversation, Reel gestures, alternate feed entry points and the complete
+photo-upload flow still require interactive verification.

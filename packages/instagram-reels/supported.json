@@ -2,7 +2,7 @@
   "version": "453.0.0.57.79",
   "versionCode": "385914559",
   "package": "com.instagram.android.piko",
-  "label": "Instagram (no Reels)",
+  "label": "Instagram (no feed)",
   "inputs": {
     "base.apk": "30f1fda173ea9d01f700d2cb13e23acac3843d4a3b00e72bd34d37f08c471818",
     "split_config.tvdpi.apk": "f49806f55dccfc4d02f5a8c3282c88cea15e20f1ee549ee1b3f42b6c80a0b7b7"

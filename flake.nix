@@ -141,7 +141,7 @@
 
         instagram-reels-patch = {
           type = "app";
-          meta.description = "Build the pinned Instagram Reels-only clone from local original APKs";
+          meta.description = "Build the pinned Instagram clone without Home or Reels navigation";
           program = nixpkgs.lib.getExe (pkgs.callPackage ./packages/instagram-reels { });
         };
       };

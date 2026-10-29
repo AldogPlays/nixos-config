@@ -42,7 +42,7 @@ def main():
         command = [
             args.java, "-Xmx2304m", "-XX:ActiveProcessorCount=2", "-jar", args.cli,
             "patch", str(archive), "-p", args.bundle,
-            "-e", "Local hide Reels navigation", "-e", "Local stop Reels scrolling",
+            "-e", "Local hide Home and Reels navigation", "-e", "Local stop Reels scrolling",
             "-p", args.clone_bundle, "-e", "Clone", "-O", f"appName={supported['label']}",
             "-O", f"packageName={supported['package']}",
             "--exclusive", "--force", "--validate", "--bytecode-mode", "FULL",

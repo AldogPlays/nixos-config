@@ -131,15 +131,23 @@ before image updates. Native buffer tests and Instagram startup were verified
 on 2026-10-29, and the owner confirmed normal video/Reels playback. A complete
 photo upload remains a manual check.
 
-The reference laptop also has a separately signed **Instagram (no Reels)** clone.
-`packages/instagram-reels/` contains two small local hooks and a pinned build
+The reference laptop also has a separately signed **Instagram (no feed)** clone.
+`packages/instagram-reels/` contains local bytecode patches and a pinned build
 command; only Piko's generic package-cloning patch is reused. Original APKs,
 signing keys and account data remain outside Git and the Nix store. The clone
 has no normal Play/Aurora update target, its APK-install request operation is
 denied, and Aurora excludes the original Instagram from updates. Updates are
 manual, with source/input review and runtime checks. The clone does not globally
-block every Reel/video. See the [package guide](../packages/instagram-reels/README.md)
+block every Reel/video or alternate feed entry point. Home and Reels navigation
+are removed while Direct, Search, Profile and Create are retained.
+Direct is the first tab and default startup destination.
+See the [package guide](../packages/instagram-reels/README.md)
 for supported inputs, exact validation limits, recovery and fresh-install steps.
+
+Waydroid mouse-wheel and touchpad scrolling are reduced by a per-window Hyprland
+rule in `dotfiles/hypr/hyprland.lua`. Android media volume remains adjustable
+Android user state; it was set to 12/15 on the reference laptop on 2026-10-29.
+The host speaker level was already 100%; no global amplification was added.
 
 The systemd-boot menu is hidden for normal startup; hold Space during firmware
 startup to open it and select an earlier generation. A persistent EFI menu-timeout

@@ -16,7 +16,7 @@ its own account, disks, encryption, bootloader and graphics settings.
 - Workspace-linked wallpapers, window/area screenshots and clipboard integration.
 - Dolphin, darktable, image/PDF/archive tools, LibreWolf, Joplin and gaming applications.
 - On-demand Waydroid with Aurora Store, a Dolphin photo-upload folder and a
-  version-pinned Instagram Reels-only patch command for locally supplied APKs.
+  version-pinned Instagram Home/Reels patch command for locally supplied APKs.
 - Terminal-based Wi-Fi, Bluetooth and audio controls.
 - Automatic power profiles, low-battery brightness handling and firmware battery
   conservation on supported hardware.
