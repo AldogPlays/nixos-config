@@ -48,11 +48,11 @@ continuous rather than copying Hyprland's independent position resets. Window
 animations themselves are never modified. Off-screen tiles are discarded at the
 next change and pixel-rounded shared edges prevent fractional-pixel cracks.
 Interactive swipe positioning outside these committed slides remains native.
-The pinned hyprgraphics BMP loader supplies zero alpha and does not free its
-decoded pixel allocation. The adapter explicitly treats prepared RGB wallpapers
-as opaque and attaches the pixel-buffer destructor to the temporary Cairo
-surface. Without the opacity correction, colors add to the light fallback and
-wash out to white.
+The adapter reads the helper's uncompressed 24-bit BMPs directly, validating
+their header and complete payload before allocation. Whole-row reads replace
+the pinned hyprgraphics decoder's stream read for every color byte. Conversion
+preserves bottom-up orientation, row padding and RGB channels in Cairo-owned,
+opaque pixels; destroying the temporary surface releases its pixel allocation.
 
 `home/jeffreyc/desktop.nix` supplies the plugin and Python/Hyprland paths.
 The generated `hyprland.lua` loads the plugin through `hl.plugin.load`.
@@ -100,12 +100,17 @@ BMPs count toward eviction; symlinks and unrelated files are preserved. The disk
 budget excludes the lock and transient copy files. It does not reduce resident
 GPU memory, and first use still requires decoding/resizing the original.
 
-The plugin watches the session directory using inotify, reads new manifests,
-and uploads changed prepared images on the next render. Textures are reused by
-prepared-image path across workspaces and outputs, including within a new
-manifest. Unreferenced textures expire after replacement; there is no permanent
-GPU history cache. Invalid state does not clear a working backdrop. There is no awww
-service, native last-image cache, or parallel wallpaper renderer.
+The plugin watches the session directory using inotify and stages at most one
+distinct changed image per render pass. It continues drawing the complete old
+set until all replacements have been processed, then publishes the new assignments
+together. A deferred event-loop callback damages outputs for the next pass even
+on an idle desktop; there is no independent loading timer. A newer manifest
+discards superseded staged textures. Textures are reused by prepared-image path
+across workspaces and outputs, including within a new manifest. Unreferenced
+textures expire after replacement; there is no permanent GPU history cache.
+Invalid replacements retain their previous resident images and defer cleanup.
+Invalid state does not clear a working backdrop. There is no awww service,
+native last-image cache, or parallel wallpaper renderer.
 
 ## Runtime state and memory
 
@@ -127,7 +132,9 @@ BMP files are pruned; originals, unrelated names and symlinks are preserved.
 For ten 1920×1200 images, the BMP cache is about 66 MiB after successful loading,
 temporarily up to about 132 MiB for current/previous sets. The plugin also
 keeps resident textures: ten distinct 32-bit images at that size have about 88 MiB of
-pixel payload, excluding allocation overhead and transient decode storage.
+pixel payload. Staging a complete replacement can temporarily double that payload
+to about 176 MiB until the assignments switch, excluding allocation overhead and
+the temporary decode surface for one image.
 These are component estimates, not measured total process memory. More outputs
 or workspaces increase usage. Originals and unrelated files are never removed.
 Assignments survive config/plugin reloads, not a new login. The secondary disk
@@ -149,17 +156,22 @@ fallback, repeated redraws, moving both wallpapers on an empty-workspace switch,
 rapid reversals and third-workspace interruptions (checking rendered scanlines
 for exposed fallback), texture sharing/reassignment without new uploads,
 preparation-lock contention, failed replacement recovery, safe cache cleanup,
-and unload/reload. Run `tests/hyprmosaic-render.py` manually
+padded BMP rows and channel/orientation accuracy, malformed BMP rejection,
+atomic staging, superseded manifests, and unload during pending work.
+Run `tests/hyprmosaic-render.py` manually
 with a Pillow-enabled Python, passing the built plugin library and `grim` executable as its two
 arguments. It briefly opens a disposable nested compositor with isolated runtime
 and D-Bus paths; it never loads a test plugin into the host. This GPU/session test
 is not part of the sandboxed flake checks. It does not substitute for checking
 real touchpad gestures, multiple physical outputs, or tablet rotation.
 
-Image decoding and GPU upload still happen on the compositor thread when an
-assignment changes. Pre-sized images avoid large-original work there, but do
-not guarantee stutter-free startup/rotation. Rotated outputs, non-slide workspace
-styles, and unusual multi-monitor interactions need separate visual validation.
+Image decoding and GPU upload still happen on the compositor thread, limited to
+one distinct image per render pass when assignments change. Bulk decoding and
+staging avoid doing a complete rotation's work in one frame; image preparation,
+quarter-hour scheduling and the visible all-at-once assignment switch stay the
+same. Very large outputs can still take more than one frame's budget for a single
+image. Rotated outputs, non-slide workspace styles, and unusual multi-monitor
+interactions need separate visual validation.
 
 Read-only diagnostics:
 

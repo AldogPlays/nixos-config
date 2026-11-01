@@ -203,8 +203,10 @@ in
     desktopFeedback
 
     # Command-line workflow
+    dnsutils # dig and nslookup for DNS diagnostics
     fd
     jq
+    openssl
     ripgrep
     tree
 

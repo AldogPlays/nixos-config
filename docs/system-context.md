@@ -244,6 +244,18 @@ personal-data backups and a restore trial remain a separate recovery requirement
 The review did not perform external penetration testing, audit every dependency
 against vulnerability databases, or establish successful physical lock/unlock.
 
+The reference host trusts the homelab Caddy root CA through
+`security.pki.certificateFiles` in `hosts/nixos/default.nix`. Its public certificate
+is stored in `hosts/nixos/certificates/hermes-root-ca.crt`; no private key belongs
+in the repository or Nix store. This host-specific trust is not inherited by
+portable bootstrap installations. Replacement certificates require fingerprint
+verification before changing the trust anchor.
+The pinned LibreWolf NSS library uses p11-kit for its root store, so this CA
+does not require a separate browser import policy. On 2026-11-01, a fresh
+LibreWolf 158 profile reported the CA trusted for TLS and opened the homelab
+login page with certificate verification enabled and no saved exceptions.
+An already running browser may need a normal restart to refresh its trust store.
+
 ## Desktop components
 
 Hyprland handles cursor hiding with its native inactivity timeout, without an
@@ -507,8 +519,11 @@ service is added; awww is no longer enabled. The collection and runtime cache
 stay outside Git and the Nix store; theme/lock screen stay independent. See
 [workspace wallpapers](wallpapers.md) for limits, validation, and recovery.
 Preparation shares identical source/size results within each update, and the
-renderer shares textures by prepared path. Superseded generated BMPs are removed
-only after successful loading, under the helper's nonblocking lock with a fresh
+renderer shares textures by prepared path. The renderer bulk-decodes prepared
+BMP rows and stages one distinct replacement per render pass, retaining the
+old visible assignments until the new set is ready to switch together.
+Superseded generated BMPs are removed only after successful loading, under the
+helper's nonblocking lock with a fresh
 manifest check. Diagnostics serialize on demand rather than during rendering.
 These internal optimizations preserve assignments, refresh timing, image quality
 and workspace animations.

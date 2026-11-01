@@ -9,6 +9,7 @@
   ];
 
   networking.hostName = "nixos";
+  security.pki.certificateFiles = [ ./certificates/hermes-root-ca.crt ];
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 

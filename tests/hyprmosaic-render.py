@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import struct
 import subprocess
 import sys
 import tempfile
@@ -221,6 +222,67 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
 
         check_pixels((91, 83, 67))
         print("PASS: workspace 1 renders the correct mid-tone over a light fallback")
+
+        # Odd width exercises BMP row padding. Different quadrants catch row
+        # inversion, channel swaps and opacity errors in the prepared loader.
+        original = Path(prepared[monitors[0]["name"]]["1"])
+        original_bytes = original.read_bytes()
+        pattern_path = cache / (
+            hashlib.sha256(b"row-padding-pattern").hexdigest() + ".bmp"
+        )
+        pattern = Image.new("RGB", (641, 401))
+        colors = ((20, 90, 150), (130, 50, 70), (70, 130, 50), (90, 60, 140))
+        for box, color in zip(
+            ((0, 0, 320, 200), (320, 0, 641, 200),
+             (0, 200, 320, 401), (320, 200, 641, 401)),
+            colors,
+        ):
+            pattern.paste(color, box)
+        pattern.save(pattern_path)
+        patterned = {
+            name: {**images, "1": str(pattern_path)}
+            for name, images in prepared.items()
+        }
+        update(patterned)
+
+        def check_pattern():
+            frame = capture()
+            for (x, y), expected in zip(((1, 1), (3, 1), (1, 3), (3, 3)), colors):
+                pixel = frame.getpixel((frame.width * x // 4, frame.height * y // 4))
+                assert all(abs(a - b) < 8 for a, b in zip(pixel, expected)), (
+                    pixel, expected,
+                )
+
+        check_pattern()
+        print("PASS: padded BMP rows retain orientation, RGB channels and opaque pixels")
+        pattern_bytes = pattern_path.read_bytes()
+        uploads = json.loads(ctl("hyprmosaic:status"))["texture_uploads"]
+        invalid_path = cache / (hashlib.sha256(b"invalid-bmp").hexdigest() + ".bmp")
+        malformed = [pattern_bytes[:20], pattern_bytes[:-1], b"XX" + pattern_bytes[2:]]
+        for offset, fmt, value in (
+            (2, "I", 0), (10, "I", 55), (14, "I", 124),
+            (18, "i", -641), (22, "i", 0), (22, "i", 2147483647),
+            (26, "H", 2), (28, "H", 32), (30, "I", 1),
+        ):
+            invalid = bytearray(pattern_bytes)
+            struct.pack_into("<" + fmt, invalid, offset, value)
+            malformed.append(invalid)
+        for invalid in malformed:
+            invalid_path.write_bytes(invalid)
+            status = update({
+                name: {**images, "1": str(invalid_path)}
+                for name, images in prepared.items()
+            })
+            assert status["texture_uploads"] == uploads, status
+            check_pattern()
+        # The original may have been pruned after the valid pattern loaded.
+        original.write_bytes(original_bytes)
+        update(prepared)
+        check_pixels((91, 83, 67))
+        print(
+            "PASS: malformed BMP replacements preserve resident pixels and recover normally"
+        )
+
         assert ctl("eval", "hl.dispatch(hl.dsp.focus({workspace=2}))").strip() == "ok"
         moving = False
         for _ in range(12):
@@ -298,6 +360,63 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
         print(
             "PASS: actual replaced files are reclaimed after upload with identical rendered pixels"
         )
+
+        # Staging must never reveal a partially replaced set. Also supersede
+        # an in-flight manifest to exercise cancellation and cache ownership.
+        originals = {
+            path: Path(path).read_bytes()
+            for images in prepared.values() for path in images.values()
+        }
+        staged_paths = {}
+        for number in range(1, 13):
+            path = cache / (
+                hashlib.sha256(f"staged-{number}".encode()).hexdigest() + ".bmp"
+            )
+            Image.new("RGB", (640, 400), (30, 100, number * 10)).save(path)
+            staged_paths[str(number)] = str(path)
+        staged_manifest = {mon["name"]: staged_paths for mon in monitors}
+
+        def wait_staging(before):
+            for _ in range(100):
+                status = json.loads(ctl("hyprmosaic:status"))
+                if status["texture_uploads"] > before["texture_uploads"]:
+                    assert status["manifest_loads"] == before["manifest_loads"], status
+                    assert status["resident_images"] == before["resident_images"], status
+                    assert status["draws"] == before["draws"], status
+                    return
+                time.sleep(0.005)
+            raise AssertionError("No staged upload observed")
+
+        before = json.loads(ctl("hyprmosaic:status"))
+        publish(staged_manifest)
+        wait_staging(before)
+        final_path = cache / (
+            hashlib.sha256(b"superseding-manifest").hexdigest() + ".bmp"
+        )
+        Image.new("RGB", (640, 400), (65, 85, 105)).save(final_path)
+        final_manifest = {
+            name: {**images, "1": str(final_path)}
+            for name, images in prepared.items()
+        }
+        publish(final_manifest)
+        status = wait_loaded(before["manifest_loads"])
+        assert status["resident_images"] == 3 * len(monitors), status
+        assert status["manifest_loads"] == before["manifest_loads"] + 1, status
+        check_pixels((65, 85, 105))
+        for path, content in originals.items():
+            Path(path).write_bytes(content)
+        update(prepared)
+        check_pixels((91, 83, 67))
+        print(
+            "PASS: staged uploads keep old assignments visible and discard superseded manifests"
+        )
+
+        for path in staged_paths.values():
+            Image.new("RGB", (640, 400), (60, 80, 100)).save(path)
+        before = json.loads(ctl("hyprmosaic:status"))
+        publish(staged_manifest)
+        wait_staging(before)
+        publish(prepared)
         assert not ctl("configerrors").strip()
         ctl("plugin", "unload", plugin)
         assert not json.loads(ctl("-j", "plugin", "list"))
@@ -307,7 +426,7 @@ hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "smooth"
             monitors
         )
         print(
-            "PASS: unload/reload retains usable assignments without compositor restart"
+            "PASS: unload during staging cancels pending work and reload retains usable assignments"
         )
     except Exception:
         log.seek(0)

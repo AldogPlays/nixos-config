@@ -4,8 +4,10 @@
 // No grid gestures, binary hooks, or compositor patch. Targets Hyprland 0.55.4.
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <fcntl.h>
@@ -18,7 +20,6 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <nlohmann/json.hpp>
-#include <hyprgraphics/image/Image.hpp>
 #include <hyprland/src/plugins/PluginAPI.hpp>
 #include <hyprland/src/Compositor.hpp>
 #include <hyprland/src/desktop/Workspace.hpp>
@@ -51,12 +52,59 @@ CHyprSignalListener renderListener, tickListener, workspaceListener;
 SP<SHyprCtlCommand> statusCommand;
 std::map<std::string, std::vector<Draw>> lastDraws;
 nlohmann::json loadedPrepared;
+nlohmann::json stagingPrepared;
+std::map<std::string, Wallpaper> staged;
+std::set<std::string> failedPrepared;
 bool prunePending = false;
 size_t textureUploads = 0, manifestLoads = 0;
 std::vector<PHLWORKSPACE> held;
 UP<SEventLoopDoLaterLock> releaseLater;
 UP<SEventLoopDoLaterLock> pruneLater;
-cairo_user_data_key_t bmpPixelsKey;
+UP<SEventLoopDoLaterLock> loadLater;
+
+using Surface = std::unique_ptr<cairo_surface_t, decltype(&cairo_surface_destroy)>;
+
+// The helper produces bottom-up, uncompressed 24-bit BMPs. Read whole rows,
+// rather than hyprgraphics 0.5.1's one stream read per color byte. Cairo owns
+// the converted pixels; no decoder allocation or zero-alpha workaround leaks.
+Surface loadPreparedBMP(const std::filesystem::path& path) {
+    Surface surface(nullptr, cairo_surface_destroy);
+    std::ifstream input(path, std::ios::binary | std::ios::ate);
+    if (!input) return surface;
+    const auto length = input.tellg();
+    input.seekg(0);
+    std::array<uint8_t, 54> header;
+    if (!input.read(reinterpret_cast<char*>(header.data()), header.size())) return surface;
+    const auto u16 = [&](size_t at) { return uint32_t(header[at]) | uint32_t(header[at + 1]) << 8; };
+    const auto u32 = [&](size_t at) { return u16(at) | u16(at + 2) << 16; };
+    const auto width = u32(18), height = u32(22);
+    if (header[0] != 'B' || header[1] != 'M' || u32(10) != 54 || u32(14) != 40 ||
+        u16(26) != 1 || u16(28) != 24 || u32(30) != 0 ||
+        width == 0 || height == 0 || width > 32768 || height > 32768) return surface;
+    const uint64_t rowBytes = (uint64_t(width) * 3 + 3) & ~uint64_t(3);
+    const uint64_t expected = 54 + rowBytes * height;
+    // Validate the full payload before allocating, including four-byte padding.
+    if (length < 0 || uint64_t(length) != expected || u32(2) != expected) return surface;
+    surface.reset(cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height));
+    if (cairo_surface_status(surface.get()) != CAIRO_STATUS_SUCCESS) {
+        surface.reset();
+        return surface;
+    }
+    auto* pixels = cairo_image_surface_get_data(surface.get());
+    const auto stride = cairo_image_surface_get_stride(surface.get());
+    std::vector<uint8_t> row(rowBytes);
+    for (uint32_t y = 0; y < height; ++y) {
+        if (!input.read(reinterpret_cast<char*>(row.data()), row.size())) {
+            surface.reset();
+            return surface;
+        }
+        auto* target = reinterpret_cast<uint32_t*>(pixels + size_t(height - y - 1) * stride);
+        for (uint32_t x = 0; x < width; ++x)
+            target[x] = 0xff000000U | uint32_t(row[x * 3 + 2]) << 16 | uint32_t(row[x * 3 + 1]) << 8 | row[x * 3];
+    }
+    cairo_surface_mark_dirty(surface.get());
+    return surface;
+}
 
 // Never wait for preparation on the compositor thread. Holding the helper's
 // lock also prevents it from pruning a BMP while we are decoding that file.
@@ -127,16 +175,25 @@ void reloadImages() {
     dirty = false;
     std::ifstream input(session / "workspace-wallpapers.json");
     const auto state = nlohmann::json::parse(input, nullptr, false);
-    if (state.is_discarded() || !state.is_object() || !state.contains("prepared") || !state["prepared"].is_object())
+    if (state.is_discarded() || !state.is_object() || !state.contains("prepared") || !state["prepared"].is_object()) {
+        staged.clear();
+        failedPrepared.clear();
+        stagingPrepared = nullptr;
         return; // Incomplete/malformed state must not remove a working backdrop.
+    }
     prunePending = false;
     Wallpapers next;
-    bool complete = true;
-    // Reuse across workspace/output changes and within this manifest. Entries
-    // not referenced by the new walls expire when this local map is destroyed.
-    std::map<std::string, Wallpaper> reusable;
-    for (const auto& [_, images] : walls)
-        for (const auto& [id, wall] : images) reusable.try_emplace(*wall.path, wall);
+    bool complete = true, uploaded = false, pending = false;
+    // Stage one distinct replacement per render pass, keeping all visible
+    // assignments unchanged until the entire manifest has been processed.
+    // A newer publication discards the superseded staging set.
+    if (stagingPrepared != state["prepared"]) {
+        stagingPrepared = state["prepared"];
+        staged.clear();
+        failedPrepared.clear();
+        for (const auto& [_, images] : walls)
+            for (const auto& [id, wall] : images) staged.try_emplace(*wall.path, wall);
+    }
     for (const auto& [output, entries] : state["prepared"].items()) {
         if (!entries.is_object()) { complete = false; continue; }
         for (const auto& [key, value] : entries.items()) {
@@ -158,43 +215,53 @@ void reloadImages() {
                 const auto it = oldOutput->second.find(id);
                 if (it != oldOutput->second.end()) old = &it->second;
             }
-            if (const auto cached = reusable.find(path.string()); cached != reusable.end()) {
+            if (const auto cached = staged.find(path.string()); cached != staged.end()) {
                 next[output][id] = cached->second;
                 continue;
             }
-            Hyprgraphics::CImage image(path.string());
-            if (!image.success()) {
+            if (failedPrepared.contains(path.string())) {
                 complete = false;
                 if (old) next[output][id] = *old;
                 continue;
             }
-            const auto surface = image.cairoSurface();
-            // Pinned hyprgraphics 0.5.1's BMP loader allocates pixels with malloc
-            // but doesn't attach a destructor to its create_for_data surface.
-            // All inputs here are the helper's 24-bit RGB BMPs, so give Cairo
-            // ownership before this temporary decode surface is destroyed.
-            if (cairo_surface_set_user_data(surface->cairo(), &bmpPixelsKey, surface->data(), std::free) != CAIRO_STATUS_SUCCESS) {
-                std::free(surface->data());
+            if (uploaded) {
+                pending = true;
+                continue;
+            }
+            uploaded = true;
+            const auto surface = loadPreparedBMP(path);
+            if (!surface) {
+                failedPrepared.insert(path.string());
                 complete = false;
                 if (old) next[output][id] = *old;
                 continue;
             }
-            auto texture = g_pHyprRenderer->createTexture(surface->cairo());
+            auto texture = g_pHyprRenderer->createTexture(surface.get());
             if (texture) {
-                // That loader also inserts zero alpha. These RGB wallpapers
-                // must ignore it, or repeated blending accumulates to white.
+                // Prepared RGB wallpapers are fully opaque.
                 texture->m_type = Render::TEXTURE_RGBX;
                 texture->m_opaque = true;
                 Wallpaper wall{std::make_shared<const std::string>(path.string()), texture};
-                reusable.emplace(path.string(), wall);
+                staged.emplace(path.string(), wall);
                 next[output][id] = std::move(wall);
                 ++textureUploads;
             }
             else {
+                failedPrepared.insert(path.string());
                 complete = false;
                 if (old) next[output][id] = *old;
             }
         }
+    }
+    if (pending) {
+        // Damage outside rendering so the next pass is scheduled even when
+        // the desktop is otherwise idle. No polling or independent timer.
+        if (!loadLater) loadLater = g_pEventLoopManager->doLaterLock([] {
+            loadLater.reset();
+            dirty = true;
+            damageMonitors();
+        });
+        return;
     }
     // As with the previous renderer, an empty collection leaves existing images alone.
     if (!next.empty()) {
@@ -206,6 +273,9 @@ void reloadImages() {
             scheduleCachePrune();
         }
     }
+    staged.clear();
+    failedPrepared.clear();
+    stagingPrepared = nullptr;
 }
 
 void pruneLoadedCache() {
@@ -334,6 +404,7 @@ void cleanup() {
     workspaceListener.reset();
     releaseLater.reset();
     pruneLater.reset();
+    loadLater.reset();
     held.clear();
     if (notifySource) wl_event_source_remove(notifySource);
     notifySource = nullptr;
@@ -342,6 +413,9 @@ void cleanup() {
     walls.clear();
     lastDraws.clear();
     loadedPrepared = nullptr;
+    stagingPrepared = nullptr;
+    staged.clear();
+    failedPrepared.clear();
     prunePending = false;
     textureUploads = manifestLoads = 0;
     lastFrames.clear();
