@@ -346,9 +346,9 @@ Lua visibility policy keeps the bar visible while pinned on an empty workspace.
 `packages/waybar-tray/` adds a small signal-controlled arrow to the native drawer;
 it reuses the existing StatusNotifier tray, menus and process without a separate
 window or service. Wi-Fi, Bluetooth, volume and battery display icons only, with
-details in tooltips. The plugged-in/charging battery uses a green battery-with-lightning icon,
-distinguishing it from Performance mode's standalone lightning bolt.
-Appearance remains driven by shared theme roles.
+details in tooltips. The plugged-in/charging battery uses a battery-with-lightning
+icon in the shared success color, distinguishing it from Performance mode's
+standalone lightning bolt. Appearance remains driven by the selected theme roles.
 
 Wiremix comes from the public `AldogPlays/wiremix` fork on
 `codex/ui-match`, pinned in `flake.lock` and following the system nixpkgs.
@@ -410,12 +410,29 @@ discarded. Gwenview supplies image viewing and quick editing. Dedicated media
 player/mail/office/general GUI editor choices remain pending; do not install a
 bundle to fill those roles.
 
+The application menu uses declarative desktop-entry overrides in
+`home/jeffreyc/packages.nix` for short descriptions and hidden utility entries.
+Upstream MIME associations, actions and launch arguments are preserved. Rofi's
+own overrides are also linked into the user application directory, ahead of the
+original entries that its wrapper prepends to `XDG_DATA_DIRS`. The
+writable Android/game exports are updated by the existing activation helper;
+Waydroid preserves its custom visibility and description fields on refresh.
+**Theme Selector** launches the existing `theme-menu` command, shared with
+Meta+Ctrl+T, to choose and apply the system theme. The upstream Rofi-only picker
+is replaced in the application menu. No launcher service is added.
+
+Meta+E explicitly passes the account's home directory to a new Dolphin window.
+A preserving Home Manager activation sets Home and disables tab restoration for
+fresh menu/command-line launches too, backing up `dolphinrc` before the first
+change. Other saved preferences remain user-managed.
+
 Dolphin uses native KDE colors generated from the selected theme roles in
 `home/jeffreyc/desktop.nix`, plus the Qt6 KDE platform plugin, Breeze widget style,
 and Breeze icons. Package selections override Home Manager's larger KDE defaults
 so this does not add System Settings or a Plasma session. Qt environment settings
 also affect other Qt clients. `kdeglobals` and the generated color-scheme file
-are managed; `dolphinrc`, Places bookmarks, and per-folder state are preserved.
+are managed; apart from the startup keys, `dolphinrc`, Places bookmarks, and
+per-folder state are preserved.
 KDE's terminal settings point to Alacritty for external terminal launches.
 The embedded Konsole panel and extra indexer are not installed.
 KIO/KIO extras and icon assets already occur in Dolphin's
@@ -589,7 +606,9 @@ leaving a readable, muted “No notifications” label.
   upgrading or maintaining a compositor patch for lock-screen effects.
   Waybar and SwayNC are fully opaque, using the shared background role independently
   of the glass opacity and window focus.
-  Both Rofi menus use the shared focused-window border color, width and rounding.
+  Both Rofi menus share background, text, normal selection colors, typography,
+  spacing and focused-window borders. The theme menu marks **Active** in its label
+  without requesting a separate active-row color state.
   The notification-center frame uses a
   thin muted outline matching Waybar tooltips; input/control
   outlines, separators and status indicators remain useful and are not removed.
@@ -604,9 +623,10 @@ leaving a readable, muted “No notifications” label.
   this is an asset exception, not a second application palette or theme switcher.
 - Generic GTK3 styling uses pinned `adw-gtk3` as widget structure, with generated
   semantic colors from the shared theme. GTK4/libadwaita uses named colors and
-  modern CSS variables without replacing its native layout. Light appearance is
-  declared through Home Manager's GTK/dconf integration. Legacy GTK2 colors and
-  apps isolated from or overriding the host stylesheet are not claimed covered.
+  modern CSS variables without replacing its native layout. Light/dark appearance
+  follows the selected preset through Home Manager's GTK/dconf integration.
+  Legacy GTK2 colors and apps isolated from or overriding the host stylesheet
+  are not claimed covered.
 - SDDM uses pinned `where-is-my-sddm-theme` as a minimal layout, configured from
   shared colors, typography and cursor settings. Small fail-fast substitutions
   cover its otherwise hardcoded selection/error colors and pulsing error border.

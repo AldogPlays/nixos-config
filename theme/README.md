@@ -14,11 +14,17 @@ native styling plugins.
 
 ## Choose a theme
 
-Press **Meta+Ctrl+T** to open the Rofi theme menu. **Active** identifies the
+Open **Theme Selector** from the app launcher or press **Meta+Ctrl+T** for the
+system theme menu. Both launch `theme-menu`. **Active** identifies the
 running system's theme, independently of unapplied file edits. Escape cancels;
 selecting the active theme makes no change. Selecting another theme opens
 Alacritty for the build and normal sudo authentication. The rebuild includes
 other saved configuration edits. It does not commit, push or reboot.
+
+The app launcher and system theme menu share the same generated Rasi stylesheet:
+background, foreground, selection, font, border and spacing all follow the
+selected preset. **Active** is a text label; the theme menu uses the launcher's
+normal selection colors rather than a separate active-row highlight.
 
 The helper runs only when invoked. It builds before activation, prevents duplicate
 switches, and restores the previous selection after a failed build or cancelled
@@ -125,9 +131,9 @@ in
 }
 ```
 
-Importing `theme/` directly still returns the default selection as plain data.
-The portable-host override passes through the flake rather than modifying those
-source files.
+Importing `theme/` directly returns the reference default as plain data. Runtime
+adapters must consume the flake's `desktopTheme` argument so portable-host
+overrides also reach every component, including the screenshot selection border.
 
 Adapters consume `roles` for common UI colors, `terminal.normal`/`bright` for
 standard ANSI slots, `terminal.indexed` for explicit indexed overrides, and
@@ -146,7 +152,7 @@ text independently of its main background; verify contrast for each new palette.
 Generated integration identifiers stay stable: Rofi uses `desktop.rasi`, KDE
 uses `JeffreyTheme.colors`/`JeffreyTheme`, and Plymouth uses `jeffrey-theme` with
 `dotfiles/plymouth/theme.script`. Their names do not select colors. Renaming
-these identifiers does not change the selected Latte styling.
+these identifiers does not choose a palette; they stay the same for every preset.
 
 Keep alpha separate from the canonical colors. An adapter can strip `#`, append
 an alpha channel, or generate the required syntax; it should not invent a second

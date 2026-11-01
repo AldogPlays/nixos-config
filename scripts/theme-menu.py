@@ -226,7 +226,8 @@ def main(argv=None):
     ]
     for index, (key, _) in enumerate(entries):
         if key == active:
-            options += ["-a", str(index), "-selected-row", str(index)]
+            # Keep the launcher's normal selection colors; the label marks Active.
+            options += ["-selected-row", str(index)]
     choice = subprocess.run(
         options,
         input="\n".join(label for _, label in entries) + "\n",

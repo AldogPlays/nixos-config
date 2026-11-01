@@ -1,13 +1,15 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   pkgsUnstable,
+  desktopTheme,
   ...
 }:
 
 let
-  theme = import ../../theme;
+  theme = desktopTheme;
   screenshotSlurp = pkgs.callPackage ../../packages/slurp { };
   screenshot = pkgs.writeShellApplication {
     name = "screenshot";
@@ -103,9 +105,71 @@ let
       ln -s ${pkgs._7zz}/bin/7zz "$out/bin/7z"
     '';
   };
+  # Copy upstream entries so actions, MIME handlers and launch arguments survive.
+  launcherEntries =
+    pkgs.runCommand "launcher-entries"
+      {
+        nativeBuildInputs = [ pkgs.desktop-file-utils ];
+      }
+      ''
+        mkdir -p "$out/share/applications"
+        describe() {
+          cp "$1/share/applications/$2.desktop" "$out/share/applications/$2.desktop"
+          chmod u+w "$out/share/applications/$2.desktop"
+          desktop-file-edit --set-generic-name="$3" "$out/share/applications/$2.desktop"
+        }
+        hide() {
+          describe "$1" "$2" ""
+          desktop-file-edit --set-key=NoDisplay --set-value=true "$out/share/applications/$2.desktop"
+        }
+        describe ${pkgs.alacritty} Alacritty 'Terminal'
+        describe ${pkgs.modrinth-app} 'Modrinth App' 'Minecraft mods'
+        describe ${pkgsUnstable.joplin-desktop} appimagekit-joplin 'Notes'
+        describe ${pkgsUnstable.chatgpt} chatgpt 'AI assistant'
+        describe ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-9 'Network simulator'
+        describe ${config.programs.librewolf.finalPackage} librewolf 'Web browser'
+        describe ${pkgs.lutris} net.lutris.Lutris 'Game launcher'
+        describe ${pkgs.kdePackages.dolphin} org.kde.dolphin 'Files'
+        describe ${pkgs.steam} steam 'Steam games'
+        describe ${pkgs.system-config-printer} system-config-printer 'Printer settings'
+        describe ${pkgs.rofi} rofi-theme-selector 'Change system theme'
+        desktop-file-edit --set-name='Theme Selector' "$out/share/applications/rofi-theme-selector.desktop"
+        desktop-file-edit --set-key=Exec --set-value=theme-menu "$out/share/applications/rofi-theme-selector.desktop"
+        desktop-file-edit --set-comment='Choose and apply a system theme.' "$out/share/applications/rofi-theme-selector.desktop"
+        hide ${pkgs.kdePackages.ark} org.kde.ark
+        hide ${pkgs.kdePackages.gwenview} org.kde.gwenview
+        hide ${pkgs.qpdfview.override { libsForQt5 = pkgs.qt6Packages; }} qpdfview
+        hide ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-ptsa-9
+        hide ${pkgs.cups} cups
+        hide ${pkgs.rofi} rofi
+        hide ${pkgs.uwsm} uuctl
+        hide ${pkgs.xterm} xterm
+        hide ${inputs.wiremix.packages.${pkgs.stdenv.hostPlatform.system}.wiremix} wiremix
+        desktop-file-validate "$out"/share/applications/*.desktop
+      '';
 in
 {
+  # Rofi's wrapper prepends its own share directory to XDG_DATA_DIRS. User data
+  # takes precedence over that directory, so its own entries must live here.
+  xdg.dataFile =
+    lib.genAttrs
+      [
+        "applications/rofi.desktop"
+        "applications/rofi-theme-selector.desktop"
+      ]
+      (path: {
+        source = "${launcherEntries}/share/${path}";
+      });
+
+  # NoDisplay hides menus without disabling the applications' other entry points.
+  xdg.desktopEntries.nixos-manual = {
+    name = "NixOS Manual";
+    exec = "nixos-help";
+    noDisplay = true;
+  };
+
   home.packages = with pkgs; [
+    (lib.hiPrio launcherEntries)
     # Desktop applications
     kdePackages.dolphin
     # Dolphin's native Extract/Compress actions; 7zz backs its 7-Zip plugin.
@@ -120,7 +184,6 @@ in
     kdePackages.ffmpegthumbs
     cisco-packet-tracer_9
     pkgsUnstable.joplin-desktop
-    sdrpp
     lutris
     modrinth-app
     # Official desktop client, including graphical Codex, from the pinned input.

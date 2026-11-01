@@ -320,6 +320,18 @@ in
     }
   );
 
+  # Change only startup preferences; keep the rest of Dolphin's writable state.
+  home.activation.dolphinStartup = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    dolphinrc=${lib.escapeShellArg "${config.xdg.configHome}/dolphinrc"}
+    if [[ -f "$dolphinrc" && ! -e "$dolphinrc.before-startup-policy" ]]; then
+      run cp -p "$dolphinrc" "$dolphinrc.before-startup-policy"
+    fi
+    run ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 --file "$dolphinrc" \
+      --group General --key RememberOpenedTabs --type bool false
+    run ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 --file "$dolphinrc" \
+      --group General --key HomeUrl ${lib.escapeShellArg config.home.homeDirectory}
+  '';
+
   # Translate canonical colors only at the application's format boundary.
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
     builtins.replaceStrings

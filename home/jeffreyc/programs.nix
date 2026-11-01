@@ -23,7 +23,10 @@ let
   darktable = pkgs.symlinkJoin {
     name = "darktable-desktop-${pkgs.darktable.version}";
     paths = [ pkgs.darktable ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
+    nativeBuildInputs = [
+      pkgs.makeWrapper
+      pkgs.desktop-file-utils
+    ];
     postBuild = ''
       rm "$out/bin/darktable"
       makeWrapper ${lib.getExe' pkgs.darktable "darktable"} "$out/bin/darktable" \
@@ -32,6 +35,7 @@ let
       desktop="$out/share/applications/org.darktable.darktable.desktop"
       cp --remove-destination ${pkgs.darktable}/share/applications/org.darktable.darktable.desktop "$desktop"
       substituteInPlace "$desktop" --replace-fail '${pkgs.darktable}/bin/darktable' "$out/bin/darktable"
+      desktop-file-edit --set-generic-name='Photo editor' "$desktop"
     '';
     meta = pkgs.darktable.meta;
   };
@@ -252,6 +256,8 @@ in
     extraConfig = {
       run-command = "${pkgs.uwsm}/bin/uwsm app -- {cmd}";
       run-shell-command = "${pkgs.uwsm}/bin/uwsm app -- {terminal} -e {cmd}";
+      drun-display-format = "{name} [<span size='small'>({generic})</span>]";
+      drun-match-fields = "name,generic,exec,categories,keywords";
     };
     modes = [
       "drun"
@@ -264,6 +270,11 @@ in
         * {
           background: ${glassBackground};
           foreground: ${roles.foreground};
+          /* Default-layout aliases must follow the selected preset too. */
+          lightfg: ${roles.foregroundMuted};
+          lightbg: ${roles.backgroundAlt};
+          red: ${roles.error};
+          blue: ${roles.accent};
           background-color: transparent;
           text-color: @foreground;
           border-color: ${roles.border};
@@ -292,6 +303,7 @@ in
         element { padding: ${px geometry.spacing}; border: 0px; }
         element-text, element-icon { background-color: transparent; text-color: inherit; }
         entry { placeholder-color: ${roles.foregroundMuted}; }
+        overlay { background-color: ${roles.surface}; text-color: ${roles.foreground}; }
         listview, message, sidebar { border: ${px geometry.borderWidth} 0px 0px; border-color: ${roles.border}; }
         num-filtered-rows, num-rows, textbox-num-sep { text-color: ${roles.foregroundMuted}; }
       ''

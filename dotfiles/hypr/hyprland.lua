@@ -9,7 +9,7 @@ hl.monitor({
 })
 
 local terminal = "uwsm app -- alacritty"
-local fileManager = "uwsm app -- dolphin"
+local fileManager = 'uwsm app -- dolphin --new-window "$HOME"'
 local menu = "rofi -show drun"
 local mainMod = "SUPER"
 

@@ -25,7 +25,6 @@ in
     extraGroups = [
       "wheel"
       "networkmanager"
-      "plugdev"
     ];
   };
   home-manager.users.${host.username}.programs.bash.shellAliases = {

@@ -80,6 +80,7 @@ in
   xdg.desktopEntries = {
     Waydroid = {
       name = "Waydroid";
+      noDisplay = true;
       genericName = "Android";
       exec = "${openAndroid}/bin/waydroid-open";
       icon = "waydroid";
@@ -91,6 +92,7 @@ in
     };
     waydroid-setup = {
       name = "Set Up Aurora Store";
+      noDisplay = true;
       exec = "${setup}/bin/waydroid-setup";
       icon = "waydroid";
       categories = [ "Utility" ];
@@ -106,7 +108,7 @@ in
   '';
 
   # Waydroid preserves NoDisplay while refreshing its exported launchers.
-  # Keep the original app installed for recovery; only the patched app is shown.
+  # Keep recovery/setup apps hidden and descriptions on writable app exports.
   home.activation.waydroidInstagramLauncher = lib.hm.dag.entryAfter [ "createDesktopDirectories" ] ''
     run ${pkgs.python3}/bin/python3 ${../../scripts/waydroid-launcher-policy.py} \
       ${lib.escapeShellArg "${config.xdg.dataHome}/applications"}

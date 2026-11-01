@@ -20,7 +20,7 @@ for rebuilds and recovery.
 | Focus window in a direction | Ctrl+Meta+Arrow; hold to repeat |
 | Move focused window | Meta+Arrow; tiled layout move or 20 px floating move, hold to repeat |
 | Resize focused window | Meta+Shift+Arrow; 20 px steps, hold to repeat |
-| File browser (Dolphin) | Meta+E |
+| File browser (Dolphin, new window at Home) | Meta+E |
 | App launcher (Rofi) | Meta+A |
 | Theme selector (Rofi) | Meta+Ctrl+T |
 | Notification center (SwayNC) | Super+N or click the bar's notification icon |
@@ -87,6 +87,23 @@ native drawer with a keyboard-controlled arrow. No separate window, tray host,
 or session service is started. Appearance and group configuration live in
 `home/jeffreyc/desktop.nix`; the shortcut and existing bar visibility policy live
 in `dotfiles/hypr/hyprland.lua`.
+
+### App launcher
+
+The app launcher shows short descriptions beside application names. Hidden
+utilities remain available through shortcuts, commands, file associations and
+context menus. `home/jeffreyc/packages.nix` preserves upstream desktop entries
+while hiding Ark, Gwenview, qpdfview, the Packet Tracer PTSA handler, the CUPS web
+interface, the NixOS manual, Rofi itself, uuctl, Wiremix and XTerm. Rofi's own
+overrides live in the user application directory so its package wrapper cannot
+give the original entries priority. **Print Settings** remains available for
+printer administration. **Theme Selector** shows **Change system theme** and
+opens the same system theme menu as Meta+Ctrl+T. Both launch `theme-menu` to choose
+and apply the declarative desktop preset.
+Waydroid and Aurora setup launchers are hidden in `home/jeffreyc/waydroid.nix`.
+The activation helper preserves writable Android/game exports while hiding Aurora
+Store and the recovery Instagram entry and adding descriptions to Instagram and
+the existing EA App shortcut. No launcher service is added.
 
 ### Photo editing with darktable
 
@@ -288,27 +305,6 @@ downloads Valve's Proton when needed for Windows games; compatibility can be
 selected per game under **Properties → Compatibility**. No extra gaming
 overlay, tuning daemon or Steam-specific firewall opening is configured.
 
-SDR++ is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs. Launch
-**SDR++** from Rofi or run `sdrpp`. It starts on demand; receiver settings and
-recordings remain user-managed.
-
-RTL-SDR Blog V4 support uses the same pinned Osmocom driver as SDR++.
-`modules/nixos/hardware.nix` enables NixOS's RTL-SDR integration: USB udev rules,
-the `rtl_test`/`rtl_sdr` tools, and a blacklist for conflicting DVB TV drivers.
-The desktop account belongs to `plugdev` on the reference host and portable
-installations. No receiver daemon is started. This follows the manufacturer's
-[V4 Linux driver guidance](https://www.rtl-sdr.com/v4/).
-
-The blacklist prevents future driver loads. If the TV driver was already loaded,
-release it once with `sudo modprobe -r dvb_usb_rtl28xxu rtl2832_sdr rtl2832`, or
-reboot when convenient. Reconnect the receiver if its USB permissions are stale.
-Group membership takes effect at the next login; an active
-local session may already have USB access through systemd's device permissions.
-In SDR++, select **RTL-SDR**, refresh the device list and select **Blog V4**.
-For HF, leave direct sampling disabled: the V4 switches its upconverter
-automatically. With SDR++ stopped, `rtl_test -t` checks device/tuner detection;
-only one application can claim the receiver at a time.
-
 Lutris is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs, including
 its NixOS-compatible game runtime. Launch **Lutris** from Rofi or run `lutris`.
 It starts on demand; game installations, downloaded runners and account sign-ins
@@ -360,9 +356,10 @@ stays opaque.
 Windows have 1px borders: the shared focus color when active and muted border
 color when inactive. The notification-center frame uses the same muted outline,
 background, font and rounding as Waybar tooltips, keeping its roomier control
-spacing. Both Rofi menus use the shared focused-window border color, width and
-rounding; useful control outlines and separators remain. This is matte blur,
-without glossy gradients or refraction.
+spacing. Both Rofi menus share the same background, text, selection colors, font,
+spacing and focused-window border. **Active** is identified by its label without
+a different row color; useful control outlines and separators remain. This is
+matte blur, without glossy gradients or refraction.
 The [generation rollback command](maintenance.md#recovery) restores the previous
 active configuration. Reverting the repository is a separate Git change; keep
 the source consistent with the chosen generation before rebuilding.
@@ -406,6 +403,13 @@ convenient time; configuration checks do not prove a successful password unlock.
 
 ## Dolphin
 
+Meta+E explicitly opens a new window at the current account's home directory,
+instead of restoring the last folder. The command lives in
+`dotfiles/hypr/hyprland.lua`; ordinary file/folder opening keeps its supplied path.
+Home Manager's activation in `home/jeffreyc/desktop.nix` also disables tab
+restoration and selects Home for fresh launches from the menu or command line.
+It backs up `dolphinrc` once and changes only those two startup keys.
+
 `home/jeffreyc/desktop.nix` generates `kdeglobals` and the `JeffreyTheme.colors`
 scheme from `theme/`. The KDE Qt platform plugin and Breeze widget style supply
 native controls; Breeze icons are exposed from Dolphin's existing dependencies.
@@ -414,8 +418,8 @@ It also sets the platform/style for other Qt applications, not just Dolphin.
 
 Open Terminal (Shift+F4) uses Alacritty at the viewed location. Dolphin's F4
 embedded terminal requires Konsole's separate component and is intentionally not
-added. Existing Dolphin preferences, view history, and Places bookmarks remain
-writable and unmanaged; selected default apps and theme colors are declarative.
+added. Other Dolphin preferences, view history, and Places bookmarks remain
+writable and unmanaged; startup, default apps and theme colors are declarative.
 KIO supplies file/trash support and extras. Qt's `kimageformats` adds HEIC/HEIF,
 AVIF, JPEG XL, RAW and other image readers; `kdegraphics-thumbnailers` adds PDF/RAW
 previews, and `ffmpegthumbs` adds video previews. Toggle **Show Previews** with F12;
@@ -428,8 +432,8 @@ save a copy when preserving an original. It launches on demand, not as a daemon.
 
 qpdfview is the default PDF viewer. It is built against the same pinned Qt6
 toolkit and uses the selected KDE palette, Breeze controls, icons, and fonts
-without a separate theme configuration. Open PDFs from Dolphin or launch
-**qpdfview** from Rofi. It starts on demand and adds no background service.
+without a separate theme configuration. Open PDFs from Dolphin or run
+`qpdfview`. It starts on demand and adds no background service.
 
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;
