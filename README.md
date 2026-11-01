@@ -77,6 +77,7 @@ Meta/Super is the Windows or logo key.
 | Workspaces 1–10 | Meta+1–9, Meta+0 |
 | Notifications | Meta+N |
 | Wi-Fi / Bluetooth / audio | Meta+Shift+N / B / A |
+| System monitor | Meta+Esc or click the battery icon |
 | Screenshot | Print or Meta+Shift+S |
 | Lock screen | Meta+L |
 

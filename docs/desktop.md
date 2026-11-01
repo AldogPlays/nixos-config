@@ -28,15 +28,21 @@ for rebuilds and recovery.
 | Wi-Fi (wlctl) | Super+Shift+N or click the bar's network module |
 | Bluetooth (Bluetui) | Super+Shift+B or click the bar's Bluetooth module |
 | Audio mixer (Wiremix) | Super+Shift+A or click the bar's volume module |
+| System monitor (btop) | Meta+Esc or click the battery icon |
 | Power mode | Click Waybar's power-mode icon to cycle available profiles |
 | App tray | Hover the arrow or toggle with Meta+Shift+T |
 | Screenshot | Prt Sc (with or without Fn on this Lenovo), or Meta+Shift+S; click a window/gap, or drag an area; Escape cancels |
 
-Network, Bluetooth, and Audio controls open as floating Alacritty windows from
+Network, Bluetooth, Audio, and System Monitor controls open as floating Alacritty windows from
 either their shortcuts or Waybar. Escape closes the focused control window,
 including when a TUI prompt is open. Hyprland's app-ID rule lives in
 `dotfiles/hypr/hyprland.lua`; launch commands there and in
 `home/jeffreyc/desktop.nix` set the per-window Alacritty Escape binding.
+
+The system monitor shows CPU, memory, network, processes and available battery
+information. Its native btop theme follows the shared desktop colors through
+`home/jeffreyc/programs.nix`. It starts through UWSM on demand, without a monitoring
+daemon. Escape closes the window, including while a btop menu is open.
 
 Keyboard app shortcuts, Waybar's system controls and apps started by Rofi use
 `uwsm app --` to launch in separate application units. Hyprland's service has an
@@ -68,6 +74,9 @@ horizontal padding and inter-module gap. Icon accents come from the selected
 theme roles in `theme/`. The clock uses 12-hour time
 with AM/PM, without a calendar dropdown or hover popup.
 SwayNC uses the same outer spacing as the tiled windows below Waybar.
+Its notification center keeps a 600-pixel height even when empty, capped by the
+available monitor height; notification text and controls retain compact spacing.
+The scrollbar is hidden; wheel and touchpad scrolling still reach older notifications.
 Scroll over volume to adjust it in 5% steps. Volume/brightness keys, speaker/mic
 mute keys, and volume scrolling show a compact one-second SwayOSD overlay.
 `desktop-feedback`, declared in `home/jeffreyc/packages.nix`, retains wpctl and

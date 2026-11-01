@@ -196,6 +196,8 @@ in
       };
       extraCss = gtkNamedColors;
     };
+    # This pinned HM release writes a numeric enum that GTK's INI parser rejects.
+    gtk4.extraConfig.gtk-interface-color-scheme = theme.appearance;
     # Keep GTK4/libadwaita's native layout; override colors, not a GTK3 stylesheet.
     gtk4.extraCss = gtkNamedColors + ''
       :root {
@@ -489,7 +491,8 @@ in
         format-charging = "󰂄";
         format-plugged = "󰂄";
         format-full = "";
-        tooltip-format = "Battery: {capacity}%\n{timeTo}";
+        tooltip-format = "Battery: {capacity}%\n{timeTo}\nClick for system monitor";
+        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class system-monitor -o 'window.dimensions={columns=120,lines=36}' -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e btop'';
         format-icons = [
           ""
           ""
@@ -546,7 +549,7 @@ in
         background: transparent; border: none;
         border-radius: 0; margin: 0; padding: 0 ${px geometry.padding}; min-width: ${px geometry.iconSize};
       }
-      #network:hover, #bluetooth:hover, #pulseaudio:hover, #power-profiles-daemon:hover, #custom-notifications:hover {
+      #network:hover, #bluetooth:hover, #pulseaudio:hover, #power-profiles-daemon:hover, #battery:hover, #custom-notifications:hover {
         background: ${roles.surface};
       }
       #bluetooth.off, #bluetooth.disabled, #pulseaudio.muted { color: ${roles.foregroundMuted}; }
@@ -613,7 +616,8 @@ in
       control-center-margin-right = geometry.spacing;
       control-center-margin-bottom = geometry.spacing;
       fit-to-screen = false;
-      control-center-height = -1;
+      # Keep an empty panel useful too; layer-shell caps this on smaller outputs.
+      control-center-height = 600;
       timeout = 5;
       text-empty = "No notifications";
       widgets = [
@@ -652,6 +656,8 @@ in
         -gtk-icon-shadow: none;
       }
       .control-center { border: ${px geometry.borderWidth} solid ${roles.border}; padding: ${px geometry.spacing}; }
+      /* Hide the scrollbar indicator while retaining wheel/touchpad scrolling. */
+      .control-center scrollbar { opacity: 0; }
       .control-center .control-center-list-placeholder {
         opacity: 1;
         color: ${roles.foregroundMuted};

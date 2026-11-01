@@ -70,6 +70,39 @@ Instagram's separately signed Android clone has its own manual update workflow,
 original-APK backups and private signing key. It is not updated by `nix flake
 update` or a routine system switch. See the [Instagram package guide](../packages/instagram-reels/README.md).
 
+## Security checks
+
+Run these on demand from the checkout; neither installs a resident scanner nor
+updates the pinned inputs. Before publishing or pushing changes, scan Git history
+with redacted findings:
+
+```bash
+nix shell --inputs-from . nixpkgs#gitleaks --command \
+  gitleaks git --redact=100 --log-opts=--all .
+```
+
+Review the working diff separately: the history scan does not cover uncommitted
+files. Keep downloaded installers, signing keys and credentials outside Git.
+The reference host intentionally retains identifying metadata; removing it from
+the latest tree would not remove it from existing history. See
+[publishing](public-release.md) before changing repository visibility.
+
+When reviewing software updates, an optional scan of the activated system is:
+
+```bash
+nix shell --inputs-from . nixpkgs#vulnix --command vulnix --system
+```
+
+Vulnix downloads and caches vulnerability data on demand. Its package-name/version
+matching is heuristic: review reported candidates against the pinned package's
+patches and upstream advisories before changing configuration. Findings do not
+trigger automatic upgrades or service restarts. A scan does not establish that
+every dependency is safe. See the [upstream scanner](https://github.com/nix-community/vulnix).
+
+Independent personal-data backups and restore testing remain separate from NixOS
+generation rollback. Automatic idle locking and sleeping are not configured;
+the existing manual controls remain in use.
+
 ## Recovery
 
 Select an earlier generation from the boot menu, or roll back a running system:

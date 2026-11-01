@@ -219,6 +219,31 @@ eza is not fully GNU-ls flag-compatible.
 Eza adds file-type icons only on terminal output, using the existing Nerd Font
 symbols. It does not supply image thumbnails or interactive content previews.
 
+## Security posture
+
+The local review on 2026-10-31 covered effective NixOS settings, live IPv4/IPv6
+input rules and listeners, sudo/account configuration, lock-screen PAM, Nix
+trust/sandbox settings, repository history and local secret-file permissions.
+Gitleaks 8.30.1 found no matches across all 44 commits reachable at the time.
+This is a scoped review, not a guarantee that credentials or vulnerabilities
+cannot exist.
+
+The live input firewall matched the declared policy: SSH was disabled, printing
+and desktop application endpoints were loopback-only, and mDNS was the deliberate
+LAN discovery opening. Tailscale maintained its own networking rules; MagicDNS
+was enabled, with Tailscale SSH and advertised routes disabled. Android DNS/DHCP
+listeners were confined to the Waydroid bridge; that bridge is deliberately
+trusted by the host. Sudo required a password, the Nix daemon trusted only root,
+and build sandboxing was enabled. The GitHub credential file, Android signing
+key and Tailscale state had restrictive access and remained outside Git.
+Forwarding uses the existing Tailscale/Waydroid integration; this input-rule
+review does not establish isolation between every routed network.
+
+Manual locking remains intentional; no automatic idle lock was added. Independent
+personal-data backups and a restore trial remain a separate recovery requirement.
+The review did not perform external penetration testing, audit every dependency
+against vulnerability databases, or establish successful physical lock/unlock.
+
 ## Desktop components
 
 Hyprland handles cursor hiding with its native inactivity timeout, without an
@@ -250,7 +275,7 @@ measure time stalled on memory, not the percentage of RAM occupied. This policy
 does not guarantee recovery from every allocation burst or kernel OOM.
 
 SwayNC keeps only its title, do-not-disturb switch and notification list. Its
-content-sized panel, compact spacing, small icons and flat controls are declared
+fixed-height panel, compact spacing, small icons and flat controls are declared
 in `home/jeffreyc/desktop.nix`, consuming shared theme colors and font from
 `theme/default.nix`. Panel and popup backgrounds are fully opaque, matching
 Waybar; their layer surfaces do not request blur. The panel and Waybar tooltips
@@ -282,6 +307,7 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Bluetooth controls | BlueZ, Bluetui | Click Waybar Bluetooth or Super+Shift+B to open Bluetui in Alacritty |
 | Authentication prompts | polkit, hyprpolkitagent | NixOS desktop module and Home Manager session service |
 | Audio | PipeWire, WirePlumber; the Wiremix fork, wpctl | Click Waybar volume or Super+Shift+A for Wiremix; media keys use desktop-feedback around wpctl |
+| System monitor | btop in floating Alacritty | Meta+Esc or click the battery; `home/jeffreyc/programs.nix` supplies its shared-theme config |
 | Portals | Hyprland and GTK backends | Hyprland's NixOS module supplies its portal; GTK is added explicitly |
 | Screenshots and clipboard | slurp, grim, wl-clipboard | Print or Meta+Shift+S starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
 | Brightness and media | brightnessctl, playerctl, SwayOSD | desktop-feedback preserves the brightness curve; Home Manager starts swayosd.service with the graphical session |
@@ -358,12 +384,14 @@ The fork's single-page audio sections and contextual controls replace its UI;
 PipeWire/WirePlumber and their startup remain unchanged. No local checkout path,
 imperative installation, or extra service is required on a new machine.
 
-The TUI controls are launched on demand; the
+The TUI controls, including btop's CPU/memory/process/battery monitor, are launched on demand; the
 network/Bluetooth/audio backend services remain enabled. Their dedicated
 Alacritty app IDs float through `dotfiles/hypr/hyprland.lua`. Keyboard and Waybar
 launch commands bind unmodified Escape to Alacritty's Quit action for these
 windows only, closing even an active TUI prompt. No extra service is involved.
 nm-applet, Blueman, and pavucontrol are no longer declared as front ends.
+The monitor uses the same UWSM launch and Escape-to-close behavior, with no new
+background service. Its dedicated Alacritty class is `system-monitor`.
 
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.

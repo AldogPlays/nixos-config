@@ -43,6 +43,61 @@ in
 {
   home.packages = [ darktable ];
 
+  # On-demand monitor, sharing the terminal's palette rather than a second theme.
+  programs.btop = {
+    enable = true;
+    settings = {
+      color_theme = "desktop";
+      theme_background = true;
+      rounded_corners = false;
+      show_battery = true;
+    };
+    themes.desktop = ''
+      theme[main_bg]="${roles.background}"
+      theme[main_fg]="${roles.foreground}"
+      theme[title]="${roles.foreground}"
+      theme[hi_fg]="${roles.accent}"
+      theme[selected_bg]="${roles.selection}"
+      theme[selected_fg]="${roles.selectionForeground}"
+      theme[inactive_fg]="${roles.foregroundMuted}"
+      theme[graph_text]="${roles.foreground}"
+      theme[meter_bg]="${roles.surface}"
+      theme[proc_misc]="${roles.accent}"
+      theme[cpu_box]="${roles.border}"
+      theme[mem_box]="${roles.border}"
+      theme[net_box]="${roles.border}"
+      theme[proc_box]="${roles.border}"
+      theme[div_line]="${roles.border}"
+      theme[temp_start]="${roles.success}"
+      theme[temp_mid]="${roles.warning}"
+      theme[temp_end]="${roles.error}"
+      theme[cpu_start]="${roles.accent}"
+      theme[cpu_mid]="${roles.accent}"
+      theme[cpu_end]="${roles.accent}"
+      theme[free_start]="${roles.success}"
+      theme[free_mid]="${roles.success}"
+      theme[free_end]="${roles.success}"
+      theme[cached_start]="${roles.info}"
+      theme[cached_mid]="${roles.info}"
+      theme[cached_end]="${roles.info}"
+      theme[available_start]="${roles.success}"
+      theme[available_mid]="${roles.success}"
+      theme[available_end]="${roles.success}"
+      theme[used_start]="${roles.accent}"
+      theme[used_mid]="${roles.warning}"
+      theme[used_end]="${roles.error}"
+      theme[download_start]="${roles.network}"
+      theme[download_mid]="${roles.network}"
+      theme[download_end]="${roles.network}"
+      theme[upload_start]="${roles.info}"
+      theme[upload_mid]="${roles.info}"
+      theme[upload_end]="${roles.info}"
+      theme[process_start]="${roles.foreground}"
+      theme[process_mid]="${roles.accent}"
+      theme[process_end]="${roles.accent}"
+    '';
+  };
+
   # Only the stylesheet is managed; preferences, catalogues and edits stay writable.
   # Native --conf overrides select it without rewriting darktablerc on exit.
   xdg.configFile."darktable/themes/desktop.css".text = ''
