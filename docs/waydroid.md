@@ -36,6 +36,8 @@ does not block every video, Reel link or alternate route into feed content.
 Messages is the first tab and the default startup destination.
 Native requests for a hidden Home/Reels tab, including Back from messages, are
 redirected to messages.
+The conversation header hides Blend's entrypoint and add/invite button through a
+separate local hook; other messaging controls remain native.
 The original package remains installed but disabled for recovery, with its account
 data retained. The patched package has its own sign-in and uses the existing
 Android media folder.

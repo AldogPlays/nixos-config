@@ -141,12 +141,22 @@
 
         instagram-reels-patch = {
           type = "app";
-          meta.description = "Build the pinned Instagram clone without Home or Reels navigation";
+          meta.description = "Build the pinned Instagram clone without Home, Reels or messaging Blend controls";
           program = nixpkgs.lib.getExe (pkgs.callPackage ./packages/instagram-reels { });
         };
       };
 
       checks.${system} = {
+        instagram-patch =
+          pkgs.runCommand "instagram-patch-checks" { nativeBuildInputs = [ pkgs.python3 ]; }
+            ''
+              export PYTHONDONTWRITEBYTECODE=1
+              mkdir -p packages/instagram-reels tests
+              cp ${./packages/instagram-reels/patch.py} packages/instagram-reels/patch.py
+              cp ${./tests/test_instagram_patch.py} tests/test_instagram_patch.py
+              python3 -m unittest discover -s tests -p test_instagram_patch.py -v
+              touch "$out"
+            '';
         dolphin-place = pkgs.runCommand "dolphin-place-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
           export PYTHONDONTWRITEBYTECODE=1
           cp -r ${./scripts} scripts

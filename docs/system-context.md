@@ -142,6 +142,14 @@ manual, with source/input review and runtime checks. The clone does not globally
 block every Reel/video or alternate feed entry point. Home and Reels navigation
 are removed while Direct, Search, Profile and Create are retained.
 Direct is the first tab and default startup destination.
+The conversation-header Blend entrypoint and add/invite variant are suppressed
+locally; shared Blend logic and other messaging controls are not patched.
+Manual APK builds preserve the previous output, require the existing signing key
+for updates, and record input/tool/output hashes. The package guide describes
+semantic hook identification and the regression/interactive checks for later work.
+The owner confirmed the existing setup worked as desired on 2026-11-01; preserve
+that baseline when making narrow UI changes. The Blend update was installed and
+hash-verified headlessly, with visual confirmation left to the owner.
 The original package is disabled for recovery with its data retained and its
 desktop entry hidden; the patched app is the sole visible Instagram launcher.
 Android's saved appearance is light, with the app visually verified in light mode.

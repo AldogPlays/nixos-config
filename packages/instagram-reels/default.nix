@@ -59,5 +59,5 @@ writeShellApplication {
       --bundle ${bundle}/share/instagram-reels/local-reels.mpp \
       --clone-bundle ${cloneBundle} --supported ${./supported.json} "$@"
   '';
-  meta.description = "Build the version-pinned Instagram clone without Home or Reels navigation";
+  meta.description = "Build the pinned Instagram clone without Home, Reels or messaging Blend controls";
 }

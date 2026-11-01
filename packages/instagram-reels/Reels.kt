@@ -12,6 +12,9 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -37,6 +40,16 @@ private object ReelRefresh : Fingerprint(
     parameters = listOf("Landroid/view/MotionEvent;"),
     definingClass = "Linstagram/features/clips/viewer/ui/ClipsSwipeRefreshLayout;",
 )
+private object BlendHeader : Fingerprint(
+    strings = listOf("show_blends_add_icon_for_thread"),
+    custom = { method, _ ->
+        method.parameterTypes.take(3).map(CharSequence::toString) == listOf(
+            "Landroid/content/Context;", "Lcom/instagram/common/session/UserSession;",
+            "Lcom/instagram/direct/capabilities/Capabilities;"
+        )
+    },
+)
+private object BlendUtil : Fingerprint(strings = listOf("android_purge_26_q2_BlendUtil_shouldBadge"))
 private const val SUPPORTED_VERSION = "@INSTAGRAM_VERSION@"
 private const val SUPPORTED_CODE = "@INSTAGRAM_VERSION_CODE@"
 private fun compatibility() = LocalCompatibility.create(SUPPORTED_VERSION)
@@ -211,5 +224,48 @@ val stopReels = bytecodePatch(name = "Local stop Reels scrolling", default = fal
         val refresh = ReelRefresh.matchAll(0..Int.MAX_VALUE).single().method
         require(refresh.returnType == "Z")
         refresh.addInstructions(0, "const/4 v0, 0x0\nreturn v0")
+    }
+}
+
+val hideBlend = bytecodePatch(name = "Local hide messaging Blend button", default = false) {
+    compatibleWith(compatibility())
+    execute {
+        require(packageMetadata.versionName == SUPPORTED_VERSION && packageMetadata.versionCode == SUPPORTED_CODE)
+        val header = BlendHeader.matchAll(0..Int.MAX_VALUE).single()
+        val method = header.method
+        val utility = BlendUtil.matchAll(0..Int.MAX_VALUE).single().classDef.type
+        val session = "Lcom/instagram/common/session/UserSession;"
+        val instructions = method.instructions.toList()
+        fun reference(index: Int) = (instructions[index] as? ReferenceInstruction)?.reference
+
+        // Resolve native Blend gates from the semantic anchors and call graph,
+        // rather than persisting this release's obfuscated class/method names.
+        val enabled = instructions.indices.mapNotNull { reference(it) as? MethodReference }
+            .filter { it.definingClass == utility && it.returnType == "Z" &&
+                it.parameterTypes.map(CharSequence::toString) == listOf(session) }
+            .distinct().single()
+        val canStart = header.classDef.methods.single { candidate ->
+            candidate.returnType == "Z" && candidate.parameterTypes.size == 2 &&
+                candidate.parameterTypes.first().toString() == session &&
+                candidate.instructions.any { (it as? ReferenceInstruction)?.reference == enabled }
+        }
+        val gates = instructions.indices.filter { reference(it) == enabled || reference(it) == canStart }
+        require(gates.size == 3) { "Expected one Blend entrypoint and two creation checks in the messaging header" }
+
+        val preference = instructions.indices.single {
+            (reference(it) as? StringReference)?.string == "show_blends_add_icon_for_thread"
+        }
+        val addIcon = (preference + 1 until minOf(preference + 14, instructions.size)).first { index ->
+            val ref = reference(index) as? MethodReference
+            ref?.name == "getBoolean" && ref.returnType == "Z" &&
+                ref.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "Z")
+        }
+        for (index in gates + addIcon) {
+            val result = instructions[index + 1]
+            require(result.opcode == Opcode.MOVE_RESULT)
+            val register = (result as OneRegisterInstruction).registerA
+            method.replaceInstruction(index + 1, "const/16 v$register, 0x0")
+        }
+        println("Verified messaging Blend header: $method; disabled four local UI decisions")
     }
 }

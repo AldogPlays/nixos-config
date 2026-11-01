@@ -1,4 +1,4 @@
-# Instagram Home and Reels patch
+# Instagram navigation and messaging patches
 
 This on-demand tool patches local original APKs for the reference Waydroid
 installation. It adds no desktop service or Android root manager. `supported.json`
@@ -21,6 +21,13 @@ Home/Reels are redirected to Direct, including Android Back from the inbox.
 Individual Reel links and videos elsewhere in
 Instagram are not globally blocked; this is a navigation restriction, not a
 network content filter.
+
+The messaging header also omits the Blend button and its add/invite variant.
+The local Blend hook changes four boolean results only in the native thread-header
+builder: the existing-Blend entrypoint, two creation checks, and the per-thread
+add-icon preference. It follows method references from semantic fingerprints;
+shared Blend utilities, conversations, sending, calls and other header controls
+are not patched. This does not block Blend links or remove existing Blend data.
 
 `default.nix` pins and verifies Morphe Desktop 1.19.1 and Piko 3.10.0. Only Piko's
 generic **Clone** patch is enabled; its settings, ads, analytics and other feature
@@ -47,8 +54,15 @@ nix run .#instagram-reels-patch -- ~/.local/state/instagram-reels/original
 ```
 
 The signed result is `~/.local/state/instagram-reels/instagram-reels.apk` by
-default; `--output /path/to/file.apk` overrides it. `last-build.json` records the
-build result. This command builds only; it does not install or launch Android.
+default; `--output /path/to/file.apk` overrides it. Builds stage in a private
+directory beside the output. Only a successful report containing exactly the four
+selected patches and successful patch/rebuild/sign steps can replace the output.
+The previous output is retained as `instagram-reels.previous.apk` (or
+`<custom-output-stem>.previous.apk`). Failed builds preserve the existing output
+and successful report. `last-build.json` records the final APK hash, original
+input hashes, patcher/bundle hashes and selected patches. The report's
+`packageName` describes the original input; `clonePackage` identifies the output.
+This command builds only; it does not install or launch Android.
 Nix builds the small patch bundle from checked-in source. Proprietary APKs and
 signing keys are neither flake inputs nor copied into the Nix store.
 
@@ -58,6 +72,8 @@ with private backups: the same signing identity permits later updates without
 uninstalling the clone. Do not commit it. NixOS rollback does not restore app data
 or this key. New installations also need matching original APKs; Google Play may
 stop serving an older release.
+If a previous build exists but the key is missing, the wrapper refuses to create
+a replacement identity; restore the private key backup first.
 
 For an explicit install using normal, unprivileged ADB, start Waydroid and obtain
 its address from `waydroid status`. Enter a temporary pinned tool shell:
@@ -74,6 +90,31 @@ adb disconnect ANDROID_IP:5555
 Approve any debugging authorization locally in Android. ADB root and disabling
 APK signature checks are not needed. Installation must report **Success**;
 verify the package with `waydroid app list` before opening its launcher.
+
+An already-running Waydroid session also supports a headless update through its
+native install bridge, without opening the app or requesting ADB authorization:
+
+```bash
+waydroid app install ~/.local/state/instagram-reels/instagram-reels.apk
+```
+
+That bridge completes installation asynchronously; its command exit status alone
+does not establish success. On the reference host, compare the built APK's SHA-256
+with the single installed clone under
+`~/.local/share/waydroid/data/app/*/com.instagram.android.piko-*/base.apk` after
+installation completes. An in-place update retains Android data and existing
+permissions. Use ADB or the Android settings UI separately when changing appops.
+If the container was frozen, the bridge may restore that state before Android's
+asynchronous installation finishes. Wake only the container in the background,
+verify the installed hash, then restore its previous frozen state:
+
+```bash
+busctl --system call id.waydro.Container /ContainerManager id.waydro.ContainerManager Unfreeze
+# Compare hashes after installation completes, without launching Instagram.
+busctl --system call id.waydro.Container /ContainerManager id.waydro.ContainerManager Freeze
+```
+
+Do not freeze an Android session the owner is actively using.
 
 To use the patched app as the only Instagram launcher, preserve the original app
 but disable it for the Android user, then apply the desktop launcher policy:
@@ -107,6 +148,44 @@ build, install and signed-in behavior checks. Keep the working APK and original
 splits until the replacement is verified. Do not replace a failed patch with
 `--continue-on-error` or simply remove the input guards.
 
+### Patch maintenance contract
+
+Keep the working app version, signing identity, package name and current behavior
+when making a small UI change. A newer patcher, Piko bundle or Android image is a
+separate upgrade. No broad Piko features, root manager or additional service is
+required for these local hooks. Original APKs and private keys must remain outside
+Git and the Nix store.
+
+| Hook | Identification and required result |
+| --- | --- |
+| Navigation list | `UserSession, boolean → List` and opcode fingerprint; filter a mutable copy by semantic fragment IDs and place Direct first |
+| Startup | `MainActivityAccountHelper.STARTUP_TAB`; preserve explicit non-feed destinations |
+| Tab selection/history | `feed_viewpager_empty_tabs`, `NavigationController.pushTabFragment`; redirect Home/Reels to Direct |
+| Reels pager | `ClipsViewPagerImpl_getViewAtIndex`; exactly one `ViewPager2` field |
+| Reels refresh | `ClipsSwipeRefreshLayout.onInterceptTouchEvent(MotionEvent)`; return false |
+| Messaging Blend | `show_blends_add_icon_for_thread` plus Context/UserSession/Capabilities parameter prefix; resolve the Blend utility through `android_purge_26_q2_BlendUtil_shouldBadge`, then follow native calls and require exactly four UI-result substitutions |
+
+Unknown or ambiguous matches must fail. For a new Instagram release, inspect the
+original bytecode and native call graph before updating the input pins; string
+anchors and server-controlled layouts can change. Do not carry obfuscated names
+or register numbers from one release into another.
+
+`nix flake check --show-trace` includes `instagram-patch`, which checks rejection
+of unknown APK inputs, missing signing keys and incomplete patch reports, plus
+failed-build preservation and successful backup/provenance handling. These tests
+use synthetic inputs and never install Android apps or access account data.
+They do not prove APK-hook correctness: also build with the preserved real splits,
+verify the signature matches the installed clone, and compare changed methods
+against the previous working APK. For a Blend-only change, the thread-header
+builder should be the only method whose instructions change.
+
+For interactive verification, check a cold start into Direct, absent Home/Reels
+tabs, Back from the inbox, opening and backing out of a conversation, a sent
+message, absent Blend controls in eligible chats, calls and photo selection/upload.
+Do not send messages or upload content automatically during verification.
+When the desktop is in use, build, verify and install headlessly; leave visual
+confirmation to the owner instead of opening or focusing Android windows.
+
 The original app is disabled and hidden on the reference laptop. For recovery,
 temporarily enable it through an authorized ADB connection, then launch it:
 
@@ -119,6 +198,17 @@ Removing the clone through Android app settings removes its own account and loca
 data, without removing the original app. System-generation rollback alone does
 not uninstall Android apps or undo Aurora preferences.
 Disable the original again after recovery to restore the single active app.
+
+To undo the latest APK update, reinstall the preserved previous clone with the
+same signing identity:
+
+```bash
+waydroid app install ~/.local/state/instagram-reels/instagram-reels.previous.apk
+```
+
+This replaces app code while retaining its data. Verify the installed hash as
+above. Keep that known-working copy until the new UI has
+been confirmed; another successful build rotates the single previous-output copy.
 
 ## Validation boundary
 
@@ -142,3 +232,11 @@ visually verified. The original package was verified disabled with no resolvable
 launcher activity; only the patched desktop entry remained visible. The launcher
 policy was applied live from the repository helper and included in a successful
 system build; it will run automatically on subsequent Home Manager activations.
+
+On 2026-11-01, the owner confirmed that the existing Home/Reels setup worked as
+desired. The Blend-only update passed the pinned real-APK build and all flake
+checks. Both APK signatures verified for Android 13 with the same certificate.
+A comparison of 882,361 method bodies across 217,945 classes found only the native
+messaging-header builder changed. The update was installed headlessly and its
+installed APK hash matched the verified build; the previous working APK remains
+available for recovery. Visual confirmation of Blend's absence remains pending.
