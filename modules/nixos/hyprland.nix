@@ -134,7 +134,7 @@ in
   programs.steam.enable = true;
 
   # Classify USB phones for Dolphin's existing MTP support.
-  services.udev.packages = [ pkgs.libmtp ];
+  services.udev.packages = [ pkgs.libmtp.out ];
 
   # CUPS serves application print dialogs; cups-browsed creates local queues for
   # discovered network printers, including apps that cannot list temporary ones.
