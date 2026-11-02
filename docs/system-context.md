@@ -483,8 +483,9 @@ are managed; apart from the startup keys, `dolphinrc`, Places bookmarks, and
 per-folder state are preserved.
 KDE's terminal settings point to Alacritty for external terminal launches.
 The embedded Konsole panel and extra indexer are not installed.
-KIO/KIO extras and icon assets already occur in Dolphin's
-dependency closure; avoid redundantly adding a KDE bundle for those functions.
+KIO/KIO extras and icon assets already occur in Dolphin's dependency closure.
+KIO extras is also exposed in the user profile so its MTP D-Bus service and
+kiod plugin can be discovered outside Dolphin's wrapper.
 The shared desktop module registers libmtp's udev rules and hardware database
 so Dolphin can identify USB phones in file-transfer mode. The existing udev
 service handles detection; KIO accesses the phone on demand.

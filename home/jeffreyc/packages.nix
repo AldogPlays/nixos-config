@@ -172,6 +172,8 @@ in
     (lib.hiPrio launcherEntries)
     # Desktop applications
     kdePackages.dolphin
+    # Expose the MTP D-Bus service and kiod plugin already in Dolphin's closure.
+    kdePackages.kio-extras
     # Dolphin's native Extract/Compress actions; 7zz backs its 7-Zip plugin.
     kdePackages.ark
     sevenZip
