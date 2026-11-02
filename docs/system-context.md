@@ -485,6 +485,9 @@ KDE's terminal settings point to Alacritty for external terminal launches.
 The embedded Konsole panel and extra indexer are not installed.
 KIO/KIO extras and icon assets already occur in Dolphin's
 dependency closure; avoid redundantly adding a KDE bundle for those functions.
+The shared desktop module registers libmtp's udev rules and hardware database
+so Dolphin can identify USB phones in file-transfer mode. The existing udev
+service handles detection; KIO accesses the phone on demand.
 
 Image support uses native Qt `kimageformats` readers, including HEIC/HEIF, AVIF,
 JPEG XL and RAW, plus KIO's `kdegraphics-thumbnailers` for PDF/RAW and

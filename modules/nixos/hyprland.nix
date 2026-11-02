@@ -133,6 +133,9 @@ in
   # Supplies Steam's runtime, 32-bit graphics/audio and controller udev rules.
   programs.steam.enable = true;
 
+  # Classify USB phones for Dolphin's existing MTP support.
+  services.udev.packages = [ pkgs.libmtp ];
+
   # CUPS serves application print dialogs; cups-browsed creates local queues for
   # discovered network printers, including apps that cannot list temporary ones.
   services.printing = {
