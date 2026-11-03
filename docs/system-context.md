@@ -244,7 +244,7 @@ listeners were confined to the Waydroid bridge; that bridge is deliberately
 trusted by the host. Sudo required a password, the Nix daemon trusted only root,
 and build sandboxing was enabled. The GitHub credential file, Android signing
 key and Tailscale state had restrictive access and remained outside Git.
-Forwarding uses the existing Tailscale/Waydroid integration; this input-rule
+Forwarding used the then-enabled Tailscale/Waydroid integration; this input-rule
 review does not establish isolation between every routed network.
 
 Manual locking remains intentional; no automatic idle lock was added. Independent
@@ -429,13 +429,8 @@ nm-applet, Blueman, and pavucontrol are no longer declared as front ends.
 The monitor uses the same UWSM launch and Escape-to-close behavior, with no new
 background service. Its dedicated Alacritty class is `system-monitor`.
 
-Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
-and CLI, with interactive authentication kept outside the repository and store.
-MagicDNS remains enabled tailnet-wide. On 2026-11-02 the laptop's local
-`accept-dns` preference was disabled; preserve that current preference rather
-than inferring it from older observations. The reference tailnet's DNS settings
-are managed outside this repository.
-No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
+Tailscale is not included in the shared configuration. Homelab VPN access uses
+the reference host's NetworkManager WireGuard profile described above.
 
 LibreWolf's package policies default downloads to the XDG Downloads folder and
 disable the per-download location prompt. They also enable automatic low-memory

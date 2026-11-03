@@ -494,16 +494,3 @@ Open a new terminal after activation; no daemon or shell migration is involved.
 The official ChatGPT desktop app includes graphical Codex and is installed
 alongside the CLI. Open **ChatGPT** from Rofi or run `chatgpt`, then sign in with
 your ChatGPT account. Both clients are pinned through the unstable flake input.
-
-## Tailscale
-
-`services.tailscale.enable` in `modules/nixos/core.nix` installs the CLI and starts
-`tailscaled` as a system service. After activation, authenticate interactively:
-
-```bash
-sudo tailscale up
-tailscale status
-```
-
-No authentication keys are stored in this repository. Tailscale SSH, subnet
-routing, and exit-node configuration are not enabled here.

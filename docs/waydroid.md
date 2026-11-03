@@ -160,7 +160,7 @@ display video, so software rendering is not enabled here.
 
 The NixOS module supplies Binder/LXC integration and trusts only the `waydroid0`
 container interface in the host firewall. The selected package uses nftables for
-its container network; the host firewall and Tailscale DNS selection stay intact.
+its container network; the host firewall and DNS selection stay intact.
 No camera, location-forwarding, root-management or Google services stack is added.
 The images and Aurora APK are pinned in `packages/waydroid/default.nix`; update
 those pins rather than writing to the Nix-managed images with `waydroid upgrade`.

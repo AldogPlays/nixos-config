@@ -38,8 +38,6 @@ stub in `/etc/resolv.conf`. The VPN profile registers `~home.arpa` with Hermes a
 `10.10.10.1`; other DNS names use the existing network's resolvers. Disabling the
 VPN removes its DNS route. Resolved's public fallback servers and LLMNR/mDNS
 listeners are disabled; the existing Avahi service keeps local discovery.
-Tailscale's existing local DNS acceptance preference
-is independent and is not changed by the VPN setup.
 
 The host's Caddy root CA remains declared in `security.pki.certificateFiles`.
 Do not disable certificate checks or add browser exceptions for homelab access.
