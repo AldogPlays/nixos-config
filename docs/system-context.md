@@ -406,6 +406,12 @@ details in tooltips. The plugged-in/charging battery uses a battery-with-lightni
 icon in the shared success color, distinguishing it from Performance mode's
 standalone lightning bolt. Appearance remains driven by the selected theme roles.
 
+The same Waybar package backports upstream's family-specific address-removal
+handling. Stock 0.15.0 clears its cached IPv4 address when an IPv6 address expires,
+which can leave a working Wi-Fi connection displayed as linked without an IP.
+`packages/waybar-tray/network-address-family.patch` preserves the other address
+family; network configuration and the existing session service remain unchanged.
+
 Wiremix comes from the public `AldogPlays/wiremix` fork on
 `codex/ui-match`, pinned in `flake.lock` and following the system nixpkgs.
 `home/jeffreyc/packages.nix` selects the fork instead of stock Wiremix, retaining
