@@ -264,6 +264,16 @@ LibreWolf 158 profile reported the CA trusted for TLS and opened the homelab
 login page with certificate verification enabled and no saved exceptions.
 An already running browser may need a normal restart to refresh its trust store.
 
+The reference laptop uses NetworkManager's native WireGuard profile for Hermes,
+with automatic activation away from its saved home NetworkManager connection
+and deactivation at home or without an uplink. The existing NetworkManager
+dispatcher runs the policy; no new daemon or timer is installed. Credentials are imported at runtime
+into a root-only keyfile outside Git and the Nix store. The host enables
+systemd-resolved for per-domain DNS routing; NetworkManager reloads configuration
+changes without reconnecting Wi-Fi. The VPN sends `home.arpa` queries to Hermes
+only while active. See [homelab VPN](homelab-vpn.md) for import, toggling,
+verification, manual pause and recovery. The existing Caddy trust declaration is independent.
+
 ## Desktop components
 
 Hyprland handles cursor hiding with its native inactivity timeout, without an
@@ -415,10 +425,10 @@ background service. Its dedicated Alacritty class is `system-monitor`.
 
 Tailscale is declared in `modules/nixos/core.nix`: the system `tailscaled` daemon
 and CLI, with interactive authentication kept outside the repository and store.
-Tailscale DNS and MagicDNS are required; preserve them when diagnosing network
-reliability. The reference tailnet supplies a DNS resolver managed outside this
-repository. Investigate resolver/tunnel timeouts rather than bypassing this DNS
-setup with Wi-Fi or public resolvers.
+MagicDNS remains enabled tailnet-wide. On 2026-11-02 the laptop's local
+`accept-dns` preference was disabled; preserve that current preference rather
+than inferring it from older observations. The reference tailnet's DNS settings
+are managed outside this repository.
 No additional GUI, Tailscale SSH, subnet routing, or exit-node setup is declared.
 
 LibreWolf's package policies default downloads to the XDG Downloads folder and

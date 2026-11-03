@@ -56,6 +56,7 @@ host instead.
 | [Desktop](docs/desktop.md) | Shortcuts, applications, charging controls and daily use |
 | [Waydroid](docs/waydroid.md) | Android, Aurora Store and photo uploads |
 | [Maintenance and recovery](docs/maintenance.md) | Validation, rebuilds, updates and rollback |
+| [Homelab VPN](docs/homelab-vpn.md) | Automatic WireGuard away from home, split DNS, credentials and recovery |
 | [Theme contract](theme/README.md) | Shared roles, native adapters and current coverage |
 | [Workspace wallpapers](docs/wallpapers.md) | Rendering, image preparation, cache and diagnostics |
 | [System context](docs/system-context.md) | Reference-host architecture and configuration decisions |

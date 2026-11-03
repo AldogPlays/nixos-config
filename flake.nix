@@ -147,6 +147,13 @@
       };
 
       checks.${system} = {
+        hermes-vpn = pkgs.runCommand "hermes-vpn-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
+          export PYTHONDONTWRITEBYTECODE=1
+          cp -r ${./scripts} scripts
+          cp -r ${./tests} tests
+          python3 -m unittest discover -s tests -p test_hermes_vpn.py -v
+          touch "$out"
+        '';
         instagram-patch =
           pkgs.runCommand "instagram-patch-checks" { nativeBuildInputs = [ pkgs.python3 ]; }
             ''
