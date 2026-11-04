@@ -43,6 +43,43 @@ in
 {
   home.packages = [ darktable ];
 
+  # Keep the client and its modification pinned together; no downloaded code updater.
+  programs.vesktop = {
+    enable = true;
+    vencord.useSystem = true;
+    settings = {
+      arRPC = false;
+      minimizeToTray = false;
+      disableMinSize = true;
+    };
+    vencord.settings = {
+      autoUpdate = false;
+      autoUpdateNotification = false;
+      useQuickCss = true;
+      cloud.settingsSync = false;
+      plugins.NoTrack = {
+        enabled = true;
+        disableAnalytics = true;
+      };
+    };
+    # Cosmetic filters only: Discord still supplies the web application.
+    vencord.extraQuickCss = ''
+      /* Store, Nitro and sponsored Quest entry points. */
+      a[href="/store"],
+      a[href="/shop"],
+      a[href="/quests"],
+      a[href="/discovery/quests"],
+      [class*="questsWrapper_"],
+      [class*="questPromo_"],
+      [class*="premiumTab_"],
+      [class*="giftCodeButton_"],
+      [class*="premiumUpsell_"],
+      [class*="nitroUpsell_"] {
+        display: none !important;
+      }
+    '';
+  };
+
   # On-demand monitor, sharing the terminal's palette rather than a second theme.
   programs.btop = {
     enable = true;

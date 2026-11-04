@@ -11,10 +11,12 @@ its own account, disks, encryption, bootloader and graphics settings.
 ## What is included
 
 - Hyprland with UWSM, Waybar, Rofi, notifications, lock screen and a graphical login.
+- Shared numbered desktops across monitors and full-edge cursor crossing.
 - Shared theme roles for desktop components, GTK/Qt applications, terminal colors,
   typography and cursor assets. Theme-specific palette names stay inside `theme/`.
 - Workspace-linked wallpapers, window/area screenshots and clipboard integration.
 - Dolphin, darktable, image/PDF/archive tools, LibreWolf, Joplin and gaming applications.
+- Vesktop for Discord with analytics disabled and local promotion filters.
 - On-demand Waydroid with Aurora Store, a Dolphin photo-upload folder and a
   version-pinned Instagram navigation patch command for locally supplied APKs.
 - Terminal-based Wi-Fi, Bluetooth and audio controls.

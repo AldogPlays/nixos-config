@@ -147,6 +147,16 @@
       };
 
       checks.${system} = {
+        audio-fallback = pkgs.runCommand "audio-fallback-checks" { nativeBuildInputs = [ pkgs.lua ]; } ''
+          lua ${./tests/test_audio_fallback.lua} ${pkgs.wireplumber}/share/wireplumber/scripts
+          touch "$out"
+        '';
+        workspace-groups = pkgs.runCommand "workspace-group-checks" { nativeBuildInputs = [ pkgs.lua ]; } ''
+          luac -p ${./dotfiles/hypr/workspace-groups.lua}
+          lua ${./tests/test_workspace_groups.lua} ${./dotfiles/hypr/workspace-groups.lua}
+          touch "$out"
+        '';
+        full-edges = pkgs.callPackage ./packages/hyprland-full-edges { };
         hermes-vpn = pkgs.runCommand "hermes-vpn-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
           export PYTHONDONTWRITEBYTECODE=1
           cp -r ${./scripts} scripts
@@ -209,6 +219,9 @@
                 inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
               }
               lua tests/test_workspace_wallpapers.lua ${
+                inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
+              }
+              lua tests/test_waybar_visibility.lua ${
                 inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
               }
               touch "$out"

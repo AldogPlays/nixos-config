@@ -57,12 +57,15 @@ Floating windows move and resize in pixel increments instead of snapping to
 screen edges. Mouse snapping is disabled. Waybar has top/side margins matching
 the compact outer window gaps, rounded corners and a thin 1px border; it still
 reserves space above tiled windows rather than covering them.
-It hides when the focused workspace has no tiled windows, but appears while
-Rofi is open or the app tray is pinned open. Floating dialogs and PiP do not count as tiles. Closing them
-restores the workspace-based visibility. Native Hyprland Lua events control the
-existing Waybar process; there is no extra daemon or polling loop. When hidden,
-Waybar releases its reserved space. The policy follows the focused monitor and
-its active special workspace when one is open.
+Each screen's bar appears when that screen has a visible window, including a
+floating window, PiP, pinned window or window in its open special workspace.
+It hides when the screen is empty, independently of mouse focus and the other
+screens. Rofi alone does not reveal an empty screen's bar. Meta+Shift+T can
+temporarily reveal the focused screen's bar with the tray pinned open.
+Native Hyprland Lua events write an atomic per-output visibility manifest in
+`$XDG_RUNTIME_DIR` and signal the existing Waybar process. The local Waybar
+extension applies explicit show/hide states to each output; no extra daemon or
+polling loop is used. Hidden bars release their reserved space.
 Other existing controls remain unchanged.
 The left side shows workspaces only. On the right, the tray comes first, followed
 by network, Bluetooth, volume, power mode, battery and notifications. Flat
@@ -87,6 +90,66 @@ Unmuted audio uses low/medium/high icons matching Waybar’s volume bands.
 Muted audio still shows its current volume percentage and bar, with a muted icon.
 Feedback stays out of notification history. SwayNC remains the notification
 center; its empty state is a muted text label without the oversized fallback icon.
+
+### Monitors and shared desktops
+
+The reference desk layout is in `hosts/nixos/monitors.lua`. The Acer KG251Q is
+rotated 180° and centered above the P2510S; the laptop stays on to the left,
+centered vertically against the P2510S. Both external screens use 120 Hz
+(119.98 Hz on the Acer); the laptop retains its preferred mode. All use 1.0 scaling.
+EDID descriptions identify the displays when dock connectors
+change. Portable bootstrap hosts use automatic placement instead of this desk
+layout; the reference host supplies it through its Home Manager module argument.
+
+| Screen | Logical position | Resolution | Rotation |
+| --- | --- | --- | --- |
+| Laptop | −1920, 120 | 1920×1200 | Normal |
+| P2510S, lower | 0, 0 | 2560×1440 at 120 Hz | Normal |
+| Acer KG251Q, upper | 320, −1080 | 1920×1080 at 119.98 Hz | 180° |
+
+The local [full-edge cursor plugin](../packages/hyprland-full-edges/README.md)
+maps the full edge proportionally to the adjacent screen, including corners
+outside the geometrically overlapping section. Moving upward from anywhere on
+the P2510S reaches the Acer; moving left reaches the laptop. Outer edges do not
+wrap. It loads inside the pinned Hyprland, with no additional service. Pointer
+constraints, session locking, and absolute touch/pen input retain native behavior.
+
+`dotfiles/hypr/workspace-groups.lua` coordinates ten numbered desktops across all
+connected monitors using Hyprland's native Lua events. Meta+1–9/0 switches every
+screen to the same desktop number while preserving the initiating screen and
+pointer position. Meta+Shift+number moves the focused window to that desktop on
+its current screen and follows it. Meta+wheel wraps through desktops 1–10.
+Click a desktop number in any screen's Waybar to switch the whole desktop group.
+Waybar clicks, scrolling over its workspace module and completed three-finger
+swipes also synchronize the screens. During a swipe only the initiating screen
+tracks the fingers; the others switch when the native workspace changes.
+This groups separate native workspaces; a single tiled window cannot span screens.
+
+On the reference desk Hyprland IDs 1–10 belong to the laptop, 11–20 to the lower
+display and 21–30 to the upper display. Waybar labels them with their shared
+desktop number and highlight the desktop visible on each screen. Only desktops
+with a window somewhere in the group, plus the current desktop, are shown;
+empty desktops remain available through shortcuts and swipes.
+Existing windows are adopted on their present screen. When an
+output disconnects, its windows join the matching desktop on their surviving
+screen so they stay reachable. Redocking keeps those merged windows there;
+new windows can be moved between screens with the existing directional controls.
+Special workspaces remain independent. Other PCs allocate output slots as their
+screens appear. Wallpaper selection still uses the underlying native IDs.
+
+With the dock disconnected, the laptop panel remains enabled at its preferred
+mode and 1.0 scaling. The external rotation and 120 Hz settings match only their
+EDID descriptions. Undocking merges external windows into laptop desktops 1–10
+and retires the missing screens' persistent workspace rules. All ten desktops
+remain reachable through Meta+number, and the laptop bar follows its own windows.
+The cursor plugin has no neighbouring output to cross to and uses ordinary
+pointer motion. Reconnecting the dock restores its monitor modes and workspace
+slots, including when connector numbers change.
+
+The automated checks simulate workspace and Waybar unplug/replug behavior and
+exercise the pinned WirePlumber default-selection hooks with and without the
+RØDE. They do not replace a physical dock unplug/replug trial during an idle
+session.
 
 The app tray expands left inside Waybar with a short animation and a rotating
 arrow. Hover opens it temporarily; Meta+Shift+T pins it open or closes it.
@@ -113,6 +176,27 @@ Waydroid and Aurora setup launchers are hidden in `home/jeffreyc/waydroid.nix`.
 The activation helper preserves writable Android/game exports while hiding Aurora
 Store and the recovery Instagram entry and adding descriptions to Instagram and
 the existing EA App shortcut. No launcher service is added.
+
+### Discord with Vesktop
+
+Open **Vesktop (Discord chat)** from Rofi, or run `vesktop`. Rofi launches it
+through UWSM on demand. Closing its window quits the client; no autostart or
+additional session service is configured. Rich Presence integration is disabled.
+
+`home/jeffreyc/programs.nix` uses Home Manager's Vesktop module with the pinned
+Nixpkgs Vencord package. NoTrack disables Discord analytics, metrics and crash
+reporting. Quick CSS hides Store, Nitro and sponsored Quest entry points and
+known upsell elements. These are cosmetic filters; Discord UI changes can
+require selector updates, and this does not block advertisements in shared
+messages or embeds. Discord still receives account activity and messages.
+Vencord is a third-party modification and its maintainers note that using it
+violates Discord's terms: see the [upstream project](https://github.com/Vendicated/Vencord).
+
+Client settings, Vencord settings and Quick CSS under `~/.config/vesktop/` are
+managed by Home Manager; edit the Nix module and rebuild for persistent changes.
+Login/session data remains writable and outside the repository and Nix store.
+Vencord updates follow `flake.lock` and system rebuilds, with its own updater and
+cloud settings sync disabled. Vesktop retains its sandboxed, isolated web renderer.
 
 ### Photo editing with darktable
 
@@ -217,6 +301,25 @@ under the same command and desktop entry; Waybar and Meta+Shift+A open the fork
 in the existing floating Alacritty window. PipeWire and WirePlumber are unchanged,
 and no new background service is added. Update the fork deliberately with
 `nix flake update wiremix`, validate, then rebuild.
+
+On the reference desk, the RØDE AI-1 is preferred for both stereo playback and
+mono microphone capture. `hosts/nixos/default.nix` installs the matching
+WirePlumber user rules under `~/.config/wireplumber/wireplumber.conf.d/`.
+They take effect when WirePlumber next starts; activation does not restart the
+audio session. The live default selections are saved by `wpctl set-default`.
+Wiremix can select another device, and ordinary fallback remains available
+when the interface is unplugged. See [WirePlumber's ALSA rules](https://pipewire.pages.freedesktop.org/wireplumber/daemon/configuration/alsa.html#rules).
+
+The saved RØDE choice is a preference rather than a requirement for audio to work.
+WirePlumber selects an available speaker and microphone when that interface is
+absent and returns to it when it reappears, unless another device has been
+selected deliberately in the meantime. The laptop's internal audio nodes remain
+enabled.
+
+The Ninjutso Sora 4K mouse has a device-specific Hyprland sensitivity of `-0.35`
+in `dotfiles/hypr/hyprland.lua`; the ELAN mouse/touchpad devices retain their
+existing settings. The override applies when the external mouse is connected,
+independently of whether the laptop is docked.
 
 The cursor hides after five seconds without pointer activity and reappears on
 movement. This is Hyprland's native timeout, not a separate idle service.

@@ -4,6 +4,7 @@
   pkgs,
   desktopTheme,
   themeConfiguration,
+  monitorConfiguration ? null,
   ...
 }:
 
@@ -19,6 +20,7 @@ let
   wallpaperInterval = 15 * 60;
   wallpaperCacheMiB = 512;
   hyprmosaic = pkgs.callPackage ../../packages/hyprmosaic { };
+  fullEdges = pkgs.callPackage ../../packages/hyprland-full-edges { };
   wallpaperPython = pkgs.python3.withPackages (p: [ p.pillow ]);
   themeMenuConfig = pkgs.writeText "theme-menu.json" (
     builtins.toJSON {
@@ -358,6 +360,9 @@ in
         "@WALLPAPER_INTERVAL@"
         "@HYPRMOSAIC_PLUGIN@"
         "@THEME_BACKGROUND@"
+        "@MONITOR_CONFIGURATION@"
+        "@WORKSPACE_GROUPS@"
+        "@FULL_EDGES_PLUGIN@"
       ]
       [
         (toString geometry.borderWidth)
@@ -380,6 +385,14 @@ in
         (toString wallpaperInterval)
         "${hyprmosaic}/lib/libhyprmosaic.so"
         (hex roles.background)
+        (
+          if monitorConfiguration == null then
+            "{}"
+          else
+            "(function()\n${builtins.readFile monitorConfiguration}\nend)()"
+        )
+        "${../../dotfiles/hypr/workspace-groups.lua}"
+        "${fullEdges}/lib/libfull-edges.so"
       ]
       (builtins.readFile ../../dotfiles/hypr/hyprland.lua)
   );
@@ -391,13 +404,15 @@ in
     settings.mainBar = {
       layer = "top";
       position = "top";
+      # Visible desktop buttons must receive mouse clicks after hidden mode.
+      passthrough = false;
       height = geometry.controlHeight;
       margin-top = geometry.spacing;
       margin-left = geometry.spacing;
       margin-right = geometry.spacing;
       spacing = geometry.spacing;
-      # Hyprland's native event callbacks reconcile this with tiles/Rofi.
-      on-sigusr1 = "toggle";
+      # The local Waybar extension consumes explicit per-output visibility.
+      visibility-signal = 10;
       # Keep invisible mode observable by Lua even though its surface stays mapped.
       modes.invisible = {
         layer = "bottom";
@@ -406,6 +421,21 @@ in
         visible = false;
       };
       modules-left = [ "hyprland/workspaces" ];
+      "hyprland/workspaces" = {
+        all-outputs = false;
+        lua-dispatch = true;
+        workspace-group-size = 10;
+        hide-empty-groups = true;
+        format = "{icon}";
+        format-icons = builtins.listToAttrs (
+          builtins.genList (index: {
+            name = toString (index + 1);
+            value = toString (lib.mod index 10 + 1);
+          }) 100
+        );
+        on-scroll-up = ''hyprctl dispatch 'hl.dsp.focus({ workspace = "m-1" })' '';
+        on-scroll-down = ''hyprctl dispatch 'hl.dsp.focus({ workspace = "m+1" })' '';
+      };
       modules-center = [ "clock" ];
       modules-right = [
         "group/app-tray"
@@ -533,7 +563,7 @@ in
       #workspaces { background: transparent; }
       #workspaces button { margin: 0; padding: 0 ${px geometry.padding}; min-height: 0; border-radius: 0; color: ${roles.foregroundMuted}; background: transparent; box-shadow: none; text-shadow: none; }
       #workspaces button:hover { background: ${roles.surface}; color: ${roles.foreground}; }
-      #workspaces button.active { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
+      #workspaces button.visible { color: ${roles.accent}; background: ${roles.backgroundAlt}; }
       #workspaces button:active { background: ${roles.selection}; }
       #workspaces button.urgent { color: ${roles.error}; }
       tooltip.background { background: transparent; border: none; margin: 0; padding: 0; box-shadow: none; }

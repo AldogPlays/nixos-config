@@ -62,6 +62,14 @@ input for a version newer than 3.7.0; stable nixpkgs supplies 3.5.13.
 It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart service or sync
 account is configured. Notes and application preferences remain user-managed.
 
+Vesktop provides Discord through Home Manager in `home/jeffreyc/programs.nix`,
+using the pinned system Vencord package with NoTrack enabled and local CSS
+filters for Store, Nitro and sponsored Quest promotion. It starts on demand,
+quits when closed, and disables Rich Presence and Vencord cloud sync. Client
+modifications violate Discord's terms; cosmetic filters do not guarantee that
+future Discord interfaces remain free of ads. See the [desktop guide](desktop.md#discord-with-vesktop)
+for configuration ownership, update behavior and limits.
+
 Darktable is declared in `home/jeffreyc/programs.nix` from pinned stable nixpkgs.
 The `darktable` command and desktop launcher select a generated native GTK stylesheet using
 temporary `--conf` overrides. Interface colors and typography follow the shared
@@ -275,6 +283,44 @@ only while active. See [homelab VPN](homelab-vpn.md) for import, toggling,
 verification, manual pause and recovery. The existing Caddy trust declaration is independent.
 
 ## Desktop components
+
+The reference desk has an upside-down Acer KG251Q centered above the P2510S,
+with the laptop on the lower display's left. `hosts/nixos/monitors.lua` matches
+EDID descriptions; it is not used by portable bootstrap hosts. Both external
+screens use 120 Hz (119.98 Hz on the Acer), with the laptop at its preferred
+mode, all at 1.0 scaling. A short simultaneous dual-120 Hz hardware trial
+succeeded, but the owner still perceived latency on the upper display;
+refresh rate alone does not explain that symptom. The reference dock identifies
+as a ThinkPad Universal USB-C Smart Dock (40B2).
+The local `packages/hyprland-full-edges/`
+plugin supplies proportional cursor crossing along entire shared edges. It
+hooks relative pointer motion against the pinned compositor ABI, without a
+service or input-device access; constraints, locking and absolute input bypass it.
+
+Ten logical desktops span connected outputs through native Lua coordination in
+`dotfiles/hypr/workspace-groups.lua`. Each screen retains its own native workspace
+and tiling layout, with Waybar showing the logical desktop number. Native
+workspace events synchronize keyboard, Waybar and completed swipe navigation.
+Undocked windows merge into their matching desktop on surviving screens and
+remain there after redocking. Disconnected outputs' persistent workspace rules
+are retired until they return. Waybar-driven switches synchronize in the next
+event-loop turn after the native click dispatcher completes, avoiding nested
+workspace transitions. See [desktop controls](desktop.md#monitors-and-shared-desktops)
+for IDs, startup behavior and swipe limitations. No workspace-manager daemon or
+additional workspace plugin is installed.
+
+The reference host prefers the RØDE AI-1 for playback and capture when attached.
+Its Home Manager configuration in `hosts/nixos/default.nix` installs a user
+WirePlumber ALSA priority fragment. WirePlumber reads it when its session next
+starts; routine activation does not restart the audio session. `wpctl set-default`
+selects both live endpoints and stores the user's current choice, while current
+PulseAudio-compatible streams can be moved with `pactl`. Unplugging the interface
+retains normal fallback selection. Portable hosts do not inherit this desk rule.
+The saved default is matched only against available audio nodes; the pinned
+WirePlumber selection hooks are exercised by `tests/test_audio_fallback.lua`
+for repeated USB removal/return with laptop speakers and microphone available.
+Internal audio remains enabled, and the running stream policy allows fallback
+and reconnection. This does not establish a physical dock-removal test.
 
 Hyprland handles cursor hiding with its native inactivity timeout, without an
 idle daemon. Meta+K uses Dwindle's `togglesplit` for the focused tile's parent
@@ -603,21 +649,28 @@ leaving a readable, muted “No notifications” label.
   Workspace buttons and system controls use square hover/pressed/active fills
   spanning the bar’s inner height, with zero vertical margins. The outer bar
   retains its existing rounded frame. A 1px margin on the bar’s root content box
-  reserves the painted border so button fills cannot cover it. Waybar is visible
-  when the focused monitor's active workspace (or active special workspace)
-  has a mapped, non-hidden tiled window, or while Rofi is mapped or the app tray is pinned open.
-  Floating dialogs/PiP do not count. Native Lua window/workspace/layer events
-  reconcile visibility using its standard SIGUSR1 toggle, signaling the main
-  process of `waybar.service` through systemd rather than matching wrapped
-  executable names. Invisible Waybar stays
+  reserves the painted border so button fills cannot cover it. Each Waybar is
+  visible only when its own monitor has a mapped, non-hidden window on a visible
+  workspace, including floating/PiP and pinned windows. A manual tray pin reveals
+  the focused monitor's bar; Rofi alone does not reveal an empty screen's bar.
+  Native Lua window/workspace/layer events write an atomic per-output runtime
+  manifest and signal `waybar.service` with SIGRTMIN+10. The existing local Waybar
+  package applies explicit output states without globally toggling other bars.
+  Invisible Waybar stays
   mapped, so the explicit invisible mode uses the bottom layer while the visible
   bar uses top; Lua queries this real state, without a stale visibility cache.
   Small one-shot timers coalesce events and asynchronous signals. No polling loop
   or extra service is added. The existing Home Manager reload signal is preserved.
   Hidden Waybar releases its exclusive zone; visible Waybar reserves
-  space as before. Multi-output bars currently share this focused-monitor policy.
+  space as before. Workspace labels show occupied logical desktop groups plus
+  the current desktop; the `.visible` state highlights each screen's displayed
+  desktop independently of focus. Native persistent workspaces remain available
+  for navigation while unused buttons are hidden.
 - The touchpad should remain usable during typing and use non-natural scrolling.
   Both `disable_while_typing` and `natural_scroll` are false in the Lua source.
+  The Ninjutso Sora 4K alone has a slower device-specific sensitivity override;
+  ELAN touchpad/mouse settings remain at the shared defaults. The mouse override
+  is independent of docking and follows the matching device when connected.
 - Windows explicitly marked modal float through a single Hyprland rule. Normal
   application windows stay tiled. Modal detection does not use broad title
   heuristics or Bitwarden-specific exceptions; the separate browser PiP rule

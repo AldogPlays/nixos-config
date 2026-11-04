@@ -125,6 +125,9 @@ let
         describe ${pkgs.alacritty} Alacritty 'Terminal'
         describe ${pkgs.modrinth-app} 'Modrinth App' 'Minecraft mods'
         describe ${pkgsUnstable.joplin-desktop} appimagekit-joplin 'Notes'
+        describe ${
+          config.programs.vesktop.package.override { withSystemVencord = true; }
+        } vesktop 'Discord chat'
         describe ${pkgsUnstable.chatgpt} chatgpt 'AI assistant'
         describe ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-9 'Network simulator'
         describe ${config.programs.librewolf.finalPackage} librewolf 'Web browser'

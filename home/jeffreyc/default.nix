@@ -6,6 +6,8 @@
 }:
 
 {
+  _module.args.monitorConfiguration = lib.mkDefault null;
+
   imports = [
     ./packages.nix
     ./programs.nix
@@ -56,6 +58,7 @@
         "application/pdf" = [ "qpdfview.desktop" ];
         "inode/directory" = [ "org.kde.dolphin.desktop" ];
         "x-scheme-handler/codex" = [ "chatgpt.desktop" ];
+        "x-scheme-handler/discord" = [ "vesktop.desktop" ];
       };
       # The desktop client also advertises generic web URLs; keep those in the browser.
       associations.removed = {

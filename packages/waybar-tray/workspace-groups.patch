@@ -1,0 +1,69 @@
+--- a/include/modules/hyprland/workspaces.hpp
++++ b/include/modules/hyprland/workspaces.hpp
+@@ -10,6 +10,7 @@
+ #include <memory>
+ #include <optional>
+ #include <regex>
++#include <set>
+ #include <string>
+ #include <vector>
+ 
+@@ -36,6 +37,9 @@
+   void init();
+ 
+   auto allOutputs() const -> bool { return m_allOutputs; }
++  bool hideEmptyGroup(int id) const {
++    return m_hideEmptyGroups && id > 0 && !m_occupiedGroups.contains(groupId(id));
++  }
+   auto showSpecial() const -> bool { return m_showSpecial; }
+   auto activeOnly() const -> bool { return m_activeOnly; }
+   auto specialVisibleOnly() const -> bool { return m_specialVisibleOnly; }
+@@ -142,6 +146,10 @@
+   bool m_allOutputs = false;
+   bool m_showSpecial = false;
+   bool m_activeOnly = false;
++  int groupId(int id) const { return (id - 1) % m_groupSize + 1; }
++  int m_groupSize = 10;
++  bool m_hideEmptyGroups = false;
++  std::set<int> m_occupiedGroups;
+   bool m_specialVisibleOnly = false;
+   bool m_persistentOnly = false;
+   bool m_moveToMonitor = false;
+--- a/src/modules/hyprland/workspaces.cpp
++++ b/src/modules/hyprland/workspaces.cpp
+@@ -630,6 +630,9 @@
+     populateIconsMap(config["format-icons"]);
+   }
+ 
++  if (config["workspace-group-size"].isInt() && config["workspace-group-size"].asInt() > 0)
++    m_groupSize = config["workspace-group-size"].asInt();
++  populateBoolConfig(config, "hide-empty-groups", m_hideEmptyGroups);
+   populateBoolConfig(config, "all-outputs", m_allOutputs);
+   populateBoolConfig(config, "show-special", m_showSpecial);
+   populateBoolConfig(config, "special-visible-only", m_specialVisibleOnly);
+@@ -1063,6 +1066,12 @@
+ void Workspaces::updateWorkspaceStates() {
+   const std::vector<int> visibleWorkspaces = getVisibleWorkspaces();
+   auto updatedWorkspaces = m_ipc.getSocket1JsonReply("workspaces");
++  // A logical desktop is occupied if any of its monitor workspaces has windows.
++  m_occupiedGroups.clear();
++  for (const auto& ws : updatedWorkspaces) {
++    if (ws["id"].asInt() > 0 && ws["windows"].asUInt() > 0)
++      m_occupiedGroups.insert(groupId(ws["id"].asInt()));
++  }
+ 
+   auto currentWorkspace = m_ipc.getSocket1JsonReply("activeworkspace");
+   std::string currentWorkspaceName =
+--- a/src/modules/hyprland/workspace.cpp
++++ b/src/modules/hyprland/workspace.cpp
+@@ -229,6 +229,10 @@
+     m_button.hide();
+     return;
+   }
++  if (m_workspaceManager.hideEmptyGroup(id()) && !isVisible() && !isUrgent()) {
++    m_button.hide();
++    return;
++  }
+   m_button.show();
+ 
+   auto styleContext = m_button.get_style_context();

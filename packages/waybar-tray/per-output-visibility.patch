@@ -1,0 +1,36 @@
+--- a/src/bar.cpp
++++ b/src/bar.cpp
+@@ -4,6 +4,9 @@
+ #include <spdlog/spdlog.h>
+ 
+ #include <type_traits>
++#include <cstdlib>
++#include <fstream>
++#include <csignal>
+ 
+ #include "client.hpp"
+ #include "factory.hpp"
+@@ -516,6 +519,23 @@
+ }
+ 
+ void waybar::Bar::handleSignal(int signal) {
++  // A single process owns all bars; apply an explicit state for this output.
++  if (config["visibility-signal"].isInt() && config["visibility-signal"].asInt() > 0 &&
++      signal == SIGRTMIN + config["visibility-signal"].asInt()) {
++    const auto* runtime = std::getenv("XDG_RUNTIME_DIR");
++    if (!runtime) return;
++    std::ifstream input(std::string(runtime) + "/waybar-output-visibility.json");
++    if (!input) return;
++    try {
++      Json::Value states;
++      input >> states;
++      if (states.isObject() && states[output->name].isBool())
++        setVisible(states[output->name].asBool());
++    } catch (const std::exception& error) {
++      spdlog::warn("Invalid per-output visibility state: {}", error.what());
++    }
++    return;
++  }
+   for (auto& module : modules_all_) {
+     module->refresh(signal);
+   }

@@ -8,6 +8,10 @@ hl.monitor({
     scale = 1.0,
 })
 
+local monitorSlots = @MONITOR_CONFIGURATION@
+local workspaceGroups = dofile("@WORKSPACE_GROUPS@")(monitorSlots)
+hl.plugin.load("@FULL_EDGES_PLUGIN@")
+
 local terminal = "uwsm app -- alacritty"
 local fileManager = 'uwsm app -- dolphin --new-window "$HOME"'
 local menu = "rofi -show drun"
@@ -69,6 +73,11 @@ hl.config({
         background_color = "rgb(@THEME_BACKGROUND@)",
     },
 })
+
+-- Scope the slower external mouse to its own device names; leave ELAN input alone.
+for _, name in ipairs({ "compx-ninjutso-sora-4k", "compx-ninjutso-sora-4k-1" }) do
+    hl.device({ name = name, sensitivity = -0.35 })
+end
 
 -- Blur translucent shell backplates, not the fully transparent surrounding area.
 hl.layer_rule({
@@ -157,37 +166,49 @@ hl.on("config.reloaded", function()
     for _, window in ipairs(hl.get_windows()) do scheduleBrowserPip(window) end
 end)
 
--- Waybar is useful with tiles or the launcher, not over an empty desktop.
--- Invisible Waybar stays mapped but uses our configured bottom layer; the
--- visible bar uses the top layer. Query that real state instead of caching it.
+-- Each bar follows the windows visible on its own monitor, independent of focus.
+-- A runtime manifest plus an explicit signal avoids global toggle races.
 local waybarUpdateQueued = false
 local waybarSignalPending = false
 local waybarDirty = false
-local waybarTrayPinned = false
+local waybarTrayPinnedMonitor = nil
 local scheduleWaybarVisibility
 local function updateWaybarVisibility()
-    local wanted, present, visible = waybarTrayPinned, false, false
-    for _, layer in ipairs(hl.get_layers()) do
-        if layer.mapped then
-            if layer.namespace == "rofi" then wanted = true end
-            if layer.namespace == "waybar" then
-                present = true
-                visible = layer.layer == 2 -- zwlr_layer_shell_v1 top
-            end
-        end
-    end
-    local workspace = hl.get_active_special_workspace() or hl.get_active_workspace()
-    if workspace then
-        for _, window in ipairs(workspace:get_windows()) do
-            if window.mapped and not window.hidden and not window.floating then
-                wanted = true
+    local wanted, states, changed = {}, {}, false
+    for _, monitor in ipairs(hl.get_monitors()) do
+        local normal = hl.get_active_workspace(monitor)
+        local special = hl.get_active_special_workspace(monitor)
+        local show = waybarTrayPinnedMonitor == monitor.name
+        for _, window in ipairs(hl.get_windows({ monitor = monitor })) do
+            if window.mapped and not window.hidden and window.workspace and
+                (window.pinned or (normal and window.workspace.id == normal.id) or
+                    (special and window.workspace.id == special.id)) then
+                show = true
                 break
             end
         end
+        wanted[monitor.name] = show
+        states[#states + 1] = string.format("%q:%s", monitor.name, tostring(show))
     end
-    if not present or wanted == visible then return end
+    for _, layer in ipairs(hl.get_layers()) do
+        if layer.mapped and layer.namespace == "waybar" and layer.monitor then
+            local visible = layer.layer == 2 -- zwlr_layer_shell_v1 top
+            if wanted[layer.monitor.name] ~= nil and wanted[layer.monitor.name] ~= visible then
+                changed = true
+            end
+        end
+    end
+    if not changed then return end
+    local runtime = os.getenv("XDG_RUNTIME_DIR")
+    if not runtime then return end
+    local path = runtime .. "/waybar-output-visibility.json"
+    local file = io.open(path .. ".tmp", "w")
+    if not file then return end
+    file:write("{" .. table.concat(states, ",") .. "}\n")
+    file:close()
+    if not os.rename(path .. ".tmp", path) then return end
     waybarSignalPending = true
-    hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=SIGUSR1 waybar.service"))
+    hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=SIGRTMIN+10 waybar.service"))
     hl.timer(function()
         waybarSignalPending = false
         if waybarDirty then
@@ -207,14 +228,14 @@ scheduleWaybarVisibility = function()
 end
 for _, event in ipairs({
     "window.open", "window.close", "window.destroy", "window.active",
-    "window.move_to_workspace", "window.update_rules", "workspace.active",
+    "window.move_to_workspace", "window.update_rules", "window.pin", "workspace.active",
     "monitor.focused", "monitor.added", "monitor.removed", "config.reloaded",
 }) do
     hl.on(event, scheduleWaybarVisibility)
 end
 for _, event in ipairs({ "layer.opened", "layer.closed" }) do
     hl.on(event, function(layer)
-        if layer and (layer.namespace == "rofi" or layer.namespace == "waybar") then
+        if layer and layer.namespace == "waybar" then
             scheduleWaybarVisibility()
         end
     end)
@@ -286,9 +307,11 @@ hl.bind(mainMod .. " + N", hl.dsp.exec_cmd("swaync-client -t -sw"))
 hl.bind(mainMod .. " + CTRL + T", hl.dsp.exec_cmd("uwsm app -- theme-menu"),
     { description = "Choose a desktop theme" })
 hl.bind(mainMod .. " + SHIFT + T", function()
-    waybarTrayPinned = not waybarTrayPinned
+    local monitor = hl.get_active_monitor()
+    if not monitor then return end
+    waybarTrayPinnedMonitor = waybarTrayPinnedMonitor ~= monitor.name and monitor.name or nil
     scheduleWaybarVisibility()
-    local signal = waybarTrayPinned and "SIGRTMIN+8" or "SIGRTMIN+9"
+    local signal = waybarTrayPinnedMonitor and "SIGRTMIN+8" or "SIGRTMIN+9"
     hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=" .. signal .. " waybar.service"))
 end, { description = "Toggle the app tray" })
 -- Escape quits only these control windows, including an active TUI prompt.
@@ -330,16 +353,16 @@ end
 
 for i = 1, 10 do
     local key = i % 10
-    hl.bind(mainMod .. " + " .. key, hl.dsp.focus({ workspace = i }))
-    hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
+    hl.bind(mainMod .. " + " .. key, function() workspaceGroups.focus(i) end)
+    hl.bind(mainMod .. " + SHIFT + " .. key, function() workspaceGroups.moveWindow(i) end)
 end
 
 -- Lenovo's bare screenshot hotkey may emit Meta+Shift+S instead of Print.
 -- Both hardware variants use the same screenshot picker.
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("screenshot"),
     { description = "Capture a window, or the monitor by selecting a gap" })
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
+hl.bind(mainMod .. " + mouse_down", function() workspaceGroups.step(1) end)
+hl.bind(mainMod .. " + mouse_up", function() workspaceGroups.step(-1) end)
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 

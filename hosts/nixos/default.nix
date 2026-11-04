@@ -23,6 +23,23 @@ in
   ];
 
   networking.hostName = "nixos";
+  home-manager.users.jeffreyc = {
+    _module.args.monitorConfiguration = ./monitors.lua;
+    # Prefer the desk interface when present, with ordinary fallback when unplugged.
+    # A user fragment avoids restarting the running audio session on activation.
+    xdg.configFile."wireplumber/wireplumber.conf.d/51-rode-ai1.conf".text = builtins.toJSON {
+      "monitor.alsa.rules" = [
+        {
+          matches = [ { "node.name" = "~alsa_output.usb-RODE_Microphones_RODE_AI-1_.*"; } ];
+          actions.update-props."priority.session" = 1450;
+        }
+        {
+          matches = [ { "node.name" = "~alsa_input.usb-RODE_Microphones_RODE_AI-1_.*"; } ];
+          actions.update-props."priority.session" = 2450;
+        }
+      ];
+    };
+  };
   security.pki.certificateFiles = [ ./certificates/hermes-root-ca.crt ];
 
   # NetworkManager supplies per-link DNS; the VPN routes only home.arpa to Hermes.

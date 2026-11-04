@@ -1,0 +1,60 @@
+--- a/include/modules/hyprland/workspaces.hpp
++++ b/include/modules/hyprland/workspaces.hpp
+@@ -37,6 +37,7 @@
+   void init();
+ 
+   auto allOutputs() const -> bool { return m_allOutputs; }
++  bool luaDispatch() const { return m_luaDispatch; }
+   bool hideEmptyGroup(int id) const {
+     return m_hideEmptyGroups && id > 0 && !m_occupiedGroups.contains(groupId(id));
+   }
+@@ -150,6 +151,7 @@
+   int m_groupSize = 10;
+   bool m_hideEmptyGroups = false;
+   std::set<int> m_occupiedGroups;
++  bool m_luaDispatch = false;
+   bool m_specialVisibleOnly = false;
+   bool m_persistentOnly = false;
+   bool m_moveToMonitor = false;
+--- a/src/modules/hyprland/workspaces.cpp
++++ b/src/modules/hyprland/workspaces.cpp
+@@ -633,6 +633,7 @@
+   if (config["workspace-group-size"].isInt() && config["workspace-group-size"].asInt() > 0)
+     m_groupSize = config["workspace-group-size"].asInt();
+   populateBoolConfig(config, "hide-empty-groups", m_hideEmptyGroups);
++  populateBoolConfig(config, "lua-dispatch", m_luaDispatch);
+   populateBoolConfig(config, "all-outputs", m_allOutputs);
+   populateBoolConfig(config, "show-special", m_showSpecial);
+   populateBoolConfig(config, "special-visible-only", m_specialVisibleOnly);
+--- a/src/modules/hyprland/workspace.cpp
++++ b/src/modules/hyprland/workspace.cpp
+@@ -1,4 +1,5 @@
+ #include <json/value.h>
++#include <json/writer.h>
+ #include <spdlog/spdlog.h>
+ 
+ #include <memory>
+@@ -69,6 +70,23 @@
+ bool Workspace::handleClicked(GdkEventButton* bt) const {
+   if (bt->type == GDK_BUTTON_PRESS) {
+     try {
++      if (m_workspaceManager.luaDispatch()) {
++        Json::StreamWriterBuilder writer;
++        writer["indentation"] = "";
++        auto quote = [&](const std::string& value) {
++          return Json::writeString(writer, Json::Value(value));
++        };
++        std::string dispatcher;
++        if (isSpecial()) {
++          dispatcher = "hl.dsp.workspace.toggle_special(" + quote(id() == -99 ? "" : name()) + ")";
++        } else {
++          auto workspace = id() > 0 ? std::to_string(id()) : quote("name:" + name());
++          dispatcher = "hl.dsp.focus({ workspace = " + workspace +
++              (m_workspaceManager.moveToMonitor() ? ", on_current_monitor = true" : "") + " })";
++        }
++        m_ipc.getSocket1Reply("dispatch " + dispatcher);
++        return true;
++      }
+       if (id() > 0) {  // normal
+         if (m_workspaceManager.moveToMonitor()) {
+           m_ipc.getSocket1Reply("dispatch focusworkspaceoncurrentmonitor " + std::to_string(id()));
