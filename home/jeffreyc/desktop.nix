@@ -595,6 +595,15 @@ in
       #battery.critical, #network.disconnected { color: ${roles.error}; }
       #battery.charging, #battery.plugged, #battery.full { color: ${roles.success}; }
       #clock { padding: 0 ${px geometry.padding}; }
+    ''
+    + lib.optionalString (theme.variant == "monochrome") ''
+      /* Fit edge fills inside the rounded frame; keep interior controls square. */
+      #workspaces button:first-child { border-radius: ${
+        px (geometry.radius - geometry.borderWidth)
+      } 0 0 ${px (geometry.radius - geometry.borderWidth)}; }
+      #custom-notifications { border-radius: 0 ${px (geometry.radius - geometry.borderWidth)} ${
+        px (geometry.radius - geometry.borderWidth)
+      } 0; }
     '';
   };
 

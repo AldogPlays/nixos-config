@@ -94,16 +94,39 @@ let
       };
     }).overrideAttrs
       (old: {
+        # This package's custom install phase does not invoke postInstall itself.
+        installPhase =
+          (old.installPhase or "")
+          + lib.optionalString (theme.variant == "monochrome") ''
+            runHook postInstall
+          '';
         # Upstream exposes most colors as settings, but hardcodes selection/failure.
-        postInstall = (old.postInstall or "") + ''
-          substituteInPlace "$out/share/sddm/themes/where_is_my_sddm_theme/Main.qml" \
-            --replace-fail 'selectedTextColor: "#000000"' 'selectedTextColor: "${roles.selectionForeground}"' \
-            --replace-fail 'selectionColor: textColor' 'selectionColor: "${roles.selection}"' \
-            --replace-fail 'border.color: "#ff3117"' 'border.color: "${roles.error}"' \
-            --replace-fail 'backgroundBorder.border.width = 5;' 'backgroundBorder.border.width = ${toString geometry.borderWidth};' \
-            --replace-fail 'NumberAnimation { from: 5; to: 10; duration: 700 }' 'NumberAnimation { from: ${toString geometry.borderWidth}; to: ${toString geometry.borderWidth}; duration: 700 }' \
-            --replace-fail 'NumberAnimation { from: 10; to: 5;  duration: 400 }' 'NumberAnimation { from: ${toString geometry.borderWidth}; to: ${toString geometry.borderWidth}; duration: 400 }'
-        '';
+        postInstall =
+          (old.postInstall or "")
+          + ''
+            substituteInPlace "$out/share/sddm/themes/where_is_my_sddm_theme/Main.qml" \
+              --replace-fail 'selectedTextColor: "#000000"' 'selectedTextColor: "${roles.selectionForeground}"' \
+              --replace-fail 'selectionColor: textColor' 'selectionColor: "${roles.selection}"' \
+              --replace-fail 'border.color: "#ff3117"' 'border.color: "${roles.error}"' \
+              --replace-fail 'backgroundBorder.border.width = 5;' 'backgroundBorder.border.width = ${toString geometry.borderWidth};' \
+              --replace-fail 'NumberAnimation { from: 5; to: 10; duration: 700 }' 'NumberAnimation { from: ${toString geometry.borderWidth}; to: ${toString geometry.borderWidth}; duration: 700 }' \
+              --replace-fail 'NumberAnimation { from: 10; to: 5;  duration: 400 }' 'NumberAnimation { from: ${toString geometry.borderWidth}; to: ${toString geometry.borderWidth}; duration: 400 }'
+          ''
+          + lib.optionalString (theme.variant == "monochrome") ''
+            # Each Wayland greeter window has its own local screen coordinates.
+            substituteInPlace "$out/share/sddm/themes/where_is_my_sddm_theme/Main.qml" \
+              --replace-fail ${
+                lib.escapeShellArg (
+                  lib.concatStringsSep "\n" [
+                    "property variant geometry: screenModel.geometry(screenModel.primary)"
+                    "        x: geometry.x"
+                    "        y: geometry.y"
+                    "        width: geometry.width"
+                    "        height: geometry.height"
+                  ]
+                )
+              } 'anchors.fill: parent'
+          '';
       });
 in
 {

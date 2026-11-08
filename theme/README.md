@@ -4,7 +4,7 @@ Status: native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
 SwayNC, Dolphin/KDE Qt colors, darktable, GTK3/GTK4, Plymouth, SDDM and hyprlock. This is not
 yet a claim that the entire desktop is themed.
 
-Catppuccin Latte is selected by default; a dark Monochrome preset is also available.
+Dark Monochrome is selected by default; Catppuccin Latte is also available.
 The adapter contract uses semantic
 roles, standard terminal slots and syntax purposes rather than Catppuccin keys.
 Theme data stays plain Nix, with no additional flake inputs or background
@@ -179,6 +179,9 @@ field width. Font sizes stay in points. Component-specific content widths,
 positions and native third-party widget layouts remain in their adapters.
 Waybar gives all six status icons the same minimum width and horizontal padding,
 with no additional per-icon margins. Its border inset matches the border width.
+Monochrome rounds the workspace fill at the left edge and the notification hover
+fill at the right edge to fit inside the shared rounded frame. Interior fills
+stay square; Catppuccin's generated styling is unchanged.
 Notification panel/popups share the outer tile gap; small inner rounding is
 derived from the outer radius where needed.
 Integrations follow normal rebuild and app reload/restart behavior.
@@ -212,7 +215,7 @@ the adapter overrides that field while retaining the normal dconf preference.
 | Dolphin/KDE Qt | `desktop.nix` generates KDE RGB color groups in `kdeglobals` and `color-schemes/JeffreyTheme.colors`. Group coverage was researched from the [KDE reference port](https://github.com/catppuccin/kde/tree/6606b5179cfc1e9ba5c3b6b70e15c468e2dddca2); behavior/terminal keys were checked against pinned Dolphin 26.04.3/KIO 6.26.0 sources and the [Dolphin handbook](https://docs.kde.org/trunk_kf6/en/dolphin/dolphin/configuring-dolphin.html). Selection uses the shared selection/text roles rather than the port's separate accent/white palette choice. The Qt platform plugin and Breeze widget style are native rendering dependencies, not a second Latte palette. |
 | GTK3/GTK4 | `desktop.nix` translates one semantic color map into GTK named colors and GTK4 CSS variables. Pinned [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) provides GTK3 structure; GTK4/libadwaita retains its native layout. [Libadwaita's CSS-variable documentation](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/css-variables.html) and the pinned adw-gtk3 CSS determine coverage. The [archived Catppuccin GTK port](https://github.com/catppuccin/gtk) was researched but is not installed or vendored. |
 | Darktable | `programs.nix` generates `darktable/themes/desktop.css`, extending the pinned application's native stylesheet with shared interface roles and typography. The `darktable` command and desktop launcher select it through temporary `--conf` overrides without managing mutable preferences or catalogues; headless tools are unchanged. Native neutral image surrounds and functional graph/swatch colors are preserved, including under Monochrome. The general focus-dependent window opacity still applies. The pinned [theme loader](https://github.com/darktable-org/darktable/blob/release-5.4.1/src/gui/gtk.c) defines stylesheet selection and system-font behavior. |
-| SDDM | `modules/nixos/hyprland.nix` uses the pinned [where-is-my-sddm-theme](https://github.com/stepanzubkov/where-is-my-sddm-theme/tree/v1.12.0) layout and native settings, with fail-fast substitutions for hardcoded selection/failure colors and a static thin error outline. [SDDM's theming API](https://github.com/sddm/sddm/wiki/Theming) and the [Catppuccin reference port](https://github.com/catppuccin/sddm) informed research; the latter is not a build dependency. |
+| SDDM | `modules/nixos/hyprland.nix` uses the pinned [where-is-my-sddm-theme](https://github.com/stepanzubkov/where-is-my-sddm-theme/tree/v1.12.0) layout and native settings. Monochrome explicitly runs the package's otherwise uncalled post-install hook for fail-fast substitutions: shared selection/failure colors, a static thin error outline, and content anchored to each greeter window rather than desktop-wide primary-monitor coordinates. Catppuccin's existing package is preserved. [SDDM's theming API](https://github.com/sddm/sddm/wiki/Theming) and the [Catppuccin reference port](https://github.com/catppuccin/sddm) informed research; the latter is not a build dependency. |
 | Plymouth | `modules/nixos/hyprland.nix` generates a theme for the pinned native script plugin; `dotfiles/plymouth/theme.script` renders prompt, mask and messages. Colors are normalized from shared roles, the initrd includes Monaspace Neon, and the plain field image is generated at build time from shared geometry. Pillow is a build dependency only. No separate Catppuccin theme package, logo or animation is installed. [Plymouth's documentation](https://www.freedesktop.org/wiki/Software/Plymouth/) describes its early-boot role. Boot rendering and successful graphical unlocking still require validation after activation and boot. |
 | Hyprlock | Home Manager generates native settings from roles and typography, checked against pinned 0.9.5 source, [upstream documentation](https://wiki.hypr.land/Hypr-Ecosystem/hyprlock/) and the [Catppuccin reference](https://github.com/catppuccin/hyprlock). No copied palette, wallpaper reader, command-driven clock or refresh service is needed. PAM is declared separately in the NixOS desktop module. |
 

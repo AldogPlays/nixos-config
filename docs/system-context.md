@@ -661,7 +661,9 @@ leaving a readable, muted “No notifications” label.
   Workspace buttons and system controls use square hover/pressed/active fills
   spanning the bar’s inner height, with zero vertical margins. The outer bar
   retains its existing rounded frame. A 1px margin on the bar’s root content box
-  reserves the painted border so button fills cannot cover it. Each Waybar is
+  reserves the painted border. Monochrome additionally curves the outer workspace
+  and notification fills inside that frame; interior fills remain square, and
+  Catppuccin's styling is preserved. Each Waybar is
   visible only when its own monitor has a mapped, non-hidden window on a visible
   workspace, including floating/PiP and pinned windows. A manual tray pin reveals
   the focused monitor's bar; Rofi alone does not reveal an empty screen's bar.
@@ -688,8 +690,8 @@ leaving a readable, muted “No notifications” label.
   heuristics or Bitwarden-specific exceptions; the separate browser PiP rule
   below uses its known dedicated title. Unmarked extension windows may need
   separate inspection if this baseline does not catch them.
-- Catppuccin Latte remains the default, preserving its existing colors, fonts,
-  assets and geometry. `theme/selection.nix` selects Latte or dark Monochrome at
+- Monochrome is the checked-in selection. Catppuccin Latte preserves its existing
+  colors, fonts, assets and geometry. `theme/selection.nix` selects either preset at
   rebuild time. Shared typography, icons, geometry and material settings live in
   `theme/common.nix`; preset colors and cursor assets live in their own files.
   The wallpaper mode follows the preset (color for Latte, grayscale for Monochrome)
@@ -759,8 +761,11 @@ leaving a readable, muted “No notifications” label.
   Legacy GTK2 colors and apps isolated from or overriding the host stylesheet
   are not claimed covered.
 - SDDM uses pinned `where-is-my-sddm-theme` as a minimal layout, configured from
-  shared colors, typography and cursor settings. Small fail-fast substitutions
-  cover its otherwise hardcoded selection/error colors and pulsing error border.
+  shared colors, typography and cursor settings. Monochrome explicitly invokes
+  the package's otherwise uncalled post-install hook: fail-fast substitutions
+  cover hardcoded selection/error colors and the pulsing error border, and anchor
+  content to the local greeter window to avoid primary-monitor coordinate offsets.
+  Catppuccin's existing package and positioning are preserved.
   The theme's QML dependencies are passed through SDDM's `extraPackages`; no
   display-manager replacement or new session service is introduced. Activation
   leaves the running display manager alone; the new configuration takes effect

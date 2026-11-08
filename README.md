@@ -94,9 +94,10 @@ Press **Meta+Ctrl+T** for the Rofi theme menu. It marks the active theme; choosi
 another opens a terminal to build and apply the configuration with normal sudo
 authentication. Escape cancels. No automatic reboot is performed.
 
-Latte is the default. Monochrome uses a dark grayscale desktop and
+Monochrome is selected by default. It uses a dark grayscale desktop and
 grayscale wallpaper copies, preserving the original images. Wallpaper color
-can also be chosen independently. See [theme selection](theme/README.md#choose-a-theme)
+can also be chosen independently. Catppuccin Latte remains available from the
+selector. See [theme selection](theme/README.md#choose-a-theme)
 for settings, manual selection and activation details. The rebuild includes other
 saved configuration edits.
 
