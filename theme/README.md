@@ -179,9 +179,9 @@ field width. Font sizes stay in points. Component-specific content widths,
 positions and native third-party widget layouts remain in their adapters.
 Waybar gives all six status icons the same minimum width and horizontal padding,
 with no additional per-icon margins. Its border inset matches the border width.
-Monochrome rounds the workspace fill at the left edge and the notification hover
+Both presets round the workspace fill at the left edge and the notification hover
 fill at the right edge to fit inside the shared rounded frame. Interior fills
-stay square; Catppuccin's generated styling is unchanged.
+stay square.
 Notification panel/popups share the outer tile gap; small inner rounding is
 derived from the outer radius where needed.
 Integrations follow normal rebuild and app reload/restart behavior.

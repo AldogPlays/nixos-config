@@ -661,9 +661,8 @@ leaving a readable, muted “No notifications” label.
   Workspace buttons and system controls use square hover/pressed/active fills
   spanning the bar’s inner height, with zero vertical margins. The outer bar
   retains its existing rounded frame. A 1px margin on the bar’s root content box
-  reserves the painted border. Monochrome additionally curves the outer workspace
-  and notification fills inside that frame; interior fills remain square, and
-  Catppuccin's styling is preserved. Each Waybar is
+  reserves the painted border. Both themes curve the outer workspace and
+  notification fills inside that frame; interior fills remain square. Each Waybar is
   visible only when its own monitor has a mapped, non-hidden window on a visible
   workspace, including floating/PiP and pinned windows. A manual tray pin reveals
   the focused monitor's bar; Rofi alone does not reveal an empty screen's bar.
