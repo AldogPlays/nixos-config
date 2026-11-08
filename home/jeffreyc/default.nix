@@ -56,6 +56,13 @@
         "text/html" = [ "librewolf.desktop" ];
         "application/xhtml+xml" = [ "librewolf.desktop" ];
         "application/pdf" = [ "qpdfview.desktop" ];
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" = [
+          "onlyoffice-desktopeditors.desktop"
+        ];
+        "application/msword" = [ "onlyoffice-desktopeditors.desktop" ];
+        "application/vnd.oasis.opendocument.text" = [ "onlyoffice-desktopeditors.desktop" ];
+        "application/rtf" = [ "onlyoffice-desktopeditors.desktop" ];
+        "text/rtf" = [ "onlyoffice-desktopeditors.desktop" ];
         "inode/directory" = [ "org.kde.dolphin.desktop" ];
         "x-scheme-handler/codex" = [ "chatgpt.desktop" ];
         "x-scheme-handler/discord" = [ "vesktop.desktop" ];

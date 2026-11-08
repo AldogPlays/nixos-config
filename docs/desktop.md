@@ -436,7 +436,7 @@ Home Manager's backup suffix during the first activation.
 
 The existing GTK/Hyprland portals, polkit agent, and UDisks2 provide file dialogs,
 screen sharing, authentication prompts, and removable-drive support. No desktop
-bundle or automounter is added. Media-player, mail, office, and general GUI editor
+bundle or automounter is added. Media-player, mail, and general GUI editor
 choices remain open; they are not silently filled by extra packages.
 
 `theme/common.nix` defines the shared Monaspace Neon font and point size.
@@ -546,6 +546,20 @@ qpdfview is the default PDF viewer. It is built against the same pinned Qt6
 toolkit and uses the selected KDE palette, Breeze controls, icons, and fonts
 without a separate theme configuration. Open PDFs from Dolphin or run
 `qpdfview`. It starts on demand and adds no background service.
+
+ONLYOFFICE Desktop Editors is the default editor for DOCX, DOC, ODT and RTF.
+Open a document from Dolphin, choose **ONLYOFFICE** in the app
+launcher, or run `onlyoffice-desktopeditors`. Its single desktop package also
+includes spreadsheet and presentation editors. It works with local files offline
+without an account and starts on demand without a background service.
+Microsoft's DOCX, XLSX and PPTX are its native formats; see the upstream
+[format explanation](https://community.onlyoffice.com/t/make-the-open-document-format-odf-a-first-level-citizen-in-onlyoffice/18930/3)
+and [desktop guide](https://helpcenter.onlyoffice.com/desktop/getting-started).
+Older DOC files are converted for editing; save as DOCX. Complex layouts and
+missing document fonts can still affect fidelity, so check important documents
+in Word before sharing. Existing documents and application preferences remain
+user-managed. The editor uses its built-in appearance rather than the shared
+desktop palette; qpdfview remains the default PDF viewer.
 
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;

@@ -512,7 +512,7 @@ Alacritty. The terminal selector is an on-demand command, not a daemon. Standard
 folders and Pictures/Screenshots/Wallpapers are created without moving existing
 data. MIME configuration that predates Home Manager is backed up rather than
 discarded. Gwenview supplies image viewing and quick editing. Dedicated media
-player/mail/office/general GUI editor choices remain pending; do not install a
+player/mail/general GUI editor choices remain pending; do not install a
 bundle to fill those roles.
 
 The application menu uses declarative desktop-entry overrides in
@@ -564,6 +564,18 @@ The pinned package is built with `qt6Packages` through its existing toolkit
 override, sharing Gwenview’s KDE platform plugin, Breeze style, and generated
 theme colors. No Qt5 theme adapter or new service is added. It launches on demand;
 its normal preferences and document history remain unmanaged.
+
+ONLYOFFICE Desktop Editors replaces AbiWord for Microsoft Office compatibility.
+`home/jeffreyc/packages.nix` declares the pinned stable package and descriptive
+launcher entry; `home/jeffreyc/default.nix` sets DOCX, DOC, ODT and RTF defaults.
+The single package includes document, spreadsheet and presentation editors and
+uses DOCX, XLSX and PPTX natively. It runs on demand through the app launcher,
+Dolphin or `onlyoffice-desktopeditors`, with no new service or cloud account.
+The pinned nixpkgs wrapper supplies its FHS runtime and selects XWayland for the
+bundled Qt version. Its built-in interface is outside shared-theme coverage;
+documents, document fonts and writable preferences remain user-managed.
+Native OOXML support does not guarantee exact Word layout or feature parity;
+see the [desktop guide](desktop.md) for usage and compatibility references.
 
 Ark is the archive viewer and supplies Dolphin's native extraction/compression
 service menus. Archive MIME defaults are derived from its desktop entry rather

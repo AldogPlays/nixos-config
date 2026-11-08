@@ -123,6 +123,8 @@ let
           desktop-file-edit --set-key=NoDisplay --set-value=true "$out/share/applications/$2.desktop"
         }
         describe ${pkgs.alacritty} Alacritty 'Terminal'
+        describe ${pkgs.onlyoffice-desktopeditors} onlyoffice-desktopeditors 'Document editor'
+        desktop-file-edit --add-mime-type=text/rtf "$out/share/applications/onlyoffice-desktopeditors.desktop"
         describe ${pkgs.modrinth-app} 'Modrinth App' 'Minecraft mods'
         describe ${pkgsUnstable.joplin-desktop} appimagekit-joplin 'Notes'
         describe ${
@@ -174,6 +176,7 @@ in
   home.packages = with pkgs; [
     (lib.hiPrio launcherEntries)
     # Desktop applications
+    onlyoffice-desktopeditors
     kdePackages.dolphin
     # Expose the MTP D-Bus service and kiod plugin already in Dolphin's closure.
     kdePackages.kio-extras
@@ -213,6 +216,7 @@ in
     jq
     openssl
     ripgrep
+    traceroute
     tree
 
     # Keep Codex on the fast-moving pinned nixpkgs input.

@@ -258,7 +258,7 @@ starting `surface2` assignment's 3.69:1. Yellow warning states use a border with
 normal text rather than low-contrast yellow body text on the light bar.
 
 Not integrated yet: legacy GTK2 colors, Qt clients that ignore the KDE palette,
-LibreWolf, Joplin, ChatGPT/Codex, Steam, Modrinth, Packet Tracer, and app-specific
+LibreWolf, Joplin, ChatGPT/Codex, Steam, Modrinth, Packet Tracer, ONLYOFFICE, and app-specific
 TUI themes (wlctl, Bluetui, Wiremix and Codex CLI). Lutris and Print Settings may
 inherit generic GTK styling; app-specific overrides are not covered.
 Personal wallpaper assignments are independent of the palette; an optional
