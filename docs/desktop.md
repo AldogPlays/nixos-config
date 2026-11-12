@@ -560,6 +560,8 @@ missing document fonts can still affect fidelity, so check important documents
 in Word before sharing. Existing documents and application preferences remain
 user-managed. The editor uses its built-in appearance rather than the shared
 desktop palette; qpdfview remains the default PDF viewer.
+Open/save dialogs use the existing desktop GTK portal and follow its shared
+theme. Reopen ONLYOFFICE after activation for this setting to take effect.
 
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;

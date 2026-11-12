@@ -574,6 +574,11 @@ Dolphin or `onlyoffice-desktopeditors`, with no new service or cloud account.
 The pinned nixpkgs wrapper supplies its FHS runtime and selects XWayland for the
 bundled Qt version. Its built-in interface is outside shared-theme coverage;
 documents, document fonts and writable preferences remain user-managed.
+The local package override passes `--xdg-desktop-portal=default` on every launch,
+using the existing GTK file portal for open/save dialogs outside the editor
+process. This avoids the unreadable text observed in its in-process GTK picker,
+without adding a backend or changing the global font. Reopen ONLYOFFICE after
+activation to use this path.
 Native OOXML support does not guarantee exact Word layout or feature parity;
 see the [desktop guide](desktop.md) for usage and compatibility references.
 
