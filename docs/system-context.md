@@ -103,6 +103,11 @@ including its Java runtimes and game libraries. Launch it from Rofi or run
 `ModrinthApp`; it adds no background service. Minecraft instances, mods and
 account sign-ins remain user-managed.
 
+Moonlight Qt is declared in `home/jeffreyc/packages.nix` from pinned stable
+nixpkgs. Launch **Moonlight** from Rofi or run `moonlight`; it starts on demand
+without a new background service. Paired hosts and streaming preferences remain
+user-managed.
+
 The kernel selection is `pkgs.linuxPackages_latest` from the stable input. Recent
 hardware support is a consideration when reviewing that choice, but a specific
 requirement for this kernel has not been established.

@@ -422,6 +422,10 @@ its NixOS-compatible game runtime. Launch **Lutris** from Rofi or run `lutris`.
 It starts on demand; game installations, downloaded runners and account sign-ins
 remain user-managed.
 
+Launch **Moonlight (Game streaming)** from Rofi (Meta+A) or run `moonlight`.
+The client is declared in `home/jeffreyc/packages.nix` and starts on demand;
+paired hosts and streaming preferences remain user-managed.
+
 Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
 `Pictures`, `Public`, `Templates`, `Videos`, and `Projects`, plus writable
 `Pictures/Screenshots` and `Pictures/Wallpapers` subfolders. The screenshot helper
