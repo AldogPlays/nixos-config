@@ -20,6 +20,167 @@ let
   glassBackground =
     roles.background
     + lib.fixedWidthString 2 "0" (lib.toHexString (builtins.floor (theme.material.opacity * 255)));
+  # Discord's current semantic tokens, plus legacy tokens still used by Vencord.
+  vesktopColors =
+    lib.genAttrs [
+      "background-primary"
+      "background-base-low"
+      "background-surface-high"
+      "modal-background"
+      "bg-base-primary"
+      "input-background-default"
+    ] (_: roles.background)
+    // lib.genAttrs [
+      "background-secondary"
+      "background-secondary-alt"
+      "background-tertiary"
+      "background-base-lower"
+      "background-base-lowest"
+      "background-floating"
+      "modal-footer-background"
+      "bg-base-secondary"
+      "bg-base-tertiary"
+    ] (_: roles.backgroundAlt)
+    // lib.genAttrs [
+      "background-accent"
+      "background-surface-higher"
+      "background-surface-highest"
+      "background-mod-subtle"
+      "background-mod-muted"
+      "background-mod-normal"
+      "channeltextarea-background"
+      "chat-background-default"
+      "background-gradient-highest"
+      "input-background"
+      "button-secondary-background"
+      "background-feedback-critical"
+      "background-feedback-warning"
+      "background-feedback-positive"
+      "background-feedback-info"
+      "background-feedback-mod-critical"
+      "background-feedback-mod-warning"
+      "background-feedback-mod-positive"
+      "background-feedback-mod-info"
+    ] (_: roles.surface)
+    // lib.genAttrs [
+      "text-normal"
+      "text-default"
+      "text-strong"
+      "header-primary"
+      "interactive-hover"
+      "interactive-text-hover"
+      "interactive-icon-hover"
+      "control-icon-only-icon-default"
+      "control-icon-only-icon-hover"
+      "control-icon-only-icon-active"
+      "input-icon-default"
+      "icon-default"
+      "icon-strong"
+      "input-text-default"
+    ] (_: roles.foreground)
+    // lib.genAttrs [
+      "text-muted"
+      "text-subtle"
+      "header-secondary"
+      "interactive-muted"
+      "interactive-normal"
+      "interactive-text-default"
+      "interactive-icon-default"
+      "channels-default"
+      "channel-icon"
+      "channel-text-area-placeholder"
+      "chat-text-muted"
+      "input-placeholder-text-default"
+      "icon-muted"
+      "icon-subtle"
+      "icon-status-offline"
+    ] (_: roles.foregroundMuted)
+    // lib.genAttrs [
+      "interactive-active"
+      "interactive-text-active"
+      "interactive-icon-active"
+    ] (_: roles.selectionForeground)
+    // lib.genAttrs [
+      "text-link"
+      "text-brand"
+      "background-brand"
+      "brand-500"
+      "brand-560"
+      "brand-600"
+      "control-brand-foreground"
+      "control-brand-foreground-new"
+      "icon-brand"
+      "icon-link"
+      "border-focus"
+      "input-border-active"
+    ] (_: roles.accent)
+    // lib.genAttrs [
+      "border-subtle"
+      "border-muted"
+      "border-normal"
+      "border-strong"
+      "input-border-default"
+      "input-border-hover"
+      "input-border-readonly"
+    ] (_: roles.border)
+    // lib.genAttrs [
+      "background-modifier-hover"
+      "background-modifier-active"
+      "background-modifier-selected"
+      "background-mod-strong"
+      "interactive-background-hover"
+      "interactive-background-selected"
+      "interactive-background-active"
+    ] (_: roles.selection)
+    // lib.genAttrs [
+      "text-danger"
+      "text-feedback-critical"
+      "status-danger"
+      "text-status-dnd"
+      "border-feedback-critical"
+      "icon-feedback-critical"
+      "icon-status-dnd"
+    ] (_: roles.error)
+    // lib.genAttrs [
+      "text-positive"
+      "text-feedback-positive"
+      "status-positive"
+      "status-online"
+      "status-speaking"
+      "text-status-online"
+      "border-feedback-positive"
+      "icon-feedback-positive"
+      "icon-status-online"
+    ] (_: roles.success)
+    // {
+      "text-feedback-warning" = roles.warning;
+      "icon-feedback-warning" = roles.warning;
+      "icon-status-idle" = roles.warning;
+      "text-status-idle" = roles.warning;
+      "text-status-offline" = roles.foregroundMuted;
+      "text-feedback-info" = roles.info;
+      "icon-feedback-info" = roles.info;
+      "icon-feedback-notification" = roles.notifications;
+      "icon-invert" = roles.onAccent;
+      "text-invert" = roles.onAccent;
+      "border-feedback-warning" = roles.warning;
+      "border-feedback-info" = roles.info;
+      "status-positive-background" = roles.success;
+      "status-positive-text" = roles.onSuccess;
+      "status-warning-background" = roles.warning;
+      "status-warning-text" = roles.onWarning;
+    }
+    // lib.concatMapAttrs (state: _: {
+      "control-primary-background-${state}" = if state == "hover" then roles.foreground else roles.accent;
+      "control-primary-text-${state}" = roles.onAccent;
+      "control-primary-icon-${state}" = roles.onAccent;
+      "control-primary-border-${state}" = "transparent";
+      "control-secondary-background-${state}" =
+        if state == "default" then roles.surface else roles.selection;
+      "control-secondary-text-${state}" = roles.foreground;
+      "control-secondary-icon-${state}" = roles.foreground;
+      "control-secondary-border-${state}" = roles.border;
+    }) (lib.genAttrs [ "default" "hover" "active" ] (_: null));
   darktable = pkgs.symlinkJoin {
     name = "darktable-desktop-${pkgs.darktable.version}";
     paths = [ pkgs.darktable ];
@@ -46,6 +207,7 @@ in
   # Keep the client and its modification pinned together; no downloaded code updater.
   programs.vesktop = {
     enable = true;
+    package = pkgs.vesktop.override { vencord = pkgs.callPackage ../../packages/vencord.nix { }; };
     vencord.useSystem = true;
     settings = {
       arRPC = false;
@@ -64,10 +226,54 @@ in
     };
     # Cosmetic filters only: Discord still supplies the web application.
     vencord.extraQuickCss = ''
+      /* The selected desktop palette applies regardless of Discord's account theme. */
+      :root, .theme-dark, .theme-light, .theme-midnight, .theme-darker {
+        color-scheme: ${theme.appearance};
+        --font-primary: "${typography.family}", sans-serif !important;
+        --font-display: "${typography.family}", sans-serif !important;
+        --font-headline: "${typography.family}", sans-serif !important;
+        ${lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (name: value: "--${name}: ${value} !important;") vesktopColors
+        )}
+      }
+      body, #app-mount {
+        background-color: ${roles.background};
+        color: ${roles.foreground};
+      }
+      body, input, textarea, button { font-size: ${toString typography.size}pt; }
+      /* Discord hardcodes white on these themed accent fills. */
+      [class*="wrapper_"][class*="selected_"] [class*="childWrapper_"],
+      [class*="wrapper_"]:hover [class*="childWrapper_"] {
+        color: ${roles.onAccent} !important;
+      }
+      [class*="tabBar_"] [class*="addFriend_"] {
+        color: ${roles.onAccent} !important;
+      }
+      [class*="tabBar_"] [class*="addFriend_"][aria-selected="true"] {
+        background-color: ${roles.selection} !important;
+        color: ${roles.selectionForeground} !important;
+      }
+      /* Custom account backgrounds otherwise force a translucent placeholder. */
+      [class*="channelTextArea_"] [class*="placeholder_"] {
+        color: ${roles.foregroundMuted} !important;
+      }
+      /* Replace login decoration only; avatars, attachments and video keep their colors. */
+      [class*="characterBackground_"] { background: ${roles.background} !important; }
+      [class*="characterBackground_"] [class*="artwork_"] { display: none; }
+      [class*="characterBackground_"] [class*="logoWithText_"] {
+        filter: ${if theme.appearance == "light" then "brightness(0)" else "none"};
+      }
+      [class*="authBox_"] {
+        border: ${px geometry.borderWidth} solid ${roles.border};
+        border-radius: ${px geometry.radius};
+        box-shadow: none;
+      }
+
       /* Store, Nitro and sponsored Quest entry points. */
       a[href="/store"],
       a[href="/shop"],
       a[href="/quests"],
+      a[href="/quest-home"],
       a[href="/discovery/quests"],
       [class*="questsWrapper_"],
       [class*="questPromo_"],
@@ -75,6 +281,10 @@ in
       [class*="giftCodeButton_"],
       [class*="premiumUpsell_"],
       [class*="nitroUpsell_"] {
+        display: none !important;
+      }
+      /* Quest reward cards above the account controls, not the controls themselves. */
+      [class*="panels_"] [class*="mask_"]:has([class*="reward"]) {
         display: none !important;
       }
     '';

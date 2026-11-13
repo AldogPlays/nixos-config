@@ -183,11 +183,14 @@ Open **Vesktop (Discord chat)** from Rofi, or run `vesktop`. Rofi launches it
 through UWSM on demand. Closing its window quits the client; no autostart or
 additional session service is configured. Rich Presence integration is disabled.
 
-`home/jeffreyc/programs.nix` uses Home Manager's Vesktop module with the pinned
-Nixpkgs Vencord package. NoTrack disables Discord analytics, metrics and crash
-reporting. Quick CSS hides Store, Nitro and sponsored Quest entry points and
-known upsell elements. These are cosmetic filters; Discord UI changes can
-require selector updates, and this does not block advertisements in shared
+`home/jeffreyc/programs.nix` uses Home Manager's Vesktop module with the
+source-pinned Vencord compatibility update in `packages/vencord.nix`. NoTrack
+disables Discord analytics, metrics and crash reporting. Quick CSS hides Store,
+Nitro and sponsored Quest entry points, the Quest reward card above the account
+controls, and known upsell elements. The reward-card filter is scoped to the
+account panel and preserves username, microphone, headphones and settings
+controls. These are cosmetic filters; Discord UI changes can require selector
+updates, and this does not block advertisements in shared
 messages or embeds. Discord still receives account activity and messages.
 Vencord is a third-party modification and its maintainers note that using it
 violates Discord's terms: see the [upstream project](https://github.com/Vendicated/Vencord).
@@ -195,8 +198,19 @@ violates Discord's terms: see the [upstream project](https://github.com/Vendicat
 Client settings, Vencord settings and Quick CSS under `~/.config/vesktop/` are
 managed by Home Manager; edit the Nix module and rebuild for persistent changes.
 Login/session data remains writable and outside the repository and Nix store.
-Vencord updates follow `flake.lock` and system rebuilds, with its own updater and
-cloud settings sync disabled. Vesktop retains its sandboxed, isolated web renderer.
+Vencord updates follow the source and dependency hashes in `packages/vencord.nix`
+and system rebuilds, with its own updater and cloud settings sync disabled.
+Vesktop retains its sandboxed, isolated web renderer.
+
+Quick CSS also maps Discord's interface colors and font family to the selected
+desktop theme, including its login form, text fields and buttons. This overrides
+Discord's account-level light/dark palette. Read channels use secondary text;
+selected channels use selection text and a selection background. The message
+composer uses a themed surface with primary input text and secondary placeholder
+text. The Discord home icon and Add Friend tab use explicit theme foregrounds
+for their filled and selected states. Avatars, attachments, server artwork
+and video retain their original colors. Reopen Vesktop after a theme rebuild;
+future Discord interface changes may require token updates.
 
 ### Photo editing with darktable
 
@@ -425,6 +439,10 @@ remain user-managed.
 Launch **Moonlight (Game streaming)** from Rofi (Meta+A) or run `moonlight`.
 The client is declared in `home/jeffreyc/packages.nix` and starts on demand;
 paired hosts and streaming preferences remain user-managed.
+`packages/moonlight-theme.nix` connects its native Qt Quick Material interface
+to the shared background, text, accent and font settings, including light/dark
+appearance and readable toolbar icons. Reopen Moonlight after a theme rebuild.
+Streamed video and game artwork retain their original colors.
 
 Home Manager creates and registers `Desktop`, `Documents`, `Downloads`, `Music`,
 `Pictures`, `Public`, `Templates`, `Videos`, and `Projects`, plus writable

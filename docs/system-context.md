@@ -63,12 +63,24 @@ It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart ser
 account is configured. Notes and application preferences remain user-managed.
 
 Vesktop provides Discord through Home Manager in `home/jeffreyc/programs.nix`,
-using the pinned system Vencord package with NoTrack enabled and local CSS
-filters for Store, Nitro and sponsored Quest promotion. It starts on demand,
-quits when closed, and disables Rich Presence and Vencord cloud sync. Client
-modifications violate Discord's terms; cosmetic filters do not guarantee that
+using the source-pinned Vencord override in `packages/vencord.nix` with NoTrack
+enabled and local CSS filters for Store, Nitro and sponsored Quest promotion.
+It starts on demand, quits when closed, and disables Rich Presence and Vencord
+cloud sync. Client modifications violate Discord's terms; cosmetic filters do not guarantee that
 future Discord interfaces remain free of ads. See the [desktop guide](desktop.md#discord-with-vesktop)
 for configuration ownership, update behavior and limits.
+Its existing Quick CSS also translates the selected theme's interface roles and
+font family into Discord's current and legacy color tokens. It applies across
+Discord's account themes; media and server artwork retain their own colors.
+Read channel labels use secondary text, while selected channels use the shared
+selection pair. Current composer background and placeholder tokens are mapped
+explicitly so Discord's account palette cannot leave a light input in a dark theme.
+
+The Vencord override addresses a Discord web-client compatibility failure:
+on 2026-11-12 the stable input's 1.15.10 produced a blank page with
+`TypeError: i.A is not a constructor`, including with a fresh profile under Xvfb.
+The updated revision rendered the login screen with the same Vesktop version
+and privacy settings. Signed-in chat and calls were not covered by that test.
 
 Darktable is declared in `home/jeffreyc/programs.nix` from pinned stable nixpkgs.
 The `darktable` command and desktop launcher select a generated native GTK stylesheet using
@@ -104,7 +116,15 @@ including its Java runtimes and game libraries. Launch it from Rofi or run
 account sign-ins remain user-managed.
 
 Moonlight Qt is declared in `home/jeffreyc/packages.nix` from pinned stable
-nixpkgs. Launch **Moonlight** from Rofi or run `moonlight`; it starts on demand
+nixpkgs with the local theme adapter in `packages/moonlight-theme.nix`.
+Moonlight forces Qt Quick Material instead of using the KDE widget palette;
+the adapter supplies the shared colors, font and appearance, replaces hardcoded
+backgrounds and section-heading colors, and recolors white interface icons for
+light themes.
+Its QML disk cache is scoped to the executable's store path, preventing stale
+cached colors after a rebuild without deleting existing caches or preferences.
+Native control layouts, artwork and streamed video stay unchanged.
+Launch **Moonlight** from Rofi or run `moonlight`; it starts on demand
 without a new background service. Paired hosts and streaming preferences remain
 user-managed.
 

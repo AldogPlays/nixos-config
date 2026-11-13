@@ -10,6 +10,7 @@
 
 let
   theme = desktopTheme;
+  moonlight = pkgs.callPackage ../../packages/moonlight-theme.nix { inherit desktopTheme; };
   # Keep GTK file dialogs outside ONLYOFFICE's bundled toolkit process.
   onlyoffice = pkgs.onlyoffice-desktopeditors.override {
     buildFHSEnv =
@@ -145,7 +146,7 @@ let
         describe ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-9 'Network simulator'
         describe ${config.programs.librewolf.finalPackage} librewolf 'Web browser'
         describe ${pkgs.lutris} net.lutris.Lutris 'Game launcher'
-        describe ${pkgs.moonlight-qt} com.moonlight_stream.Moonlight 'Game streaming'
+        describe ${moonlight} com.moonlight_stream.Moonlight 'Game streaming'
         describe ${pkgs.kdePackages.dolphin} org.kde.dolphin 'Files'
         describe ${pkgs.steam} steam 'Steam games'
         describe ${pkgs.system-config-printer} system-config-printer 'Printer settings'
@@ -205,7 +206,7 @@ in
     cisco-packet-tracer_9
     pkgsUnstable.joplin-desktop
     lutris
-    moonlight-qt
+    moonlight
     modrinth-app
     # Official desktop client, including graphical Codex, from the pinned input.
     pkgsUnstable.chatgpt
