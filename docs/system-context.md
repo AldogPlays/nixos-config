@@ -49,6 +49,13 @@ The official ChatGPT desktop app provides graphical Codex alongside the Codex CL
 Both are declared from the pinned unstable input; the Linux desktop launcher is
 `chatgpt`. This uses nixpkgs' adaptation of the official application binary.
 
+ADB is installed system-wide through `android-tools` in `modules/nixos/core.nix`,
+including on bootstrap-generated hosts. The pinned NixOS release uses systemd's
+USB uaccess rules, so no `adbusers` group or extra udev package is needed.
+The ADB server starts on demand when a command needs it; no autostart service is
+configured. Run `adb devices` after enabling USB debugging on the Android device
+and approve the computer on the device when prompted.
+
 Cisco Packet Tracer is supplied by pinned nixpkgs, launched as `packettracer9` or
 through its desktop entry. The package selects XWayland locally. Cisco's matching
 installer is a separately downloaded input: bootstrap verifies and imports it
