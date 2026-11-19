@@ -585,6 +585,11 @@ desktop palette; qpdfview remains the default PDF viewer.
 Open/save dialogs use the existing desktop GTK portal and follow its shared
 theme. Reopen ONLYOFFICE after activation for this setting to take effect.
 
+Microsoft's core fonts, including Times New Roman in regular, bold, italic and
+bold italic, are installed system-wide through `fonts.packages` in
+`modules/nixos/hyprland.nix`. Reopen ONLYOFFICE after adding fonts, then select
+**Times New Roman** from the document's font menu.
+
 Ark supplies native **Extract** and **Compress** context-menu actions and is the
 default archive viewer. Use **Extract here** or **Extract to…** to unpack files;
 select files/folders and use **Compress to…** to create an archive. These are

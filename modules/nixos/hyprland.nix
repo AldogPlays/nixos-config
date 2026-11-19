@@ -212,6 +212,7 @@ in
   fonts.packages = with pkgs; [
     (lib.getAttrFromPath typography.package pkgs)
     (lib.getAttrFromPath typography.symbolsPackage pkgs)
+    corefonts # Microsoft document fonts, including Times New Roman.
     noto-fonts
     noto-fonts-color-emoji
   ];

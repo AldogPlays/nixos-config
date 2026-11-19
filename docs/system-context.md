@@ -419,7 +419,7 @@ needed. Reload SwayNC's config and CSS after activation to update a running proc
 | Portals | Hyprland and GTK backends | Hyprland's NixOS module supplies its portal; GTK is added explicitly |
 | Screenshots and clipboard | slurp, grim, wl-clipboard | Print or Meta+Shift+S starts `screenshot`; `home/jeffreyc/packages.nix`, `dotfiles/hypr/screenshot.sh`; no daemon |
 | Brightness and media | brightnessctl, playerctl, SwayOSD | desktop-feedback preserves the brightness curve; Home Manager starts swayosd.service with the graphical session |
-| Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji | NixOS desktop module and application settings |
+| Fonts | Monaspace Neon, Nerd Font symbols, Noto, Noto Emoji, Microsoft core fonts | NixOS desktop module and application settings |
 | Wallpaper | hyprmosaic, wallpaper-only backport | Native plugin draws workspace-linked images; Lua events/timer trigger preparation |
 
 Firmware updates, power profiles, and battery state are supported by fwupd,
@@ -605,7 +605,10 @@ uses DOCX, XLSX and PPTX natively. It runs on demand through the app launcher,
 Dolphin or `onlyoffice-desktopeditors`, with no new service or cloud account.
 The pinned nixpkgs wrapper supplies its FHS runtime and selects XWayland for the
 bundled Qt version. Its built-in interface is outside shared-theme coverage;
-documents, document fonts and writable preferences remain user-managed.
+document contents and writable preferences remain user-managed. The shared NixOS
+desktop module installs Microsoft's `corefonts`, including Times New Roman's
+four styles, for document compatibility. Fontconfig exposes them system-wide;
+ONLYOFFICE picks them up when reopened, without an additional service.
 The local package override passes `--xdg-desktop-portal=default` on every launch,
 using the existing GTK file portal for open/save dialogs outside the editor
 process. This avoids the unreadable text observed in its in-process GTK picker,
