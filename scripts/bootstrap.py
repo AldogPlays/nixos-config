@@ -20,7 +20,7 @@ FILES = (
     "project-host.nix",
     "project-host.json",
     "flake.lock",
-    "flake.nix",  # Publish the entry point last.
+    "flake.nix",
 )
 
 
@@ -111,17 +111,39 @@ def install(stage, destination, host):
     check_destination(destination)
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     backup = destination.with_name(destination.name + ".pre-project-" + timestamp)
-    privileged(shutil.which("cp"), "-a", "--", destination, backup)
-    print(f"Original configuration backup: {backup}", flush=True)
-    for name in FILES:
+    # Prepare a complete sibling copy. The exchange leaves the original at backup.
+    # Never fall back to copying over the live directory if atomic rename fails.
+    print(f"Preparing configuration copy: {backup}", flush=True)
+    try:
+        privileged(shutil.which("cp"), "-a", "--", destination, backup)
+        for name in FILES:
+            privileged(
+                shutil.which("install"),
+                "-m",
+                "0644",
+                "--",
+                stage / name,
+                backup / name,
+            )
+        check_destination(destination)
         privileged(
-            shutil.which("install"),
-            "-m",
-            "0644",
+            shutil.which("mv"),
+            "--exchange",
+            "--no-copy",
+            "-T",
             "--",
-            stage / name,
-            destination / name,
+            backup,
+            destination,
         )
+    except (subprocess.CalledProcessError, OSError, KeyboardInterrupt):
+        print(
+            f"Configuration preparation/publication stopped; no activation was attempted. "
+            f"Inspect {destination} and {backup} before retrying. "
+            "An interrupted exchange can leave either complete directory selected.",
+            file=sys.stderr,
+        )
+        raise
+    print(f"Original configuration backup: {backup}", flush=True)
     try:
         privileged(
             shutil.which("nixos-rebuild"),
@@ -129,17 +151,24 @@ def install(stage, destination, host):
             "--flake",
             str(destination) + "#nixos",
         )
-        if (
-            host["bootLoader"]["systemd-boot"]["enable"]
-            and host["bootLoader"]["efi"]["canTouchEfiVariables"]
-        ):
-            privileged(shutil.which("bootctl"), "set-timeout", "")
     except subprocess.CalledProcessError:
         print(
             f"Activation failed. Configuration backup: {backup}. No automatic reboot was attempted.",
             file=sys.stderr,
         )
         raise
+    if (
+        host["bootLoader"]["systemd-boot"]["enable"]
+        and host["bootLoader"]["efi"]["canTouchEfiVariables"]
+    ):
+        try:
+            privileged(shutil.which("bootctl"), "set-timeout", "")
+        except (subprocess.CalledProcessError, OSError):
+            print(
+                "Configuration activated, but the EFI boot-menu timeout could not be cleared. "
+                "Inspect bootctl status; retry with sudo bootctl set-timeout '' when EFI variables are writable.",
+                file=sys.stderr,
+            )
 
 
 def parse_arguments(argv=None):

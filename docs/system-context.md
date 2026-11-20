@@ -172,38 +172,18 @@ buffer tests and Instagram startup were verified on 2026-10-29. I also checked
 normal video/Reels playback, but I have not completed the full photo-upload
 check.
 
-My laptop uses a separately signed patched **Instagram**, package
-`com.instagram.android.piko`. `packages/instagram-reels/` contains local
-bytecode patches and a pinned build command; only Piko's generic package-cloning
-patch is reused. Original APKs, signing keys and account data remain outside Git
-and the Nix store. The clone has no normal Play/Aurora update target, its
-APK-install request operation is denied, and Aurora excludes the original
-Instagram from updates. Updates are manual, with source/input review and runtime
-checks. The clone does not globally block every Reel/video or alternate feed
-entry point. Home and Reels navigation are removed while Direct, Search, Profile
-and Create are retained. Direct is the first tab and default startup
-destination. The conversation-header Blend entrypoint and add/invite variant are
-suppressed locally; shared Blend logic and other messaging controls are not
-patched. Manual APK builds preserve the previous output, require the existing
-signing key for updates, and record input/tool/output hashes. The package guide
-describes semantic hook identification and the regression/interactive checks for
-later work. I was satisfied with the Home/Reels behavior on 2026-11-01 and keep
-that baseline for narrow UI changes. The Blend update was installed and
-hash-verified headlessly; I have not recorded a visual check of the Blend
-controls. The original package is disabled for recovery with its data retained
-and its desktop entry hidden; the patched app is the sole visible Instagram
-launcher. Android's saved appearance is light, with the app visually verified in
-light mode. Home Manager reapplies the original launcher's `NoDisplay` flag
-through `scripts/waydroid-launcher-policy.py`, preserving Waydroid's writable
-export. I keep normal tiling for Android windows, without a phone-shaped
-aspect-ratio lock. See the [package
-guide](../packages/instagram-reels/README.md) for supported inputs, exact
-validation limits, recovery and fresh-install steps.
+I use a separately signed Instagram clone with Home/Reels navigation and thread-header
+Blend controls removed. Direct is the default tab; the original app stays disabled
+and hidden for recovery. I keep normal desktop tiling and Android's saved light
+appearance. I was satisfied with the Home/Reels behavior on 2026-11-01; narrow UI
+changes should preserve that baseline.
 
-Waydroid mouse-wheel and touchpad scrolling are reduced by a per-window Hyprland
-rule in `dotfiles/hypr/hyprland.lua`. Android media volume remains adjustable
-Android user state; it was set to 12/15 on my laptop on 2026-10-29. The host
-speaker level was already 100%; no global amplification was added.
+I keep the manual build/update workflow, signing-key requirements, exact input
+pins, and verification limits in the [Instagram package guide](../packages/instagram-reels/README.md).
+The [Waydroid guide](waydroid.md) covers launchers, photo access, volume, and
+per-window scrolling. Private keys, original APKs, and account data stay outside
+Git and the Nix store. The clone is updated manually, independently of normal
+Play/Aurora updates; it does not block every alternate route into feed content.
 
 The systemd-boot menu is hidden for normal startup; hold Space during firmware
 startup to open it and select an earlier generation. A persistent EFI menu-timeout
@@ -630,52 +610,21 @@ so `home/jeffreyc/packages.nix` adds a compatibility symlink to that same binary
 Do not replace it with an obsolete p7zip package or install an entire KDE bundle.
 Ark follows the shared Qt/KDE theme and starts on demand, without a new daemon.
 
-hyprmosaic is the sole wallpaper renderer, built as a wallpaper-only backport
-against the pinned Hyprland 0.55.4. `packages/hyprmosaic/` pins upstream source
-and retains its license; the local C++ adaptation uses the old API and the project's
-per-output manifest, omitting grid navigation and blurred margins. Wallpaper
-textures follow native workspace animation progress. Interrupted horizontal
-slides preserve their last rendered positions as a joined strip instead of
-copying native position resets that can expose a gap. Window animations remain
-untouched; there is no separately timed fade or wallpaper process on ordinary
-switches. Native controls stay unchanged. Lua events and its quarter-hour timer launch a short-lived Pillow
-helper for remembered assignments and display-sized copies. No extra background
-service is added; awww is no longer enabled. The collection and runtime cache
-stay outside Git and the Nix store; theme/lock screen stay independent. See
-[workspace wallpapers](wallpapers.md) for limits, validation, and recovery.
-Preparation shares identical source/size results within each update, and the
-renderer shares textures by prepared path. The renderer bulk-decodes prepared
-BMP rows and stages one distinct replacement per render pass, retaining the
-old visible assignments until the new set is ready to switch together.
-Superseded generated BMPs are removed only after successful loading, under the
-helper's nonblocking lock with a fresh
-manifest check. Diagnostics serialize on demand rather than during rendering.
-These internal optimizations preserve assignments, refresh timing, image quality
-and workspace animations.
+I use hyprmosaic as the sole wallpaper renderer. Its wallpaper-only backport
+tracks native workspace motion; interrupted slides preserve their visible image
+positions without changing window animations. Native Lua events start a short-lived
+preparation helper; ordinary workspace switches do not launch a wallpaper process.
+I keep image originals, assignments, and caches outside Git and the Nix store.
+My [wallpaper guide](wallpapers.md) covers the rendering model, cache/memory limits,
+regression checks, diagnostics, and recovery.
 
-wlctl is pinned through its upstream flake, following the system nixpkgs input.
-Screenshots use an on-demand slurp picker with a slightly bolder shared-theme hover
-outline and light dimming outside the selection. Click a visible window for its
-rectangle or a gap for that monitor; hold the left button and drag for a free
-area. Escape cancels. Grim captures after selection;
-the helper saves a PNG under XDG Pictures/Screenshots and copies it with
-wl-clipboard. After capture and clipboard success, libnotify sends a three-second
-SwayNC confirmation with the saved image as its thumbnail. Cancellation stays
-silent. No editor, OCR, or screenshot daemon is added. This replaces Snap's capture UI.
-Fn+Prt Sc sends Print on this Lenovo. Bare screenshot hotkeys on Lenovo can
-send Meta+Shift+S. Print and Meta+Shift+S launch the same picker. Example
-scratchpad bindings are disabled to avoid shortcut conflicts. Only the monitor's
-active workspace (or open special workspace), plus visible pinned windows, is offered.
-Captures crop visible screen pixels rather than reconstructing obscured windows;
-slurp's smallest-rectangle selection can be ambiguous for overlapping floating
-windows. The same helper and pinned packages are included in portable bootstrap.
-The helper uses Slurp's combined rectangle-click and free-drag mode without `-r`,
-retaining `-o` for gap-to-monitor fallback. `packages/slurp/` applies a small
-four-logical-pixel threshold before pointer motion replaces a click target with
-an area; once dragging starts, it stays an area until release. This avoids tiny
-captures from click jitter. The patch builds against pinned Slurp, with headless
-checks calling its actual selection handlers for click, overlap, jitter, drag
-direction, cross-output coordinates and gesture reset. No new daemon is added.
+I use the on-demand Slurp/Grim screenshot helper for both Print and Meta+Shift+S.
+It supports window/monitor clicks and free-area dragging, saves under XDG
+Pictures/Screenshots, copies the image to the clipboard, and sends a brief
+notification after success. I keep usage and capture limitations in the
+[desktop guide](desktop.md#wallpapers-and-screenshots) and the click-tolerance
+patch contract in the [Slurp guide](../packages/slurp/README.md). No screenshot
+daemon, editor, or OCR service is configured.
 
 ## Customization decisions
 
@@ -733,97 +682,38 @@ leaving a readable, muted “No notifications” label.
   heuristics or Bitwarden-specific exceptions; the separate browser PiP rule
   below uses its known dedicated title. Unmarked extension windows may need
   separate inspection if this baseline does not catch them.
-- I use Monochrome as the checked-in selection. Catppuccin Latte preserves its existing
-  colors, fonts, assets and geometry. `theme/selection.nix` selects either preset at
-  rebuild time. Shared typography, icons, geometry and material settings live in
-  `theme/common.nix`; preset colors and cursor assets live in their own files.
-  The wallpaper mode follows the preset (color for Latte, grayscale for Monochrome)
-  unless overridden in the selection file. Preparation changes only cached copies
-  and keeps color/grayscale cache identities separate. No new service or renderer
-  change is required. Adapters consume generic semantic roles, terminal slots and syntax
-  purposes rather than Catppuccin palette keys. Shared appearance drives GTK
-  preferences/structural variant and Delta; font/icon/cursor package selections
-  also live in the plain theme data. Generated Rofi, KDE and Plymouth names are
-  stable across themes. Theme changes use normal rebuild activation; no refresh
-  coordinator or theme daemon is configured. Meta+Ctrl+T opens the
-  existing Rofi as a theme selector; the tray toggle uses Meta+Shift+T. The on-demand
-  `scripts/theme-menu.py` helper opens Alacritty for builds and sudo, without a
-  new background service or automatic reboot. Available themes come from
-  `theme/presets.nix`; active identity comes from the running generation's
-  `etc/desktop-theme.json`. The flake passes resolved theme data to both NixOS and
-  Home Manager so bootstrapped hosts can retain their selection in
-  `/etc/nixos/project-host.json`; bootstrap reruns preserve it. See `theme/README.md`
-  for the contract and coverage limits.
-- I use matte frosted glass, without glossy or refractive effects. Normal application windows (including LibreWolf and Dolphin) and Rofi
-  use Hyprland background blur. Shared opacity and blur controls
-  live under `theme/common.nix.material`. Normal windows use a native
-  Hyprland rule for fully opaque focus, 95% opaque unfocused state, and fully opaque
-  fullscreen. Their whole surfaces, including text, follow that opacity; native
-  Alacritty alpha stays at 1.0 to avoid multiplying two transparency settings.
-  Later rules keep explicitly modal windows and recognized LibreWolf/Firefox
-  PiP fully opaque, without exempting all floating windows. Recognized PiP also
-  floats with a compact initial size defined in the Lua component, without
-  forcing placement or pin state. Initial sizing runs once per PiP window (and
-  once again after config reload), not on later metadata updates, so manual
-  resizing remains available. PiP uses the exact
-  English `Picture-in-Picture` title and browser class, researched from Mozilla's
-  upstream player/localization sources. Unmarked dialogs and other PiP app/title
-  combinations need separate runtime inspection rather than broad title guesses.
-  Native Hyprland open/title/class/reload callbacks cover late metadata and
-  existing PiP windows because floating rules only apply when a window maps.
-  A one-shot next-loop callback allows class/layout updates to finish before
-  floating. No polling helper or background service is used.
-  Windows and Waybar have thin 1px borders using the shared border roles;
-  focused windows use the distinct focus-border role. The login surface remains
-  opaque. Hyprlock uses a solid, opaque shared theme background, without a
-  background screenshot, blur or transparency. Session-lock xray is disabled;
-  authentication stays unchanged. Keep the pinned Hyprland version rather than
-  upgrading or maintaining a compositor patch for lock-screen effects.
-  Waybar and SwayNC are fully opaque, using the shared background role independently
-  of the glass opacity and window focus.
-  Both Rofi menus share background, text, normal selection colors, typography,
-  spacing and focused-window borders. The theme menu marks **Active** in its label
-  without requesting a separate active-row color state.
-  The notification-center frame uses a
-  thin muted outline matching Waybar tooltips; input/control
-  outlines, separators and status indicators remain useful and are not removed.
-  No shader, refraction plugin, highlight gradient, shadow or new service is added.
-- Fonts share the family and point size in `theme/common.nix` across terminal,
-  launcher, bar, notifications, GTK defaults and KDE UI roles. CSS uses `pt`, not
-  `px`, to avoid unit mismatches. Web content and app-specific overrides are not
-  forced. Display scaling remains unchanged.
-- Latte uses packaged Catppuccin Mocha Dark cursor assets for contrast. Monochrome
-  uses DMZ White from the small `vanilla-dmz` cursor package. Its package/name/size come from the shared theme for both
-  Home Manager and SDDM. Home Manager configures Hyprcursor, Xcursor, GTK and KDE;
-  this is an asset exception, not a second application palette or theme switcher.
-- Generic GTK3 styling uses pinned `adw-gtk3` as widget structure, with generated
-  semantic colors from the shared theme. GTK4/libadwaita uses named colors and
-  modern CSS variables without replacing its native layout. Light/dark appearance
-  follows the selected preset through Home Manager's GTK/dconf integration.
-  Legacy GTK2 colors and apps isolated from or overriding the host stylesheet
-  are not claimed covered.
-- SDDM uses pinned `where-is-my-sddm-theme` as a minimal layout, configured from
-  shared colors, typography and cursor settings. Monochrome explicitly invokes
-  the package's otherwise uncalled post-install hook: fail-fast substitutions
-  cover hardcoded selection/error colors and the pulsing error border, and anchor
-  content to the local greeter window to avoid primary-monitor coordinate offsets.
-  Catppuccin's existing package and positioning are preserved.
-  The theme's QML dependencies are passed through SDDM's `extraPackages`; no
-  display-manager replacement or new session service is introduced. Activation
-  leaves the running display manager alone; the new configuration takes effect
-  when SDDM next starts, normally on the next boot.
-- Hyprlock has a generated minimal theme config and a normal NixOS PAM entry.
-  Configure PAM directly rather than enabling the NixOS hyprlock module, which
-  implicitly enables hypridle in this pinned release. No idle daemon, auto-lock
-  timer, grace period or authentication bypass is configured. Parser checks and
-  login-screen test mode do not establish successful real authentication.
-- Native theme adapters consume the shared definitions for Hyprland borders,
-  Alacritty, Rofi, Waybar, SwayNC, and Dolphin/KDE Qt colors. Keep app-specific syntax in the existing
-  modules; do not install independent Catppuccin palettes. Canonical palette
-  values stay opaque; shell backplates and normal windows add alpha at the adapter
-  boundary. Their displayed tint now intentionally depends on the blurred content
-  behind them. See `theme/README.md` for
-  researched integration details and the remaining unthemed components.
+- I use Monochrome and keep Catppuccin Latte available. I keep shared colors,
+  typography, geometry, cursor assets, and material settings in `theme/`.
+  Application modules consume semantic roles rather than independent palettes.
+  My [theme guide](../theme/README.md) is the reference for adapters, exceptions,
+  coverage limits, and activation behavior.
+- I change themes through the normal rebuild workflow. The on-demand Rofi menu
+  stores the selection in the checkout or generated host; it adds no resident
+  theme service. Wallpaper color can be chosen independently, and preparation
+  changes only cached copies of my originals.
+- I use matte frosted glass for normal windows and Rofi, without glossy or
+  refractive effects. Focused/fullscreen windows remain opaque; unfocused normal
+  windows use the declared opacity. Native terminal alpha stays opaque to avoid
+  multiplying transparency. Waybar, SwayNC, the greeter, and the lock screen stay
+  opaque. I keep thin borders, compact spacing, and no window shadows.
+- I keep explicitly modal windows and recognized Firefox-family PiP opaque.
+  PiP matching uses the known class and exact English title, with initial sizing
+  applied once so manual resizing remains available. I do not treat every
+  floating window or extension window as a modal dialog.
+- I share font family and point size across the native adapters; CSS uses `pt`.
+  Media, server artwork, web content, and application-specific overrides retain
+  their own colors or typography where documented. Cursor packages are an
+  explicit asset exception, chosen for contrast rather than as extra app themes.
+- I retain the minimal SDDM layout and its local Monochrome substitutions for
+  selection/error colors and monitor-local positioning. Activation leaves the
+  running greeter alone. I verify those substitutions against the pinned package
+  when upgrading; a theme change does not justify replacing the login manager.
+- I configure hyprlock's PAM service directly: enabling the pinned NixOS hyprlock
+  module would also enable hypridle. I use manual locking, with no automatic idle
+  lock, grace period, or authentication bypass. The lock screen has a solid
+  background, without a screenshot or transparency. I retain the pinned
+  compositor rather than adding a lock-screen-effects patch.
+
 - Validation runs locally; no GitHub Actions workflow is configured. Repository
   visibility and remote settings are managed separately from the system configuration.
 

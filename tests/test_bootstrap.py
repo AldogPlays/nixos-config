@@ -1,11 +1,12 @@
 """Bootstrap planning and failure handling; never modify the installed system."""
 
 import copy
+import contextlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import subprocess
-import shutil
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -73,6 +74,15 @@ class BootstrapTests(unittest.TestCase):
             self.assertEqual(host, {"username": "tester"})
 
     def setUp(self):
+        # Activation is mocked; these host tools need not exist in the build sandbox.
+        real_which = bootstrap.shutil.which
+        host_tools = mock.patch.object(
+            bootstrap.shutil,
+            "which",
+            side_effect=lambda name: name if name in ("nixos-rebuild", "bootctl") else real_which(name),
+        )
+        host_tools.start()
+        self.addCleanup(host_tools.stop)
         nixos = mock.patch.object(bootstrap, "running_nixos", return_value=True)
         nixos.start()
         self.addCleanup(nixos.stop)
@@ -249,7 +259,7 @@ class BootstrapTests(unittest.TestCase):
             bootstrap.main([*self.arguments(), "--apply"])
         self.assertEqual(actions, ["eval", "flake", "build", "install"])
 
-    def test_install_backs_up_first_and_publishes_entry_point_last(self):
+    def test_install_prepares_complete_copy_before_atomic_publication(self):
         destination = self.root / "target"
         destination.mkdir()
         with (
@@ -262,50 +272,173 @@ class BootstrapTests(unittest.TestCase):
         calls = [call.args for call in privileged.call_args_list]
         self.assertEqual(Path(calls[0][0]).name, "cp")
         copies = [call for call in calls if Path(call[0]).name == "install"]
-        self.assertEqual(Path(copies[-1][-1]).name, "flake.nix")
         self.assertEqual(len(copies), len(bootstrap.FILES))
+        backup = Path(calls[0][-1])
+        self.assertTrue(all(Path(call[-1]).parent == backup for call in copies))
+        exchange = next(call for call in calls if Path(call[0]).name == "mv")
+        self.assertEqual(
+            exchange[1:], ("--exchange", "--no-copy", "-T", "--", backup, destination)
+        )
+        self.assertLess(calls.index(copies[-1]), calls.index(exchange))
+        rebuild = next(call for call in calls if Path(call[0]).name == "nixos-rebuild")
+        self.assertLess(calls.index(exchange), calls.index(rebuild))
         self.assertEqual(calls[-1][-2:], ("set-timeout", ""))
 
-    def test_install_files_and_repeat_run_preserve_original_configuration(self):
+    def install_fixture(self):
         destination = self.root / "etc-nixos"
         destination.mkdir()
         original = destination / "configuration.nix"
         original.write_text("original configuration")
+        original.chmod(0o640)
+        (destination / "private").mkdir(mode=0o700)
+        (destination / "private/note").write_text("unrelated local configuration")
+        (destination / "linked.nix").symlink_to("configuration.nix")
         stage = self.root / "stage"
         stage.mkdir()
         bootstrap.write_configuration(stage, ROOT, self.hardware, self.host)
         (stage / "flake.lock").write_text("{}")
+        return stage, destination
 
-        def dispatch(command, *arguments):
-            name = Path(command).name
-            if name == "cp":
-                shutil.copytree(arguments[-2], arguments[-1], symlinks=True)
-            elif name == "install":
-                shutil.copyfile(arguments[-2], arguments[-1])
-            elif name not in ("nixos-rebuild", "bootctl"):
-                self.fail(f"Unexpected command: {name}")
+    def filesystem_command(self, command, *arguments):
+        name = Path(command).name
+        if name in ("cp", "install", "mv"):
+            # Exercise real coreutils, including the filesystem's atomic exchange.
+            subprocess.run([name, *map(str, arguments)], check=True)
+        elif name not in ("nixos-rebuild", "bootctl"):
+            self.fail(f"Unexpected command: {name}")
 
-        with (
-            mock.patch.object(bootstrap, "privileged", side_effect=dispatch),
-            mock.patch.object(
-                bootstrap.shutil, "which", side_effect=lambda name: "/test-bin/" + name
-            ),
-        ):
+    def directory_snapshot(self, directory):
+        snapshot = {}
+        for path in directory.rglob("*"):
+            content = None
+            if path.is_symlink():
+                content = str(path.readlink())
+            elif path.is_file():
+                content = path.read_bytes()
+            snapshot[str(path.relative_to(directory))] = (path.lstat().st_mode, content)
+        return snapshot
+
+    def test_install_files_and_repeat_run_preserve_original_configuration(self):
+        stage, destination = self.install_fixture()
+        original = self.directory_snapshot(destination)
+        with mock.patch.object(bootstrap, "privileged", side_effect=self.filesystem_command):
             bootstrap.install(stage, destination, self.host)
+            first = self.directory_snapshot(destination)
+            host = json.loads((stage / "project-host.json").read_text())
+            host["themeSelection"] = {"preset": "latte", "wallpaperMode": "color"}
+            (stage / "project-host.json").write_text(json.dumps(host))
             bootstrap.install(stage, destination, self.host)
-        self.assertEqual(original.read_text(), "original configuration")
+        current = self.directory_snapshot(destination)
+        self.assertEqual({name: current[name] for name in original}, original)
         self.assertEqual(
             (destination / "project-hardware.nix").read_bytes(),
             self.hardware.read_bytes(),
         )
-        backups = list(self.root.glob("etc-nixos.pre-project-*"))
+        self.assertEqual(json.loads((destination / "project-host.json").read_text()), host)
+        backups = sorted(self.root.glob("etc-nixos.pre-project-*"))
         self.assertEqual(len(backups), 2)
-        self.assertTrue(
-            all(
-                (backup / "configuration.nix").read_text() == "original configuration"
-                for backup in backups
+        self.assertEqual(self.directory_snapshot(backups[0]), original)
+        self.assertEqual(self.directory_snapshot(backups[1]), first)
+
+    def test_failed_preparation_or_exchange_leaves_existing_host_intact(self):
+        stage, destination = self.install_fixture()
+        # A repeat installation must never expose mixed old/new generated files.
+        for name in bootstrap.FILES:
+            (destination / name).write_text(
+                '{"bootstrapSchema": 1}' if name == "project-host.json" else "old " + name
             )
-        )
+        original = self.directory_snapshot(destination)
+        for failure in ("cp", *bootstrap.FILES, "mv"):
+            with self.subTest(failure=failure):
+                commands = []
+
+                def dispatch(command, *arguments):
+                    name = Path(command).name
+                    commands.append(name)
+                    if name == failure or (
+                        name == "install" and Path(arguments[-1]).name == failure
+                    ):
+                        raise subprocess.CalledProcessError(1, [name])
+                    self.filesystem_command(command, *arguments)
+
+                stderr = io.StringIO()
+                with (
+                    mock.patch.object(bootstrap, "privileged", side_effect=dispatch),
+                    contextlib.redirect_stderr(stderr),
+                ):
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        bootstrap.install(stage, destination, self.host)
+                self.assertEqual(self.directory_snapshot(destination), original)
+                self.assertNotIn("nixos-rebuild", commands)
+                self.assertIn("no activation was attempted", stderr.getvalue())
+
+    def test_interruption_after_exchange_retains_both_complete_configurations(self):
+        stage, destination = self.install_fixture()
+        original = self.directory_snapshot(destination)
+
+        def dispatch(command, *arguments):
+            self.filesystem_command(command, *arguments)
+            if Path(command).name == "mv":
+                raise KeyboardInterrupt
+
+        with (
+            mock.patch.object(bootstrap, "privileged", side_effect=dispatch),
+            contextlib.redirect_stderr(io.StringIO()),
+        ):
+            with self.assertRaises(KeyboardInterrupt):
+                bootstrap.install(stage, destination, self.host)
+        backups = list(self.root.glob("etc-nixos.pre-project-*"))
+        self.assertEqual(len(backups), 1)
+        self.assertEqual(self.directory_snapshot(backups[0]), original)
+        for name in bootstrap.FILES:
+            self.assertEqual((destination / name).read_bytes(), (stage / name).read_bytes())
+
+    def test_activation_failure_keeps_backup_and_complete_replacement(self):
+        stage, destination = self.install_fixture()
+        original = self.directory_snapshot(destination)
+        commands = []
+
+        def dispatch(command, *arguments):
+            name = Path(command).name
+            commands.append(name)
+            if name == "nixos-rebuild":
+                raise subprocess.CalledProcessError(1, [name])
+            self.filesystem_command(command, *arguments)
+
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(bootstrap, "privileged", side_effect=dispatch),
+            contextlib.redirect_stderr(stderr),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                bootstrap.install(stage, destination, self.host)
+        backup = next(self.root.glob("etc-nixos.pre-project-*"))
+        self.assertEqual(self.directory_snapshot(backup), original)
+        for name in bootstrap.FILES:
+            self.assertEqual((destination / name).read_bytes(), (stage / name).read_bytes())
+        self.assertIn("Activation failed", stderr.getvalue())
+        self.assertNotIn("bootctl", commands)
+
+    def test_efi_timeout_failure_does_not_misreport_successful_activation(self):
+        stage, destination = self.install_fixture()
+        commands = []
+
+        def dispatch(command, *arguments):
+            name = Path(command).name
+            commands.append(name)
+            if name == "bootctl":
+                raise subprocess.CalledProcessError(1, [name])
+            self.filesystem_command(command, *arguments)
+
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(bootstrap, "privileged", side_effect=dispatch),
+            contextlib.redirect_stderr(stderr),
+        ):
+            bootstrap.install(stage, destination, self.host)
+        self.assertIn("nixos-rebuild", commands)
+        self.assertIn("Configuration activated", stderr.getvalue())
+        self.assertNotIn("Activation failed", stderr.getvalue())
 
 
 if __name__ == "__main__":

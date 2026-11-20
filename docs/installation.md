@@ -92,16 +92,30 @@ use the generated host with that installation's own account and hardware.
 
 ## Build, backup and recovery
 
-With `--apply`, bootstrap builds the complete generation before privileged
-configuration writes. It copies `/etc/nixos` to
-`/etc/nixos.pre-project-TIMESTAMP`, then installs a host flake, lock file,
-settings JSON and copied hardware module. The original `configuration.nix` and
-`hardware-configuration.nix` remain in place.
+With `--apply`, I build the complete generation before privileged configuration
+writes. Bootstrap prepares a sibling copy of `/etc/nixos`, including my original
+files, and adds the generated host flake, lock file, settings JSON, and hardware
+module there. It publishes the complete directory with an atomic exchange;
+the previous directory becomes `/etc/nixos.pre-project-TIMESTAMP`.
 
-For systemd-boot, bootstrap clears a persistent EFI menu-timeout override when
-EFI variables are writable. Hold Space during firmware startup to open the boot
-menu and select an earlier generation. See [maintenance](maintenance.md#recovery)
-for runtime rollback and its limits.
+A failed copy or unsupported exchange does not replace the active configuration.
+I keep any incomplete preparation copy for inspection. If I interrupt publication,
+I inspect both reported paths: the exchange selects either the complete old or
+complete new directory, with no file-by-file mixture. This requires a filesystem
+that supports atomic directory exchange; bootstrap stops rather than falling back
+to a non-atomic copy.
+
+Activation happens after publication. If it fails, I retain the complete new
+configuration and the old backup for recovery; bootstrap does not automatically
+roll back services that may already have changed. The original `configuration.nix`
+and `hardware-configuration.nix` are preserved in both directories.
+
+For systemd-boot, bootstrap attempts to clear a persistent EFI menu-timeout
+override after activation when the host permits EFI-variable writes. If that
+cleanup fails, it reports the successful activation separately and prints the
+manual retry command. I hold Space during firmware startup to open the boot menu
+and select an earlier generation. My [maintenance notes](maintenance.md#recovery)
+cover runtime rollback and its limits.
 
 The `/etc/nixos` backup contains configuration, not personal data. NixOS generation
 rollback does not restore personal files. Home Manager preserves conflicting

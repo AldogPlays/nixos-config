@@ -1,5 +1,5 @@
 {
-  description = "Jeffrey's reproducible NixOS and Hyprland configuration";
+  description = "My personal NixOS and Hyprland configuration";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
@@ -118,7 +118,7 @@
             hardwareModule
             hostModule
             {
-              # Keep the exact private project snapshot reachable after GC.
+              # Keep the exact project snapshot reachable after GC.
               environment.etc."nixos-project-source".source = inputs.self.outPath;
             }
             ./modules/nixos/core.nix
