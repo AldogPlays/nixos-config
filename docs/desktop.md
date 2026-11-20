@@ -186,8 +186,10 @@ additional session service is configured. Rich Presence integration is disabled.
 `home/jeffreyc/programs.nix` uses Home Manager's Vesktop module with the
 source-pinned Vencord compatibility update in `packages/vencord.nix`. NoTrack
 disables Discord analytics, metrics and crash reporting. Quick CSS hides Store,
-Nitro and sponsored Quest entry points, the Quest reward card above the account
-controls, and known upsell elements. The reward-card filter is scoped to the
+Nitro and sponsored Quest entry points, the Quest Home navigation hero and page,
+the Quest reward card above the account controls, and known upsell elements.
+If Discord restores an already-open Quests route, choose Friends or a conversation
+to leave the hidden page. The reward-card filter is scoped to the
 account panel and preserves username, microphone, headphones and settings
 controls. These are cosmetic filters; Discord UI changes can require selector
 updates, and this does not block advertisements in shared

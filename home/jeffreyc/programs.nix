@@ -283,6 +283,12 @@ in
       [class*="nitroUpsell_"] {
         display: none !important;
       }
+      /* Quest Home keeps its hero wrapper even when its navigation link is hidden. */
+      [class*="wrapper_"]:has(> [class*="withQuestHomeHeroContent_"]),
+      [class*="page_"]:has([class*="questTile_"]),
+      [class*="page_"]:has([class*="heroWrapper_"] [class*="sponsoredTag_"]) {
+        display: none !important;
+      }
       /* Quest reward cards above the account controls, not the controls themselves. */
       [class*="panels_"] [class*="mask_"]:has([class*="reward"]) {
         display: none !important;
