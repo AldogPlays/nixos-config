@@ -4,11 +4,11 @@ about: Propose a focused improvement to the configuration
 title: ''
 ---
 
-## Problem or use case
+## My use case
 
-## Proposed behavior
+## What I propose
 
 ## Scope and tradeoffs
 
-Describe any new package, background service, hardware dependency or bootstrap
-implication. Include alternatives if they help explain the proposal.
+I describe any new package, background service, hardware dependency, or
+bootstrap implication, with alternatives where they help explain my proposal.

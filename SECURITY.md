@@ -1,28 +1,32 @@
 # Security
 
-Security maintenance targets the current `main` branch and its pinned inputs.
-There are no separately maintained release branches.
+I maintain the current `main` branch and its pinned inputs. I do not maintain
+separate release branches.
 
 ## Reporting a vulnerability
 
-Use **Report a vulnerability** in the repository's Security tab when private
-reporting is available. If that option is unavailable, open an issue requesting
-a private contact method without including vulnerability details, credentials
-or an exploit. Please allow a private discussion before public disclosure.
+I prefer private vulnerability reports through **Report a vulnerability** in
+GitHub's Security tab when that option is available. Otherwise, I ask for an
+issue requesting a private contact method, without vulnerability details,
+credentials, or an exploit. I appreciate a private discussion before disclosure.
 
-For ordinary configuration bugs, use the bug-report template.
+For ordinary configuration bugs, I use the bug-report template.
 
 ## Sensitive information
 
-Do not submit passwords, private keys, access tokens, Tailscale authentication
-keys, recovery material or complete personal configuration directories.
-Review logs, screenshots and generated host files before attaching them.
+I keep passwords, private keys, access tokens, recovery material, application
+accounts, and personal configuration exports outside Git. I review logs,
+screenshots, and generated host files before sharing them.
 
-The reference host intentionally includes a login name, hardware model, disk
-identifiers and storage layout. These identify this installation; they are not
-portable defaults or encryption keys. Bootstrap uses the destination machine's
-hardware configuration instead. Git history and attribution are retained.
+My checked-in host includes my login name, hardware model, disk identifiers, and
+storage layout. My Git author identity is part of the history. These describe my
+installation; they are not portable defaults or encryption keys. Bootstrap uses
+the destination machine's hardware configuration instead.
 
-Nix expressions and NixOS modules are executable configuration. Inspect sources
-before evaluation or activation. The Nix store is not a secret store: do not
-place credentials in expressions that copy them into store paths.
+My homelab CA file is a public certificate. Its private key and my WireGuard
+credentials are stored separately. I describe this boundary in my [public-source
+checks](docs/public-release.md).
+
+I treat Nix expressions and modules as executable configuration and inspect
+sources before evaluation or activation. I do not use the Nix store for secrets
+or put credentials in expressions that copy them into store paths.

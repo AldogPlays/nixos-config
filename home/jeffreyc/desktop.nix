@@ -295,7 +295,7 @@ in
       package = pkgs.kdePackages.breeze;
     };
   };
-  # Expose the icon theme already in Dolphin's closure to the user's Qt apps.
+  # Expose the icon theme already in Dolphin's closure to my Qt apps.
   home.packages = [
     themeMenu
     (lib.getAttrFromPath theme.icons.qt.package pkgs)

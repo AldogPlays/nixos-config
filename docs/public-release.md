@@ -1,38 +1,49 @@
-# Publishing the repository
+# Public-source checks
 
-Repository visibility is a separate GitHub setting. Preparing or pushing the
-configuration does not make it public.
+I share this repository as my personal desktop configuration. My checked-in host
+reflects my hardware and preferences; bootstrap is how I reproduce the shared
+parts on another installed NixOS machine.
 
-## Review before publishing
+## What I check before pushing
 
-- Validate the exact revision using the [maintenance checks](maintenance.md).
-  Try bootstrap on a fresh VM or spare PC before describing installation as
-  deployment-tested. Check graphical unlocking and the battery cutoff on hardware.
-- Confirm that every pinned source is publicly accessible, including forks.
-  Proprietary installers and application sign-ins remain separate prerequisites.
-- Review the current tree, Git history and any GitHub Actions logs or artifacts
-  for credentials and private data. Local secret scans are useful but are not a
-  guarantee that every sensitive value has been identified.
-- Keep the [MIT license](../LICENSE) and [third-party notices](../THIRD_PARTY_NOTICES.md)
-  with the source. Packaged software keeps its own distribution terms.
-- Review issue templates, contribution guidance and the private vulnerability
-  reporting route in GitHub's Security settings.
-- Confirm local commits are pushed and the default branch matches the intended
-  release revision. Public-facing documentation should describe behavior and
-  limitations directly, without conversation history.
+- I review the diff and run the relevant [maintenance checks](maintenance.md).
+- I scan the current tree and Git history for credentials, private keys, and
+  accidentally committed local files. I use redacted scanner output and review
+  findings manually; a clean scan is not proof that every sensitive value is absent.
+- I keep account data, private keys, original APKs, installers, and personal
+  wallpaper collections outside Git and the Nix store.
+- I check that pinned sources, including my forks, can be fetched publicly.
+- I retain the [MIT license](../LICENSE) and [third-party notices](../THIRD_PARTY_NOTICES.md).
+- I check links and write documentation in my own voice, with clear limits on
+  what I have actually tested.
+- I verify that the pushed branch matches the intended local commit.
 
-The reference host intentionally retains its account name, disk identifiers and
-storage layout. Existing author attribution and Git history are retained too.
-Removing information from the latest files does not remove it from earlier
-commits. Do not publish the checked-in host as a portable hardware template.
+## Information I keep public
 
-## Change visibility when ready
+My host includes my account name, hardware model, disk identifiers, monitor
+configuration, and storage layout. My Git author name and email are also part of
+the history. My homelab notes describe private subnets and local service names.
+These are configuration details, not account passwords or encryption keys.
 
-Open the repository's **Settings → General → Danger Zone → Change repository
-visibility**. Review GitHub's confirmation and consequences before choosing
-public visibility. See [GitHub's visibility documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility).
+I include my homelab's public Caddy CA certificate so my laptop can trust its
+services. The CA private key and WireGuard credentials stay outside this
+repository. Bootstrap does not inherit my laptop's CA trust or VPN
+configuration.
 
-Once public, test the README's GitHub bootstrap reference without private
-repository credentials. Check the repository's community profile, license
-detection, issue templates and Security reporting options from a reader's account.
-Public copies and forks can remain available even if visibility changes later.
+Deleting something from the latest files would not remove earlier commits. If I
+discover an exposed credential, I revoke or rotate it before considering history
+cleanup. Public copies and forks may remain available independently of this
+repository's visibility. I keep [GitHub's visibility
+documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility)
+as a reference for those consequences.
+
+## Scope of my checks
+
+I use this setup on my Lenovo and run local regression checks. I have not
+completed a fresh VM or spare-PC bootstrap activation trial, so I keep that
+limitation in the installation guide. I do not present my personal configuration
+as a generally supported distribution.
+
+I also review GitHub issues, releases, workflow logs, and artifacts when sharing
+project material. My [security policy](../SECURITY.md) describes how I handle
+sensitive reports.

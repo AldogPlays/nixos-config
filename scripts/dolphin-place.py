@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add one Dolphin Place without replacing the user's other bookmarks."""
+"""Add one Dolphin Place without replacing existing bookmarks."""
 
 import argparse
 import os

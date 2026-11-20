@@ -1,137 +1,123 @@
 # NixOS + Hyprland
 
-A personal NixOS desktop built around Hyprland, Home Manager and pinned flake
-inputs. Compact spacing, thin borders and a shared theme keep
-the desktop consistent without installing a full desktop environment.
+I run my laptop on NixOS with Hyprland and Home Manager. This is my personal
+desktop configuration: compact spacing, thin borders, shared themes, and the
+applications I use for school, photos, gaming, and my homelab.
 
-The checked-in `nixos` host targets a Lenovo IdeaPad 5 2-in-1 14AKP10. A separate
-bootstrap command adopts an existing **x86-64 NixOS installation**, preserving
-its own account, disks, encryption, bootloader and graphics settings.
+I keep the system, desktop, local patches, and setup logic here so I can rebuild
+my environment from pinned inputs. I'm sharing what I use and how it works; the
+defaults reflect my hardware and preferences.
 
-## What is included
+## My desktop
 
-- Hyprland with UWSM, Waybar, Rofi, notifications, lock screen and a graphical login.
-- Shared numbered desktops across monitors and full-edge cursor crossing.
-- Shared theme roles for desktop components, GTK/Qt applications, terminal colors,
-  typography and cursor assets. Theme-specific palette names stay inside `theme/`.
-- Workspace-linked wallpapers, window/area screenshots and clipboard integration.
-- Dolphin, darktable, image/PDF/archive tools, LibreWolf, Joplin and gaming applications.
-- Vesktop for Discord with analytics disabled and local promotion filters.
-- On-demand Waydroid with Aurora Store, a Dolphin photo-upload folder and a
-  version-pinned Instagram navigation patch command for locally supplied APKs.
-- Terminal-based Wi-Fi, Bluetooth and audio controls.
-- Automatic power profiles, low-battery brightness handling and firmware battery
-  conservation on supported hardware.
-- Memory-pressure safeguards, compressed swap caching on hosts with disk swap,
-  and Nix build limits that leave room for desktop applications.
-- Portable bootstrap with a preview, a full build before activation and a backup
-  of the existing `/etc/nixos` configuration.
+| Area | What I use |
+| --- | --- |
+| Session | Hyprland, UWSM, SDDM, and hyprlock |
+| Desktop controls | Waybar, Rofi, SwayNotificationCenter, and floating terminal controls |
+| Appearance | Monochrome and Catppuccin Latte, with shared colors, fonts, and spacing |
+| Workspaces | Ten desktops shared across my screens, with sliding workspace wallpapers |
+| Everyday apps | LibreWolf, Dolphin, Joplin, ONLYOFFICE, darktable, and themed Vesktop |
+| Gaming | Steam, Lutris, Modrinth, and Moonlight |
+| Android | On-demand Waydroid, Aurora Store, and shared photo folders |
+| Laptop policies | Automatic power profiles, battery conservation, and memory-pressure safeguards |
 
-## Get started
+My [desktop guide](docs/desktop.md) covers the controls and applications. I
+explain the theme adapters in [theme/README.md](theme/README.md), the wallpaper
+renderer in [workspace wallpapers](docs/wallpapers.md), and my Android setup in
+[Waydroid](docs/waydroid.md).
 
-Start from an installed NixOS 26.05 system, signed in as the existing desktop
-account. This is a desktop configuration and adoption tool, not a disk installer.
+## How I organize it
 
-**Read the [installation guide](docs/installation.md) first.** The package set
-includes proprietary applications; Cisco Packet Tracer requires its matching
-installer to be downloaded separately. Preview before applying the configuration.
+```mermaid
+flowchart TD
+    Inputs["Pinned flake inputs"] --> System["NixOS modules"]
+    Inputs --> Home["Home Manager"]
+    Theme["Shared theme data"] --> System
+    Theme --> Home
+    Host["Host account and hardware"] --> System
+    System --> Desktop["My Hyprland desktop"]
+    Home --> Desktop
+```
 
-Once the repository is publicly accessible, preview with:
+| Path | What I keep there |
+| --- | --- |
+| `hosts/nixos/` | My Lenovo's account, disks, monitors, and host-specific settings |
+| `modules/nixos/` | Shared OS, hardware support, and desktop services |
+| `home/jeffreyc/` | My applications, shortcuts, and Home Manager configuration |
+| `theme/` | Theme selection, semantic colors, typography, and geometry |
+| `dotfiles/` | Hyprland Lua, wallpaper helpers, screenshots, and boot-screen sources |
+| `packages/` | Local packages and focused upstream patches |
+| `bootstrap/`, `scripts/`, `tests/` | Setup templates, system helpers, and regression checks |
+
+## Rebuilding my laptop
+
+My checked-in `nixos` host is a **Lenovo IdeaPad 5 2-in-1 14AKP10**. I validate
+and apply it from this checkout with:
+
+```bash
+nix flake check --show-trace
+nix build .#nixosConfigurations.nixos.config.system.build.toplevel --no-link
+sudo nixos-rebuild switch --flake .#nixos
+```
+
+**`.#nixos` contains my account and disk identifiers. I use it only on this
+laptop.** My [maintenance guide](docs/maintenance.md) covers updates,
+activation, and recovery. My wallpapers, application data, account logins, and
+private keys stay outside Git.
+
+## Setting up another machine
+
+I keep a bootstrap command for reproducing the shared setup on an existing
+**x86-64 NixOS installation**. It preserves that installation's account, disks,
+encryption, bootloader, and graphics settings rather than copying my Lenovo's.
+It does not partition disks or install NixOS from scratch.
+
+I start with a preview:
 
 ```bash
 nix --extra-experimental-features 'nix-command flakes' run github:AldogPlays/nixos-config#bootstrap
 ```
 
-For an authenticated checkout, use `nix run .#bootstrap` from its root instead.
-The [installation guide](docs/installation.md#repository-access) covers restricted
-repository access and the activation command.
+I document the prerequisites and `--apply` workflow in the [installation
+guide](docs/installation.md). My package set includes proprietary software;
+Cisco Packet Tracer requires a separate installer download. The pinned base is
+NixOS 26.05. My checks evaluate Intel/UEFI, AMD/BIOS, and NVIDIA hosts, but I
+haven't completed a fresh VM or spare-PC bootstrap activation trial.
 
-**Do not apply `.#nixos` on another computer.** That target contains this Lenovo's
-account and disk identifiers. Use bootstrap to generate an installation-specific
-host instead.
+## Everyday shortcuts
 
-## Documentation
-
-| Guide | Contents |
-| --- | --- |
-| [Installation](docs/installation.md) | Requirements, preview, activation, supported layouts and limits |
-| [Desktop](docs/desktop.md) | Shortcuts, applications, charging controls and daily use |
-| [Waydroid](docs/waydroid.md) | Android, Aurora Store and photo uploads |
-| [Maintenance and recovery](docs/maintenance.md) | Validation, rebuilds, updates and rollback |
-| [Homelab VPN](docs/homelab-vpn.md) | Automatic WireGuard away from home, split DNS, credentials and recovery |
-| [Theme contract](theme/README.md) | Shared roles, native adapters and current coverage |
-| [Workspace wallpapers](docs/wallpapers.md) | Rendering, image preparation, cache and diagnostics |
-| [System context](docs/system-context.md) | Reference-host architecture and configuration decisions |
-| [Bootstrap audit](docs/audit.md) | Historical observations from the initial migration |
-| [Contributing](CONTRIBUTING.md) | Bug reports, changes and local checks |
-| [Agent guide](AGENTS.md) | Repository workflow and rules for coding assistants |
-| [Security](SECURITY.md) | Sensitive reports and information to omit from public logs |
-| [Publishing](docs/public-release.md) | Final checks and the separate visibility change |
-
-## Everyday controls
-
-Meta/Super is the Windows or logo key.
+I use Meta/Super for the Windows or logo key.
 
 | Action | Shortcut |
 | --- | --- |
 | Terminal / browser / files | Meta+T / Meta+F / Meta+E |
 | App launcher | Meta+A |
 | Theme selector | Meta+Ctrl+T |
-| Workspaces 1–10 | Meta+1–9, Meta+0 |
+| Desktops 1–10 | Meta+1–9, Meta+0 |
 | Notifications | Meta+N |
 | Wi-Fi / Bluetooth / audio | Meta+Shift+N / B / A |
-| System monitor | Meta+Esc or click the battery icon |
+| System monitor | Meta+Esc |
 | Screenshot | Print or Meta+Shift+S |
 | Lock screen | Meta+L |
 
-The [desktop guide](docs/desktop.md) lists the complete controls and behavior.
-The [maintenance guide](docs/maintenance.md#desktop-memory-safeguards) covers live
-memory checks and garbage collection that preserves existing rollback generations.
+I currently use Monochrome, with grayscale wallpaper copies that leave my
+original images untouched. I can switch to Catppuccin Latte through the theme
+selector; it builds and applies the selected preset through the normal rebuild
+workflow.
 
-## Theme choice
+## My notes
 
-Press **Meta+Ctrl+T** for the Rofi theme menu. It marks the active theme; choosing
-another opens a terminal to build and apply the configuration with normal sudo
-authentication. Escape cancels. No automatic reboot is performed.
+- **Setup and daily use:** [Installation](docs/installation.md), [desktop](docs/desktop.md), and [Waydroid](docs/waydroid.md).
+- **Appearance:** [Shared themes](theme/README.md) and [workspace wallpapers](docs/wallpapers.md).
+- **Maintenance:** [Updates and recovery](docs/maintenance.md), [homelab VPN](docs/homelab-vpn.md), and [security](SECURITY.md).
+- **Design and history:** [System context](docs/system-context.md) and my [initial migration audit](docs/audit.md).
+- **Repository:** [Contributing](CONTRIBUTING.md), [agent instructions](AGENTS.md), and [public-source checks](docs/public-release.md).
 
-Monochrome is selected by default. It uses a dark grayscale desktop and
-grayscale wallpaper copies, preserving the original images. Wallpaper color
-can also be chosen independently. Catppuccin Latte remains available from the
-selector. See [theme selection](theme/README.md#choose-a-theme)
-for settings, manual selection and activation details. The rebuild includes other
-saved configuration edits.
-
-## Repository layout
-
-```text
-flake.nix, flake.lock    pinned inputs, systems, bootstrap and checks
-hosts/nixos/            reference Lenovo host and its hardware configuration
-modules/nixos/          shared OS, hardware and desktop modules
-home/jeffreyc/           shared Home Manager configuration
-bootstrap/, scripts/    installation templates and system helpers
-dotfiles/               compositor, wallpaper and boot-screen sources
-theme/                  selected theme data and adapter contract
-packages/               local packages and patches
-tests/                  regression checks
-docs/                   setup, daily use and implementation details
-```
-
-The `home/jeffreyc/` directory is reused by bootstrap with the destination account's
-login and home directory; its directory name does not create that account.
-
-## Compatibility and validation
-
-The reference Lenovo is used daily. Local checks also evaluate complete
-Intel/UEFI, AMD/BIOS and NVIDIA configurations and exercise bootstrap, charging,
-power, screenshot selection and wallpaper policies. Those checks do not establish
-successful installation, boot or graphics behavior on every supported PC.
-The bootstrap activation path still needs a fresh VM or spare-PC trial.
-
-Boot-screen authentication and the physical battery charging cutoff also require
-hardware observation. See the component guides for the specific validation limits.
+My related [Homelab](https://github.com/AldogPlays/Homelab) repository documents
+the services and infrastructure I connect to from this desktop.
 
 ## License
 
-Original source and documentation are available under the [MIT license](LICENSE).
-Adapted code, palette data and packaged applications retain their respective
-licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+I license my original source and documentation under the [MIT License](LICENSE).
+Adapted code, palette data, and packaged applications retain their own licenses;
+I list those in [third-party notices](THIRD_PARTY_NOTICES.md).

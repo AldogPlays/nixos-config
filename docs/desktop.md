@@ -1,8 +1,8 @@
 # Desktop guide
 
-Keyboard controls, applications and desktop behavior for this configuration.
-See [installation](installation.md) for setup and [maintenance](maintenance.md)
-for rebuilds and recovery.
+I keep my everyday shortcuts, applications, and desktop behavior here. My
+[installation guide](installation.md) covers setup, and my [maintenance
+notes](maintenance.md) cover rebuilds and recovery.
 
 ## Keyboard and controls
 
@@ -93,13 +93,13 @@ center; its empty state is a muted text label without the oversized fallback ico
 
 ### Monitors and shared desktops
 
-The reference desk layout is in `hosts/nixos/monitors.lua`. The Acer KG251Q is
-rotated 180° and centered above the P2510S; the laptop stays on to the left,
-centered vertically against the P2510S. Both external screens use 120 Hz
-(119.98 Hz on the Acer); the laptop retains its preferred mode. All use 1.0 scaling.
-EDID descriptions identify the displays when dock connectors
-change. Portable bootstrap hosts use automatic placement instead of this desk
-layout; the reference host supplies it through its Home Manager module argument.
+My desk layout is in `hosts/nixos/monitors.lua`. The Acer KG251Q is rotated 180°
+and centered above the P2510S; the laptop stays on to the left, centered
+vertically against the P2510S. Both external screens use 120 Hz (119.98 Hz on
+the Acer); the laptop retains its preferred mode. All use 1.0 scaling. EDID
+descriptions identify the displays when dock connectors change. Portable
+bootstrap hosts use automatic placement instead of this desk layout; my host
+supplies it through its Home Manager module argument.
 
 | Screen | Logical position | Resolution | Rotation |
 | --- | --- | --- | --- |
@@ -125,17 +125,17 @@ swipes also synchronize the screens. During a swipe only the initiating screen
 tracks the fingers; the others switch when the native workspace changes.
 This groups separate native workspaces; a single tiled window cannot span screens.
 
-On the reference desk Hyprland IDs 1–10 belong to the laptop, 11–20 to the lower
-display and 21–30 to the upper display. Waybar labels them with their shared
-desktop number and highlight the desktop visible on each screen. Only desktops
-with a window somewhere in the group, plus the current desktop, are shown;
-empty desktops remain available through shortcuts and swipes.
-Existing windows are adopted on their present screen. When an
-output disconnects, its windows join the matching desktop on their surviving
-screen so they stay reachable. Redocking keeps those merged windows there;
-new windows can be moved between screens with the existing directional controls.
-Special workspaces remain independent. Other PCs allocate output slots as their
-screens appear. Wallpaper selection still uses the underlying native IDs.
+At my desk Hyprland IDs 1–10 belong to the laptop, 11–20 to the lower display
+and 21–30 to the upper display. Waybar labels them with their shared desktop
+number and highlight the desktop visible on each screen. Only desktops with a
+window somewhere in the group, plus the current desktop, are shown; empty
+desktops remain available through shortcuts and swipes. Existing windows are
+adopted on their present screen. When an output disconnects, its windows join
+the matching desktop on their surviving screen so they stay reachable. Redocking
+keeps those merged windows there; new windows can be moved between screens with
+the existing directional controls. Special workspaces remain independent. Other
+PCs allocate output slots as their screens appear. Wallpaper selection still
+uses the underlying native IDs.
 
 With the dock disconnected, the laptop panel remains enabled at its preferred
 mode and 1.0 scaling. The external rotation and 120 Hz settings match only their
@@ -165,21 +165,21 @@ in `dotfiles/hypr/hyprland.lua`.
 The app launcher shows short descriptions beside application names. Hidden
 utilities remain available through shortcuts, commands, file associations and
 context menus. `home/jeffreyc/packages.nix` preserves upstream desktop entries
-while hiding Ark, Gwenview, qpdfview, the Packet Tracer PTSA handler, the CUPS web
-interface, the NixOS manual, Rofi itself, uuctl, Wiremix and XTerm. Rofi's own
-overrides live in the user application directory so its package wrapper cannot
-give the original entries priority. **Print Settings** remains available for
-printer administration. **Theme Selector** shows **Change system theme** and
-opens the same system theme menu as Meta+Ctrl+T. Both launch `theme-menu` to choose
-and apply the declarative desktop preset.
-Waydroid and Aurora setup launchers are hidden in `home/jeffreyc/waydroid.nix`.
-The activation helper preserves writable Android/game exports while hiding Aurora
-Store and the recovery Instagram entry and adding descriptions to Instagram and
-the existing EA App shortcut. No launcher service is added.
+while hiding Ark, Gwenview, qpdfview, the Packet Tracer PTSA handler, the CUPS
+web interface, the NixOS manual, Rofi itself, uuctl, Wiremix and XTerm. Rofi's
+own overrides live in my user application directory so its package wrapper
+cannot give the original entries priority. **Print Settings** remains available
+for printer administration. **Theme Selector** shows **Change system theme** and
+opens the same system theme menu as Meta+Ctrl+T. Both launch `theme-menu` to
+choose and apply the declarative desktop preset. Waydroid and Aurora setup
+launchers are hidden in `home/jeffreyc/waydroid.nix`. The activation helper
+preserves writable Android/game exports while hiding Aurora Store and the
+recovery Instagram entry and adding descriptions to Instagram and the existing
+EA App shortcut. No launcher service is added.
 
 ### Discord with Vesktop
 
-Open **Vesktop (Discord chat)** from Rofi, or run `vesktop`. Rofi launches it
+I open **Vesktop (Discord chat)** from Rofi or run `vesktop`. Rofi launches it
 through UWSM on demand. Closing its window quits the client; no autostart or
 additional session service is configured. Rich Presence integration is disabled.
 
@@ -187,22 +187,23 @@ additional session service is configured. Rich Presence integration is disabled.
 source-pinned Vencord compatibility update in `packages/vencord.nix`. NoTrack
 disables Discord analytics, metrics and crash reporting. Quick CSS hides Store,
 Nitro and sponsored Quest entry points, the Quest Home navigation hero and page,
-the Quest reward card above the account controls, and known upsell elements.
-If Discord restores an already-open Quests route, choose Friends or a conversation
-to leave the hidden page. The reward-card filter is scoped to the
+the Quest reward card above the account controls, and known upsell elements. If
+Discord restores an already-open Quests route, I choose Friends or a
+conversation to leave the hidden page. The reward-card filter is scoped to the
 account panel and preserves username, microphone, headphones and settings
 controls. These are cosmetic filters; Discord UI changes can require selector
-updates, and this does not block advertisements in shared
-messages or embeds. Discord still receives account activity and messages.
-Vencord is a third-party modification and its maintainers note that using it
-violates Discord's terms: see the [upstream project](https://github.com/Vendicated/Vencord).
+updates, and this does not block advertisements in shared messages or embeds.
+Discord still receives account activity and messages. Vencord is a third-party
+modification and its maintainers note that using it violates Discord's terms:
+see the [upstream project](https://github.com/Vendicated/Vencord).
 
-Client settings, Vencord settings and Quick CSS under `~/.config/vesktop/` are
-managed by Home Manager; edit the Nix module and rebuild for persistent changes.
-Login/session data remains writable and outside the repository and Nix store.
-Vencord updates follow the source and dependency hashes in `packages/vencord.nix`
-and system rebuilds, with its own updater and cloud settings sync disabled.
-Vesktop retains its sandboxed, isolated web renderer.
+I manage client settings, Vencord settings, and Quick CSS under
+`~/.config/vesktop/` through Home Manager. I edit the Nix module and rebuild for
+persistent changes. Login/session data remains writable and outside the
+repository and Nix store. Vencord updates follow the source and dependency
+hashes in `packages/vencord.nix` and system rebuilds, with its own updater and
+cloud settings sync disabled. Vesktop retains its sandboxed, isolated web
+renderer.
 
 Quick CSS also maps Discord's interface colors and font family to the selected
 desktop theme, including its login form, text fields and buttons. This overrides
@@ -210,22 +211,21 @@ Discord's account-level light/dark palette. Read channels use secondary text;
 selected channels use selection text and a selection background. The message
 composer uses a themed surface with primary input text and secondary placeholder
 text. The Discord home icon and Add Friend tab use explicit theme foregrounds
-for their filled and selected states. Avatars, attachments, server artwork
-and video retain their original colors. Reopen Vesktop after a theme rebuild;
+for their filled and selected states. Avatars, attachments, server artwork and
+video retain their original colors. I reopen Vesktop after a theme rebuild;
 future Discord interface changes may require token updates.
 
 ### Photo editing with darktable
 
-Open **Darktable** from Rofi or run `darktable`. It starts on demand, with no
+I open **Darktable** from Rofi or run `darktable`. It starts on demand, with no
 background service. `home/jeffreyc/programs.nix` installs the pinned application
 and generates `~/.config/darktable/themes/desktop.css` from the shared theme.
 The launcher selects this stylesheet and the system font through temporary
 `--conf` overrides; other preferences, catalogues and edits remain user-managed.
-Restart darktable after switching the desktop theme. Neutral image surrounds,
+I restart darktable after switching the desktop theme. Neutral image surrounds,
 graphs and functional color swatches retain the native stylesheet's colors.
-Gwenview remains the default image viewer.
-The general focus-dependent window opacity still applies; keep darktable focused
-while judging image colors.
+Gwenview remains the default image viewer. The general focus-dependent window
+opacity still applies; keep darktable focused while judging image colors.
 
 Mesa's OpenCL driver in `modules/nixos/hardware.nix` supplies GPU processing.
 The darktable launcher enables its Rusticl platform and defaults
@@ -281,11 +281,11 @@ restored only if it still equals the automatically dimmed value. Originals survi
 service restarts in `/run/power-source-profile`; reboot starts a fresh policy.
 External monitor DDC controls are not included. No additional service is started.
 
-Battery charging defaults to firmware conservation mode where the battery exposes
-both `Long_Life` and `Standard` charging controls. On this Lenovo, conservation
-mode targets roughly 75–80%, rather than an arbitrary configurable percentage.
-The kernel also disables rapid charging when selecting `Long_Life`.
-Before a longer trip, allow a normal full charge with:
+Battery charging defaults to firmware conservation mode where the battery
+exposes both `Long_Life` and `Standard` charging controls. On this Lenovo,
+conservation mode targets roughly 75–80%, rather than an arbitrary configurable
+percentage. The kernel also disables rapid charging when selecting `Long_Life`.
+Before a longer trip, I allow a normal full charge with:
 
 ```bash
 battery-charge status
@@ -311,20 +311,21 @@ independently of NixOS generation rollback.
 
 ### Audio and pointer
 
-The audio mixer is the [Wiremix fork](https://github.com/AldogPlays/wiremix), pinned through the `wiremix` flake
-input and selected in `home/jeffreyc/packages.nix`. It replaces stock Wiremix
-under the same command and desktop entry; Waybar and Meta+Shift+A open the fork
-in the existing floating Alacritty window. PipeWire and WirePlumber are unchanged,
-and no new background service is added. Update the fork deliberately with
-`nix flake update wiremix`, validate, then rebuild.
+I use my [Wiremix fork](https://github.com/AldogPlays/wiremix), pinned through
+the `wiremix` flake input and selected in `home/jeffreyc/packages.nix`. It
+replaces stock Wiremix under the same command and desktop entry; Waybar and
+Meta+Shift+A open the fork in the existing floating Alacritty window. PipeWire
+and WirePlumber are unchanged, and no new background service is added. Update
+the fork deliberately with `nix flake update wiremix`, validate, then rebuild.
 
-On the reference desk, the RØDE AI-1 is preferred for both stereo playback and
-mono microphone capture. `hosts/nixos/default.nix` installs the matching
-WirePlumber user rules under `~/.config/wireplumber/wireplumber.conf.d/`.
-They take effect when WirePlumber next starts; activation does not restart the
-audio session. The live default selections are saved by `wpctl set-default`.
-Wiremix can select another device, and ordinary fallback remains available
-when the interface is unplugged. See [WirePlumber's ALSA rules](https://pipewire.pages.freedesktop.org/wireplumber/daemon/configuration/alsa.html#rules).
+At my desk, the RØDE AI-1 is preferred for both stereo playback and mono
+microphone capture. `hosts/nixos/default.nix` installs the matching WirePlumber
+user rules under `~/.config/wireplumber/wireplumber.conf.d/`. They take effect
+when WirePlumber next starts; activation does not restart the audio session. The
+live default selections are saved by `wpctl set-default`. Wiremix can select
+another device, and ordinary fallback remains available when the interface is
+unplugged. See [WirePlumber's ALSA
+rules](https://pipewire.pages.freedesktop.org/wireplumber/daemon/configuration/alsa.html#rules).
 
 The saved RØDE choice is a preference rather than a requirement for audio to work.
 WirePlumber selects an available speaker and microphone when that interface is
@@ -426,19 +427,19 @@ USB-only models may need a model-specific driver declared in
 `services.printing.drivers`; no manufacturer driver bundle is preinstalled.
 These settings are included in portable bootstrap.
 
-Steam is installed through `programs.steam` in `modules/nixos/hyprland.nix`.
-Launch **Steam** from Rofi or run `steam`, then sign in. The NixOS module supplies
-the runtime, 32-bit graphics/audio support and controller permissions. Steam
-downloads Valve's Proton when needed for Windows games; compatibility can be
-selected per game under **Properties → Compatibility**. No extra gaming
+Steam is installed through `programs.steam` in `modules/nixos/hyprland.nix`. I
+launch **Steam** from Rofi or run `steam`, then sign in. The NixOS module
+supplies the runtime, 32-bit graphics/audio support and controller permissions.
+Steam downloads Valve's Proton when needed for Windows games; compatibility can
+be selected per game under **Properties → Compatibility**. No extra gaming
 overlay, tuning daemon or Steam-specific firewall opening is configured.
 
-Lutris is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs, including
-its NixOS-compatible game runtime. Launch **Lutris** from Rofi or run `lutris`.
-It starts on demand; game installations, downloaded runners and account sign-ins
-remain user-managed.
+Lutris is declared in `home/jeffreyc/packages.nix` from pinned nixpkgs,
+including its NixOS-compatible game runtime. I launch **Lutris** from Rofi or
+run `lutris`. It starts on demand; game installations, downloaded runners and
+account sign-ins remain user-managed.
 
-Launch **Moonlight (Game streaming)** from Rofi (Meta+A) or run `moonlight`.
+I launch **Moonlight (Game streaming)** from Rofi (Meta+A) or run `moonlight`.
 The client is declared in `home/jeffreyc/packages.nix` and starts on demand;
 paired hosts and streaming preferences remain user-managed.
 `packages/moonlight-theme.nix` connects its native Qt Quick Material interface
@@ -521,13 +522,13 @@ theme daemon or independent Catppuccin palette is installed. Legacy GTK2 colors,
 sandboxed apps without access to host configuration, and apps overriding their
 own styling are not covered by these adapters. Reopen apps that cache styling.
 
-SDDM remains the login manager. `modules/nixos/hyprland.nix` configures the pinned
-minimal `where-is-my-sddm-theme` layout using the shared colors, font and cursor.
-The username and session are visible; type your password and press Enter.
-F1 shows its keyboard help, F2 cycles users and F3 cycles sessions. Its power
-shortcuts are F10 suspend, F11 power off and F12 reboot. The new greeter takes
-effect when SDDM next starts, normally on your next boot; do not restart the
-display manager mid-session just to preview it.
+SDDM remains the login manager. `modules/nixos/hyprland.nix` configures the
+pinned minimal `where-is-my-sddm-theme` layout using the shared colors, font and
+cursor. My username and session are visible; I enter my password and press
+Enter. F1 shows its keyboard help, F2 cycles users and F3 cycles sessions. Its
+power shortcuts are F10 suspend, F11 power off and F12 reboot. The new greeter
+takes effect when SDDM next starts, normally on your next boot; do not restart
+the display manager mid-session just to preview it.
 
 Meta+L runs hyprlock with a solid, opaque theme background, username and
 thin-bordered password field. No background screenshot, blur or transparency is

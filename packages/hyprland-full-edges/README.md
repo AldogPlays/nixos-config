@@ -1,9 +1,10 @@
 # Full-edge cursor crossing
 
-This local plugin maps each entire shared screen edge proportionally onto its
-neighbour. It covers dead corners caused by different logical resolutions without
-changing resolution or scale. Outer edges and diagonal-only neighbours do not
-wrap. Relative input within a screen retains Hyprland's normal acceleration.
+I use this local plugin to map each entire shared screen edge proportionally
+onto its neighbour. It covers dead corners caused by different logical
+resolutions without changing resolution or scale. Outer edges and diagonal-only
+neighbours do not wrap. Relative input within a screen retains Hyprland's normal
+acceleration.
 
 Hyprland 0.55.4 has no native setting or Lua mouse-motion event for this behavior.
 The plugin hooks `CPointerManager::move`, preserving the original function for
@@ -17,7 +18,7 @@ The plugin uses Nixpkgs' `mkHyprlandPlugin` and refuses a compositor ABI mismatc
 No process, polling loop, input-device permission or service is added. The package
 build runs `test.cpp` against the pure mapping logic in `geometry.hpp`.
 
-Upgrading Hyprland requires reviewing the pointer hook API and testing crossing,
-dragging, constrained games and lock-screen input. To disable live, use
-`hyprctl plugin unload` with the plugin path from `hyprctl plugin list`; remove
-its Lua load call and package substitution for a persistent removal.
+When I upgrade Hyprland, I review the pointer hook API and test crossing,
+dragging, constrained games and lock-screen input. To disable it live, I use
+`hyprctl plugin unload` with the plugin path from `hyprctl plugin list`; I
+remove its Lua load call and package substitution for a persistent removal.

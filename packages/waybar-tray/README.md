@@ -1,9 +1,9 @@
 # Waybar patches
 
-This overrides pinned Waybar with a small extension to its native drawer group.
-The tray expands to the left inside the bar using GTK's existing revealer and
-native StatusNotifier icons and application menus. No extra window, tray host,
-or service is started.
+I override pinned Waybar with a small extension to its native drawer group. The
+tray expands to the left inside the bar using GTK's existing revealer and native
+StatusNotifier icons and application menus. No extra window, tray host, or
+service is started.
 
 `drawer.signal = 8` adds the symbolic arrow and caches the signal number during
 construction (upstream passes a constructor-local JSON copy). SIGRTMIN+8 opens
@@ -12,9 +12,10 @@ these explicit commands and reveals the focused screen's bar while pinned, even
 on an empty workspace. Hover opens temporarily and pointer exit closes it
 unless pinned. The stylesheet rotates the arrow to indicate expansion.
 
-After a Waybar input upgrade, rebase the patch against `group.hpp`/`group.cpp`,
-build, and manually check hover, Meta+Shift+T, native app menus, empty tray state,
-and visibility on an empty workspace. Restart `waybar.service` after code changes.
+After a Waybar input upgrade, I rebase the patch against
+`group.hpp`/`group.cpp`, build, and manually check hover, Meta+Shift+T, native
+app menus, empty tray state, and visibility on an empty workspace. Restart
+`waybar.service` after code changes.
 
 `per-output-visibility.patch` adds an opt-in `visibility-signal` bar setting.
 With `visibility-signal = 10`, SIGRTMIN+10 reads the atomic

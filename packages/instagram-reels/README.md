@@ -1,9 +1,9 @@
 # Instagram navigation and messaging patches
 
-This on-demand tool patches local original APKs for the reference Waydroid
-installation. It adds no desktop service or Android root manager. `supported.json`
-records the tested x86-64 version, version code and original split hashes.
-Unknown inputs are rejected before patching.
+I use this on-demand tool to patch local original APKs for my Waydroid
+installation. It adds no desktop service or Android root manager.
+`supported.json` records the tested x86-64 version, version code and original
+split hashes. Unknown inputs are rejected before patching.
 
 ## Behavior and sources
 
@@ -46,8 +46,8 @@ signing key, preserving its Android data without another installation alongside 
 
 ## Build and install
 
-Preserve the original APK splits outside Git. On the reference laptop they are
-under `~/.local/state/instagram-reels/original/`. Run from the checkout:
+I preserve the original APK splits outside Git, under
+`~/.local/state/instagram-reels/original/`. I build from the checkout:
 
 ```bash
 nix run .#instagram-reels-patch -- ~/.local/state/instagram-reels/original
@@ -99,8 +99,8 @@ waydroid app install ~/.local/state/instagram-reels/instagram-reels.apk
 ```
 
 That bridge completes installation asynchronously; its command exit status alone
-does not establish success. On the reference host, compare the built APK's SHA-256
-with the single installed clone under
+does not establish success. On my host, I compare the built APK's SHA-256 with
+the single installed clone under
 `~/.local/share/waydroid/data/app/*/com.instagram.android.piko-*/base.apk` after
 installation completes. An in-place update retains Android data and existing
 permissions. Use ADB or the Android settings UI separately when changing appops.
@@ -114,10 +114,10 @@ busctl --system call id.waydro.Container /ContainerManager id.waydro.ContainerMa
 busctl --system call id.waydro.Container /ContainerManager id.waydro.ContainerManager Freeze
 ```
 
-Do not freeze an Android session the owner is actively using.
+I freeze the container only when I'm not using the Android session.
 
-To use the patched app as the only Instagram launcher, preserve the original app
-but disable it for the Android user, then apply the desktop launcher policy:
+To use the patched app as my only Instagram launcher, I preserve the original
+app but disable it for the Android user, then apply my desktop launcher policy:
 
 ```bash
 adb shell pm disable-user --user 0 com.instagram.android
@@ -150,11 +150,11 @@ splits until the replacement is verified. Do not replace a failed patch with
 
 ### Patch maintenance contract
 
-Keep the working app version, signing identity, package name and current behavior
-when making a small UI change. A newer patcher, Piko bundle or Android image is a
-separate upgrade. No broad Piko features, root manager or additional service is
-required for these local hooks. Original APKs and private keys must remain outside
-Git and the Nix store.
+I keep the working app version, signing identity, package name, and current
+behavior when making a small UI change. A newer patcher, Piko bundle or Android
+image is a separate upgrade. No broad Piko features, root manager or additional
+service is required for these local hooks. Original APKs and private keys must
+remain outside Git and the Nix store.
 
 | Hook | Identification and required result |
 | --- | --- |
@@ -179,14 +179,14 @@ verify the signature matches the installed clone, and compare changed methods
 against the previous working APK. For a Blend-only change, the thread-header
 builder should be the only method whose instructions change.
 
-For interactive verification, check a cold start into Direct, absent Home/Reels
-tabs, Back from the inbox, opening and backing out of a conversation, a sent
-message, absent Blend controls in eligible chats, calls and photo selection/upload.
-Do not send messages or upload content automatically during verification.
-When the desktop is in use, build, verify and install headlessly; leave visual
-confirmation to the owner instead of opening or focusing Android windows.
+For interactive verification, I check a cold start into Direct, absent
+Home/Reels tabs, Back from the inbox, opening and backing out of a conversation,
+a sent message, absent Blend controls in eligible chats, calls and photo
+selection/upload. I keep message sending and content uploads as manual checks. I
+build, verify, and install headlessly while I'm using the desktop, then check
+the interface separately when I'm ready to open Android.
 
-The original app is disabled and hidden on the reference laptop. For recovery,
+I keep the original app disabled and hidden on my laptop. For recovery, I
 temporarily enable it through an authorized ADB connection, then launch it:
 
 ```bash
@@ -212,18 +212,18 @@ been confirmed; another successful build rotates the single previous-output copy
 
 ## Validation boundary
 
-On 2026-10-29, the original reference-laptop x86-64 splits were preserved, the
-local hooks matched uniquely, and the pinned Nix workflow built the signed clone.
+On 2026-10-29, my original laptop x86-64 splits were preserved, the local hooks
+matched uniquely, and the pinned Nix workflow built the signed clone.
 Installation, native ABI selection and startup were verified. Aurora's original
 Instagram exclusion and the clone's denied APK-install operation were verified
-separately. The owner confirmed that the initial signed-in Reels-only clone opens
-and Reels controls are absent. The Home-removal update was installed with the
-same signing key and retained the sign-in. A cold start selected Direct, showed
-its inbox, omitted Home/Reels navigation and had no Home feed UI markers. Search,
+separately. I checked that the initial signed-in Reels-only clone opens with its
+Reels controls absent. The Home-removal update was installed with the same
+signing key and retained the sign-in. A cold start selected Direct, showed its
+inbox, omitted Home/Reels navigation and had no Home feed UI markers. Search,
 Activity, Create and Profile controls remained present. After adding the native
 tab-history redirect, two consecutive Android Back presses from the inbox kept
-Direct selected without reopening Home or Reels. Sending messages, Back within
-a conversation, Reel gestures, alternate feed entry points and the complete
+Direct selected without reopening Home or Reels. Sending messages, Back within a
+conversation, Reel gestures, alternate feed entry points and the complete
 photo-upload flow still require interactive verification.
 
 The plain-name APK update retained the patched package's sign-in and update
@@ -233,10 +233,10 @@ launcher activity; only the patched desktop entry remained visible. The launcher
 policy was applied live from the repository helper and included in a successful
 system build; it will run automatically on subsequent Home Manager activations.
 
-On 2026-11-01, the owner confirmed that the existing Home/Reels setup worked as
-desired. The Blend-only update passed the pinned real-APK build and all flake
-checks. Both APK signatures verified for Android 13 with the same certificate.
-A comparison of 882,361 method bodies across 217,945 classes found only the native
+On 2026-11-01, I was satisfied with the existing Home/Reels behavior. The
+Blend-only update passed the pinned real-APK build and all flake checks. Both
+APK signatures verified for Android 13 with the same certificate. A comparison
+of 882,361 method bodies across 217,945 classes found only the native
 messaging-header builder changed. The update was installed headlessly and its
 installed APK hash matched the verified build; the previous working APK remains
-available for recovery. Visual confirmation of Blend's absence remains pending.
+available for recovery. I have not recorded a visual check of Blend's absence.

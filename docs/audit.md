@@ -1,7 +1,8 @@
 # System audit — 2026-10-16
 
-Historical bootstrap observations, not the current inventory. See
-[system context](system-context.md) and the configuration for intended state.
+These are my notes from the initial migration on 2026-10-16. I keep them as a
+historical record; my [system context](system-context.md) and checked-in
+configuration describe the current design.
 
 ## Hardware
 
@@ -38,15 +39,15 @@ Historical bootstrap observations, not the current inventory. See
 
 ## Findings addressed by this repository
 
-- Split host, core OS, AMD hardware, Hyprland, home, program, and package concerns into modules.
-- Added a lockable flake and integrated Home Manager as a NixOS module.
-- Declared every command referenced by the Hyprland configuration.
-- Added explicit PipeWire, graphics, Bluetooth, firmware-update, power-management, portal, and PolicyKit configuration.
-- Added a minimal Waybar, notification daemon, NetworkManager applet, PolicyKit agent, terminal, shell, and Git configuration.
-- Kept disk UUIDs and `system.stateVersion = "26.05"` unchanged.
+- I split host, core OS, AMD hardware, Hyprland, home, program, and package concerns into modules.
+- I added a lockable flake and integrated Home Manager as a NixOS module.
+- I declared every command referenced by the Hyprland configuration.
+- I added explicit PipeWire, graphics, Bluetooth, firmware-update, power-management, portal, and PolicyKit configuration.
+- I added a minimal Waybar, notification daemon, NetworkManager applet, PolicyKit agent, terminal, shell, and Git configuration.
+- I kept disk UUIDs and `system.stateVersion = "26.05"` unchanged.
 
 ## Follow-up observations
 
-- The current boot log repeats an early `i2c_hid_acpi` report-length warning for the Wacom device. Pen and touch are nevertheless detected by Hyprland; investigate only if input is unreliable.
+- At the time of this audit, my boot log repeated an early `i2c_hid_acpi` report-length warning for the Wacom device. Pen and touch are nevertheless detected by Hyprland; investigate only if input is unreliable.
 - NixOS 26.05 reports support through 2026-12-31. Plan a normal input upgrade to 26.11 after it is released and Home Manager has a matching branch. Do not change `system.stateVersion` during that upgrade.
 - The original Btrfs layout mounts the top-level root rather than a dedicated root subvolume. Snapshot/rollback tooling should be designed deliberately instead of enabled as an incidental bootstrap change.

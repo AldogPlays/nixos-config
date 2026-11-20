@@ -1,25 +1,24 @@
 # Shared theme foundation
 
-Status: native adapters cover Hyprland borders, Alacritty, Rofi, Waybar,
-SwayNC, Dolphin/KDE Qt colors, darktable, Vesktop, Moonlight, GTK3/GTK4, Plymouth,
-SDDM and hyprlock. This is not yet a claim that the entire desktop is themed.
+I use shared theme data for Hyprland borders, Alacritty, Rofi, Waybar, SwayNC,
+Dolphin/KDE Qt colors, darktable, Vesktop, Moonlight, GTK3/GTK4, Plymouth, SDDM,
+and hyprlock. I list applications that still use their own appearance below.
 
-Dark Monochrome is selected by default; Catppuccin Latte is also available.
-The adapter contract uses semantic
-roles, standard terminal slots and syntax purposes rather than Catppuccin keys.
-Theme data stays plain Nix, with no additional flake inputs or background
-switching service. An on-demand Rofi menu changes the selection through a normal
-NixOS rebuild. App adapters may install their
-native styling plugins.
+I currently use dark Monochrome; I also keep Catppuccin Latte available. The
+adapter contract uses semantic roles, standard terminal slots and syntax
+purposes rather than Catppuccin keys. Theme data stays plain Nix, with no
+additional flake inputs or background switching service. An on-demand Rofi menu
+changes the selection through a normal NixOS rebuild. App adapters may install
+their native styling plugins.
 
 ## Choose a theme
 
-Open **Theme Selector** from the app launcher or press **Meta+Ctrl+T** for the
-system theme menu. Both launch `theme-menu`. **Active** identifies the
-running system's theme, independently of unapplied file edits. Escape cancels;
-selecting the active theme makes no change. Selecting another theme opens
-Alacritty for the build and normal sudo authentication. The rebuild includes
-other saved configuration edits. It does not commit, push or reboot.
+I open **Theme Selector** from the app launcher or press **Meta+Ctrl+T** for my
+system theme menu. Both launch `theme-menu`. **Active** identifies the running
+system's theme, independently of unapplied file edits. Escape cancels; selecting
+the active theme makes no change. Selecting another theme opens Alacritty for
+the build and normal sudo authentication. The rebuild includes other saved
+configuration edits. It does not commit, push or reboot.
 
 The app launcher and system theme menu share the same generated Rasi stylesheet:
 background, foreground, selection, font, border and spacing all follow the
@@ -32,8 +31,8 @@ authentication while the old theme remains active. Concurrent edits are left
 untouched. If activation starts but fails, inspect the terminal output before
 retrying; configuration restoration does not undo partially restarted services.
 
-On the reference host the menu updates [selection.nix](selection.nix), preserving
-the wallpaper override and comments. Manual selection uses the same file:
+On my host the menu updates [selection.nix](selection.nix), preserving the
+wallpaper override and comments. Manual selection uses the same file:
 
 ```nix
 {
@@ -273,15 +272,17 @@ ANSI palette where they use terminal colors; apps emitting their own truecolor
 values need separate research. A terminal palette alone does not establish full application coverage.
 
 Gwenview and Ark reuse the KDE adapter. The cursor is an explicit packaged-asset
-exception: Latte uses [Catppuccin cursors](https://github.com/catppuccin/cursors) Mocha Dark
-from the pinned nixpkgs package, selected for contrast on the light desktop.
-That package contains native Hyprcursor and Xcursor assets; Monochrome uses
-DMZ White's Xcursor assets instead, using Hyprland's
-[Xcursor fallback](https://wiki.hypr.land/hypr-ecosystem/user/hyprcursor/). Home Manager
+exception: Latte uses [Catppuccin
+cursors](https://github.com/catppuccin/cursors) Mocha Dark from the pinned
+nixpkgs package, selected for contrast on the light desktop. That package
+contains native Hyprcursor and Xcursor assets; Monochrome uses DMZ White's
+Xcursor assets instead, using Hyprland's [Xcursor
+fallback](https://wiki.hypr.land/hypr-ecosystem/user/hyprcursor/). Home Manager
 also sets GTK/X11 defaults and KDE's `kcminputrc`. `cursor` supplies its shared
-package/name/size to both the user session and greeter. No application Mocha palette
-or runtime theme coordinator is introduced. Sandboxed applications that cannot
-read host settings and apps with their own CSS may not follow the GTK adapter.
+package/name/size to both my user session and greeter. No application Mocha
+palette or runtime theme coordinator is introduced. Sandboxed applications that
+cannot read host settings and apps with their own CSS may not follow the GTK
+adapter.
 
 Activation uses the normal NixOS/Home Manager switch. Alacritty normally reloads
 its config; Rofi uses it on the next invocation; Waybar and SwayNC are managed by
@@ -290,7 +291,7 @@ restarting the compositor. No extra service coordinates theme changes.
 
 ## Inspect without activation
 
-From the repository root:
+I inspect the resolved theme data from the repository root:
 
 ```bash
 nix-instantiate --eval --strict --json theme

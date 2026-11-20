@@ -1,10 +1,10 @@
 # Workspace wallpapers
 
-hyprmosaic draws wallpapers inside Hyprland. Normal slides follow the workspace's
-live animated position; interrupted slides resume from the last rendered image
-positions as a joined strip, without exposing the fallback between images.
-There is no separate background fade, animation clock, timing compensation,
-wallpaper daemon, or polling controller.
+I use a local hyprmosaic adaptation to draw wallpapers inside Hyprland. Normal
+slides follow the workspace's live animated position; interrupted slides resume
+from the last rendered image positions as a joined strip, without exposing the
+fallback between images. There is no separate background fade, animation clock,
+timing compensation, wallpaper daemon, or polling controller.
 
 ## Behavior
 
@@ -145,25 +145,26 @@ entries; bump the processing-version string when changing preparation semantics.
 
 ## Validation, limitations and recovery
 
-`nix flake check --show-trace` runs Python policy/image-cache tests, generated Lua
-syntax checks, and scheduling regression tests. The system build compiles the
-plugin against the pinned compositor. Disk-cache tests include pixel-identical
-EXIF-oriented output, reuse across sessions without original decoding, source and
-size invalidation, LRU budgeting, corrupt/unavailable caches, interrupted copies,
-symlink preservation and concurrent sessions. Isolated nested-compositor testing covers
-plugin load, atomic image loading, actual mid-tone screenshot pixels over a light
-fallback, repeated redraws, moving both wallpapers on an empty-workspace switch,
-rapid reversals and third-workspace interruptions (checking rendered scanlines
-for exposed fallback), texture sharing/reassignment without new uploads,
-preparation-lock contention, failed replacement recovery, safe cache cleanup,
-padded BMP rows and channel/orientation accuracy, malformed BMP rejection,
-atomic staging, superseded manifests, and unload during pending work.
-Run `tests/hyprmosaic-render.py` manually
-with a Pillow-enabled Python, passing the built plugin library and `grim` executable as its two
-arguments. It briefly opens a disposable nested compositor with isolated runtime
-and D-Bus paths; it never loads a test plugin into the host. This GPU/session test
-is not part of the sandboxed flake checks. It does not substitute for checking
-real touchpad gestures, multiple physical outputs, or tablet rotation.
+`nix flake check --show-trace` runs Python policy/image-cache tests, generated
+Lua syntax checks, and scheduling regression tests. The system build compiles
+the plugin against the pinned compositor. Disk-cache tests include
+pixel-identical EXIF-oriented output, reuse across sessions without original
+decoding, source and size invalidation, LRU budgeting, corrupt/unavailable
+caches, interrupted copies, symlink preservation and concurrent sessions.
+Isolated nested-compositor testing covers plugin load, atomic image loading,
+actual mid-tone screenshot pixels over a light fallback, repeated redraws,
+moving both wallpapers on an empty-workspace switch, rapid reversals and
+third-workspace interruptions (checking rendered scanlines for exposed
+fallback), texture sharing/reassignment without new uploads, preparation-lock
+contention, failed replacement recovery, safe cache cleanup, padded BMP rows and
+channel/orientation accuracy, malformed BMP rejection, atomic staging,
+superseded manifests, and unload during pending work. I run
+`tests/hyprmosaic-render.py` manually with a Pillow-enabled Python, passing the
+built plugin library and `grim` executable as its two arguments. It briefly
+opens a disposable nested compositor with isolated runtime and D-Bus paths; it
+never loads a test plugin into the host. This GPU/session test is not part of
+the sandboxed flake checks. It does not substitute for checking real touchpad
+gestures, multiple physical outputs, or tablet rotation.
 
 Image decoding and GPU upload still happen on the compositor thread, limited to
 one distinct image per render pass when assignments change. Bulk decoding and
@@ -173,7 +174,7 @@ same. Very large outputs can still take more than one frame's budget for a singl
 image. Rotated outputs, non-slide workspace styles, and unusual multi-monitor
 interactions need separate visual validation.
 
-Read-only diagnostics:
+I inspect the renderer with these read-only diagnostics:
 
 ```bash
 hyprctl plugin list
@@ -185,9 +186,9 @@ Status retains the resident assignment count and most recently drawn workspace
 IDs, positions and prepared paths. It also reports distinct resident textures,
 successful texture uploads and manifest loads for checking reuse. JSON is built
 only when status is requested; rendering records compact coordinates and shared
-path references without copying strings or retaining old GPU textures for status.
-Status does not expose original photo contents.
-To recover the previous renderer, use `sudo nixos-rebuild switch --rollback`
-and reload Hyprland's config if necessary. This is a generation rollback, not a
-request to log out or restart the compositor. Keep the repository consistent
-with whichever configuration is chosen before the next normal rebuild.
+path references without copying strings or retaining old GPU textures for
+status. Status does not expose original photo contents. I can recover the
+previous renderer with `sudo nixos-rebuild switch --rollback` and reload
+Hyprland's config if necessary. This rolls back the system generation without
+logging out or restarting the compositor. I keep the repository consistent with
+my chosen configuration before the next normal rebuild.

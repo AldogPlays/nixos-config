@@ -1,10 +1,10 @@
 # Waydroid Android inputs
 
-`default.nix` pins the official x86-64 LineageOS 20 VANILLA system image,
-MAINLINE vendor image, and stable Aurora Store APK. Android image hashes come
-from the official Waydroid OTA metadata; the APK comes from Aurora OSS's release
-directory. Downloads are verified by Nix. APKs, Android images, app accounts,
-and user data are not checked into Git.
+I use `default.nix` to pin the official x86-64 LineageOS 20 VANILLA system
+image, MAINLINE vendor image, and stable Aurora Store APK. Android image hashes
+come from the official Waydroid OTA metadata; the APK comes from Aurora OSS's
+release directory. Downloads are verified by Nix. APKs, Android images, app
+accounts, and user data are not checked into Git.
 
 The NixOS module exposes the images at `/etc/waydroid-extra/images`, an upstream
 preinstalled-image location. First-use initialization selects these images
@@ -13,10 +13,11 @@ remain writable outside the store. Aurora is installed as a normal Android app,
 without root, device-owner privileges, Google Play services, or a Google account
 configured by the repository.
 
-Update the URLs and hashes deliberately when changing Android or Aurora versions.
-Do not use `waydroid upgrade` against these read-only, Nix-managed images. Existing
-Android data is preserved during routine system rebuilds; image migrations need
-separate testing. See [Waydroid usage](../../docs/waydroid.md).
+I update the URLs and hashes deliberately when changing Android or Aurora
+versions. I update these read-only images through Nix rather than `waydroid
+upgrade`. Existing Android data is preserved during routine system rebuilds;
+image migrations need separate testing. See [Waydroid
+usage](../../docs/waydroid.md).
 
 ## YV12 graphics layout
 

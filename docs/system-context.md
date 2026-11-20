@@ -1,25 +1,26 @@
 # System context and decisions
 
-This is a reference for the intended system and choices that affect future work.
+I keep my system design, configuration decisions, and validation limits here.
 The Nix configuration is authoritative for exact values. This document does not
 establish what is currently activated or running; inspect the host when needed.
-Git history records changes. The bootstrap observations in `audit.md` are historical.
+Git history records changes. The bootstrap observations in `audit.md` are
+historical.
 
-The reference host was checked against the checkout on 2026-10-29: both selected
-and running kernels were 7.2.10, the active desktop theme was Latte, and no system
-or user services were failed. The live compositor service had `OOMPolicy=continue`
-in `session.slice`; `app.slice` had memory-pressure and swap killing enabled.
-Zswap was enabled with zstd and a 20% pool limit. Declared Nix build limits were
-two concurrent builds and two cores per build. These observations are a dated
+I checked my host against the checkout on 2026-10-29: both selected and running
+kernels were 7.2.10, the active desktop theme was Latte, and no system or user
+services were failed. The live compositor service had `OOMPolicy=continue` in
+`session.slice`; `app.slice` had memory-pressure and swap killing enabled. Zswap
+was enabled with zstd and a 20% pool limit. Declared Nix build limits were two
+concurrent builds and two cores per build. These observations are a dated
 verification, not a guarantee about later sessions.
 
 ## Machine and configuration
 
-The host is `nixos`, an `x86_64-linux` Lenovo IdeaPad 5 2-in-1 14AKP10, with primary
-user `jeffreyc`. Hardware includes a Ryzen AI 7 350, Radeon 860M, AMD XDNA NPU,
-MediaTek MT7925 Wi-Fi, roughly 13 GiB usable RAM, and a 476.9 GiB NVMe SSD.
-Touchscreen, Wacom pen/touch, and tablet mode matter when evaluating hardware or
-desktop changes.
+My host is `nixos`, an `x86_64-linux` Lenovo IdeaPad 5 2-in-1 14AKP10, with
+primary account `jeffreyc`. My hardware includes a Ryzen AI 7 350, Radeon 860M,
+AMD XDNA NPU, MediaTek MT7925 Wi-Fi, roughly 13 GiB usable RAM, and a 476.9 GiB
+NVMe SSD. Touchscreen, Wacom pen/touch, and tablet mode matter when evaluating
+hardware or desktop changes.
 
 AMD VA-API decoding comes from the declared Mesa graphics stack. On 2026-10-19,
 an isolated LibreWolf 158 profile using the installed defaults confirmed native
@@ -149,60 +150,60 @@ services, root-management, camera or location-forwarding stack is installed.
 The running Lenovo kernel has Binder IPC and Binderfs built in, so this setup
 does not require a different kernel.
 
-`~/Waydroid` provides writable access to Android's shared media storage, including
-Pictures and DCIM, through an on-access bindfs mount. A root preparation oneshot
-creates missing directories; bindfs maps desktop access and preserves Android
-media ownership for new files. Home Manager adds **Waydroid** to Dolphin Places
-through a preserving XBEL helper, backing up the original first. Existing
-bookmarks and Dolphin state remain user-managed.
-An event-driven systemd path unit watches direct changes to Pictures, DCIM and
-Download and runs an Android media-index scan only while the container is running.
-This handles host writes that bypass Android's emulated-storage notifications;
-existing nested directories require a manual scan.
-Images and the Aurora APK are pinned in `packages/waydroid/default.nix`; no APKs,
-Android images or account data are committed to Git. See [Waydroid](waydroid.md)
-for setup, stopping Android, updates and runtime validation limits.
-The vendor image includes a small YV12 layout adapter for Instagram's native
-graphics crash, preserving GPU acceleration. It corrects video-plane metadata
-around the pinned minigbm backend. The repair lives in the immutable vendor
-image so switching generations can remove it; Android user data stays separate.
-The Android controller restarts when its image derivation changes. Stop Android
-before image updates. Native buffer tests and Instagram startup were verified
-on 2026-10-29, and the owner confirmed normal video/Reels playback. A complete
-photo upload remains a manual check.
+`~/Waydroid` provides writable access to Android's shared media storage,
+including Pictures and DCIM, through an on-access bindfs mount. A root
+preparation oneshot creates missing directories; bindfs maps desktop access and
+preserves Android media ownership for new files. Home Manager adds **Waydroid**
+to Dolphin Places through a preserving XBEL helper, backing up the original
+first. Existing bookmarks and Dolphin state remain user-managed. An event-driven
+systemd path unit watches direct changes to Pictures, DCIM and Download and runs
+an Android media-index scan only while the container is running. This handles
+host writes that bypass Android's emulated-storage notifications; existing
+nested directories require a manual scan. Images and the Aurora APK are pinned
+in `packages/waydroid/default.nix`; no APKs, Android images or account data are
+committed to Git. See [Waydroid](waydroid.md) for setup, stopping Android,
+updates and runtime validation limits. The vendor image includes a small YV12
+layout adapter for Instagram's native graphics crash, preserving GPU
+acceleration. It corrects video-plane metadata around the pinned minigbm
+backend. The repair lives in the immutable vendor image so switching generations
+can remove it; Android user data stays separate. The Android controller restarts
+when its image derivation changes. Stop Android before image updates. Native
+buffer tests and Instagram startup were verified on 2026-10-29. I also checked
+normal video/Reels playback, but I have not completed the full photo-upload
+check.
 
-The reference laptop uses a separately signed patched **Instagram**,
-package `com.instagram.android.piko`.
-`packages/instagram-reels/` contains local bytecode patches and a pinned build
-command; only Piko's generic package-cloning patch is reused. Original APKs,
-signing keys and account data remain outside Git and the Nix store. The clone
-has no normal Play/Aurora update target, its APK-install request operation is
-denied, and Aurora excludes the original Instagram from updates. Updates are
-manual, with source/input review and runtime checks. The clone does not globally
-block every Reel/video or alternate feed entry point. Home and Reels navigation
-are removed while Direct, Search, Profile and Create are retained.
-Direct is the first tab and default startup destination.
-The conversation-header Blend entrypoint and add/invite variant are suppressed
-locally; shared Blend logic and other messaging controls are not patched.
-Manual APK builds preserve the previous output, require the existing signing key
-for updates, and record input/tool/output hashes. The package guide describes
-semantic hook identification and the regression/interactive checks for later work.
-The owner confirmed the existing setup worked as desired on 2026-11-01; preserve
-that baseline when making narrow UI changes. The Blend update was installed and
-hash-verified headlessly, with visual confirmation left to the owner.
-The original package is disabled for recovery with its data retained and its
-desktop entry hidden; the patched app is the sole visible Instagram launcher.
-Android's saved appearance is light, with the app visually verified in light mode.
-Home Manager reapplies the original launcher's `NoDisplay` flag through
-`scripts/waydroid-launcher-policy.py`, preserving Waydroid's writable export.
-Keep the existing tiling behavior; no phone-shaped aspect-ratio lock is requested.
-See the [package guide](../packages/instagram-reels/README.md)
-for supported inputs, exact validation limits, recovery and fresh-install steps.
+My laptop uses a separately signed patched **Instagram**, package
+`com.instagram.android.piko`. `packages/instagram-reels/` contains local
+bytecode patches and a pinned build command; only Piko's generic package-cloning
+patch is reused. Original APKs, signing keys and account data remain outside Git
+and the Nix store. The clone has no normal Play/Aurora update target, its
+APK-install request operation is denied, and Aurora excludes the original
+Instagram from updates. Updates are manual, with source/input review and runtime
+checks. The clone does not globally block every Reel/video or alternate feed
+entry point. Home and Reels navigation are removed while Direct, Search, Profile
+and Create are retained. Direct is the first tab and default startup
+destination. The conversation-header Blend entrypoint and add/invite variant are
+suppressed locally; shared Blend logic and other messaging controls are not
+patched. Manual APK builds preserve the previous output, require the existing
+signing key for updates, and record input/tool/output hashes. The package guide
+describes semantic hook identification and the regression/interactive checks for
+later work. I was satisfied with the Home/Reels behavior on 2026-11-01 and keep
+that baseline for narrow UI changes. The Blend update was installed and
+hash-verified headlessly; I have not recorded a visual check of the Blend
+controls. The original package is disabled for recovery with its data retained
+and its desktop entry hidden; the patched app is the sole visible Instagram
+launcher. Android's saved appearance is light, with the app visually verified in
+light mode. Home Manager reapplies the original launcher's `NoDisplay` flag
+through `scripts/waydroid-launcher-policy.py`, preserving Waydroid's writable
+export. I keep normal tiling for Android windows, without a phone-shaped
+aspect-ratio lock. See the [package
+guide](../packages/instagram-reels/README.md) for supported inputs, exact
+validation limits, recovery and fresh-install steps.
 
 Waydroid mouse-wheel and touchpad scrolling are reduced by a per-window Hyprland
 rule in `dotfiles/hypr/hyprland.lua`. Android media volume remains adjustable
-Android user state; it was set to 12/15 on the reference laptop on 2026-10-29.
-The host speaker level was already 100%; no global amplification was added.
+Android user state; it was set to 12/15 on my laptop on 2026-10-29. The host
+speaker level was already 100%; no global amplification was added.
 
 The systemd-boot menu is hidden for normal startup; hold Space during firmware
 startup to open it and select an earlier generation. A persistent EFI menu-timeout
@@ -269,7 +270,7 @@ symbols. It does not supply image thumbnails or interactive content previews.
 
 ## Security posture
 
-The local review on 2026-10-31 covered effective NixOS settings, live IPv4/IPv6
+My local review on 2026-10-31 covered effective NixOS settings, live IPv4/IPv6
 input rules and listeners, sudo/account configuration, lock-screen PAM, Nix
 trust/sandbox settings, repository history and local secret-file permissions.
 Gitleaks 8.30.1 found no matches across all 44 commits reachable at the time.
@@ -287,47 +288,48 @@ key and Tailscale state had restrictive access and remained outside Git.
 Forwarding used the then-enabled Tailscale/Waydroid integration; this input-rule
 review does not establish isolation between every routed network.
 
-Manual locking remains intentional; no automatic idle lock was added. Independent
-personal-data backups and a restore trial remain a separate recovery requirement.
-The review did not perform external penetration testing, audit every dependency
-against vulnerability databases, or establish successful physical lock/unlock.
+I use manual locking and have not added an automatic idle lock. Independent
+personal-data backups and a restore trial remain a separate recovery
+requirement. I did not include external penetration testing or a complete
+dependency vulnerability audit in that review, and I did not establish
+successful physical lock/unlock.
 
-The reference host trusts the homelab Caddy root CA through
-`security.pki.certificateFiles` in `hosts/nixos/default.nix`. Its public certificate
-is stored in `hosts/nixos/certificates/hermes-root-ca.crt`; no private key belongs
-in the repository or Nix store. This host-specific trust is not inherited by
-portable bootstrap installations. Replacement certificates require fingerprint
-verification before changing the trust anchor.
-The pinned LibreWolf NSS library uses p11-kit for its root store, so this CA
-does not require a separate browser import policy. On 2026-11-01, a fresh
-LibreWolf 158 profile reported the CA trusted for TLS and opened the homelab
-login page with certificate verification enabled and no saved exceptions.
-An already running browser may need a normal restart to refresh its trust store.
+My host trusts the homelab Caddy root CA through `security.pki.certificateFiles`
+in `hosts/nixos/default.nix`. Its public certificate is stored in
+`hosts/nixos/certificates/hermes-root-ca.crt`; no private key belongs in the
+repository or Nix store. This host-specific trust is not inherited by portable
+bootstrap installations. Replacement certificates require fingerprint
+verification before changing the trust anchor. The pinned LibreWolf NSS library
+uses p11-kit for its root store, so this CA does not require a separate browser
+import policy. On 2026-11-01, a fresh LibreWolf 158 profile reported the CA
+trusted for TLS and opened the homelab login page with certificate verification
+enabled and no saved exceptions. An already running browser may need a normal
+restart to refresh its trust store.
 
-The reference laptop uses NetworkManager's native WireGuard profile for Hermes,
-with automatic activation away from its saved home NetworkManager connection
-and deactivation at home or without an uplink. The existing NetworkManager
-dispatcher runs the policy; no new daemon or timer is installed. Credentials are imported at runtime
-into a root-only keyfile outside Git and the Nix store. The host enables
-systemd-resolved for per-domain DNS routing; NetworkManager reloads configuration
-changes without reconnecting Wi-Fi. The VPN sends `home.arpa` queries to Hermes
-only while active. See [homelab VPN](homelab-vpn.md) for import, toggling,
-verification, manual pause and recovery. The existing Caddy trust declaration is independent.
+My laptop uses NetworkManager's native WireGuard profile for Hermes, with
+automatic activation away from its saved home NetworkManager connection and
+deactivation at home or without an uplink. The existing NetworkManager
+dispatcher runs the policy; no new daemon or timer is installed. Credentials are
+imported at runtime into a root-only keyfile outside Git and the Nix store. The
+host enables systemd-resolved for per-domain DNS routing; NetworkManager reloads
+configuration changes without reconnecting Wi-Fi. The VPN sends `home.arpa`
+queries to Hermes only while active. See [homelab VPN](homelab-vpn.md) for
+import, toggling, verification, manual pause and recovery. The existing Caddy
+trust declaration is independent.
 
 ## Desktop components
 
-The reference desk has an upside-down Acer KG251Q centered above the P2510S,
-with the laptop on the lower display's left. `hosts/nixos/monitors.lua` matches
-EDID descriptions; it is not used by portable bootstrap hosts. Both external
-screens use 120 Hz (119.98 Hz on the Acer), with the laptop at its preferred
-mode, all at 1.0 scaling. A short simultaneous dual-120 Hz hardware trial
-succeeded, but the owner still perceived latency on the upper display;
-refresh rate alone does not explain that symptom. The reference dock identifies
-as a ThinkPad Universal USB-C Smart Dock (40B2).
-The local `packages/hyprland-full-edges/`
-plugin supplies proportional cursor crossing along entire shared edges. It
-hooks relative pointer motion against the pinned compositor ABI, without a
-service or input-device access; constraints, locking and absolute input bypass it.
+My desk has an upside-down Acer KG251Q centered above the P2510S, with the
+laptop on the lower display's left. `hosts/nixos/monitors.lua` matches EDID
+descriptions; it is not used by portable bootstrap hosts. Both external screens
+use 120 Hz (119.98 Hz on the Acer), with the laptop at its preferred mode, all
+at 1.0 scaling. A short simultaneous dual-120 Hz hardware trial succeeded, but I
+still noticed latency on the upper display; refresh rate alone does not explain
+that symptom. The reference dock identifies as a ThinkPad Universal USB-C Smart
+Dock (40B2). The local `packages/hyprland-full-edges/` plugin supplies
+proportional cursor crossing along entire shared edges. It hooks relative
+pointer motion against the pinned compositor ABI, without a service or
+input-device access; constraints, locking and absolute input bypass it.
 
 Ten logical desktops span connected outputs through native Lua coordination in
 `dotfiles/hypr/workspace-groups.lua`. Each screen retains its own native workspace
@@ -341,18 +343,19 @@ workspace transitions. See [desktop controls](desktop.md#monitors-and-shared-des
 for IDs, startup behavior and swipe limitations. No workspace-manager daemon or
 additional workspace plugin is installed.
 
-The reference host prefers the RØDE AI-1 for playback and capture when attached.
-Its Home Manager configuration in `hosts/nixos/default.nix` installs a user
-WirePlumber ALSA priority fragment. WirePlumber reads it when its session next
-starts; routine activation does not restart the audio session. `wpctl set-default`
-selects both live endpoints and stores the user's current choice, while current
-PulseAudio-compatible streams can be moved with `pactl`. Unplugging the interface
-retains normal fallback selection. Portable hosts do not inherit this desk rule.
-The saved default is matched only against available audio nodes; the pinned
-WirePlumber selection hooks are exercised by `tests/test_audio_fallback.lua`
-for repeated USB removal/return with laptop speakers and microphone available.
-Internal audio remains enabled, and the running stream policy allows fallback
-and reconnection. This does not establish a physical dock-removal test.
+My host prefers the RØDE AI-1 for playback and capture when attached. Its Home
+Manager configuration in `hosts/nixos/default.nix` installs a user WirePlumber
+ALSA priority fragment. WirePlumber reads it when its session next starts;
+routine activation does not restart the audio session. `wpctl set-default`
+selects both live endpoints and stores my current choice, while current
+PulseAudio-compatible streams can be moved with `pactl`. Unplugging the
+interface retains normal fallback selection. Portable hosts do not inherit this
+desk rule. The saved default is matched only against available audio nodes; the
+pinned WirePlumber selection hooks are exercised by
+`tests/test_audio_fallback.lua` for repeated USB removal/return with laptop
+speakers and microphone available. Internal audio remains enabled, and the
+running stream policy allows fallback and reconnection. This does not establish
+a physical dock-removal test.
 
 Hyprland handles cursor hiding with its native inactivity timeout, without an
 idle daemon. Meta+K uses Dwindle's `togglesplit` for the focused tile's parent
@@ -373,14 +376,15 @@ they are not forcibly moved or restarted. This limits session-wide fallout,
 but does not cure a browser memory leak or guarantee responsiveness after all
 memory is exhausted.
 
-The existing systemd-oomd monitors the user manager's `app.slice` for sustained
-memory pressure and nearly exhausted swap. It can terminate an entire application
-unit, including unsaved work, to release memory before prolonged system stalls.
-Hyprland and core session services in `session.slice` are outside this monitoring
-scope. This is declared in `modules/nixos/core.nix` and starts through systemd;
-no second OOM daemon or arbitrary per-app RAM cap is installed. Pressure thresholds
-measure time stalled on memory, not the percentage of RAM occupied. This policy
-does not guarantee recovery from every allocation burst or kernel OOM.
+My existing systemd-oomd monitors my user manager's `app.slice` for sustained
+memory pressure and nearly exhausted swap. It can terminate an entire
+application unit, including unsaved work, to release memory before prolonged
+system stalls. Hyprland and core session services in `session.slice` are outside
+this monitoring scope. This is declared in `modules/nixos/core.nix` and starts
+through systemd; no second OOM daemon or arbitrary per-app RAM cap is installed.
+Pressure thresholds measure time stalled on memory, not the percentage of RAM
+occupied. This policy does not guarantee recovery from every allocation burst or
+kernel OOM.
 
 SwayNC keeps only its title, do-not-disturb switch and notification list. Its
 fixed-height panel, compact spacing, small icons and flat controls are declared
@@ -508,7 +512,7 @@ The monitor uses the same UWSM launch and Escape-to-close behavior, with no new
 background service. Its dedicated Alacritty class is `system-monitor`.
 
 Tailscale is not included in the shared configuration. Homelab VPN access uses
-the reference host's NetworkManager WireGuard profile described above.
+my host's NetworkManager WireGuard profile described above.
 
 LibreWolf's package policies default downloads to the XDG Downloads folder and
 disable the per-download location prompt. They also enable automatic low-memory
@@ -543,20 +547,20 @@ LibreWolf/Dolphin and the `codex://` handler, and `xdg-terminal-exec` selecting
 Alacritty. The terminal selector is an on-demand command, not a daemon. Standard
 folders and Pictures/Screenshots/Wallpapers are created without moving existing
 data. MIME configuration that predates Home Manager is backed up rather than
-discarded. Gwenview supplies image viewing and quick editing. Dedicated media
-player/mail/general GUI editor choices remain pending; do not install a
-bundle to fill those roles.
+discarded. Gwenview supplies image viewing and quick editing. I haven't chosen
+dedicated media-player, mail, or general GUI editor defaults; I keep those roles
+open rather than installing a bundle.
 
 The application menu uses declarative desktop-entry overrides in
 `home/jeffreyc/packages.nix` for short descriptions and hidden utility entries.
 Upstream MIME associations, actions and launch arguments are preserved. Rofi's
-own overrides are also linked into the user application directory, ahead of the
-original entries that its wrapper prepends to `XDG_DATA_DIRS`. The
-writable Android/game exports are updated by the existing activation helper;
-Waydroid preserves its custom visibility and description fields on refresh.
-**Theme Selector** launches the existing `theme-menu` command, shared with
-Meta+Ctrl+T, to choose and apply the system theme. The upstream Rofi-only picker
-is replaced in the application menu. No launcher service is added.
+own overrides are also linked into my user application directory, ahead of the
+original entries that its wrapper prepends to `XDG_DATA_DIRS`. The writable
+Android/game exports are updated by the existing activation helper; Waydroid
+preserves its custom visibility and description fields on refresh. **Theme
+Selector** launches the existing `theme-menu` command, shared with Meta+Ctrl+T,
+to choose and apply the system theme. The upstream Rofi-only picker is replaced
+in the application menu. No launcher service is added.
 
 Meta+E explicitly passes the account's home directory to a new Dolphin window.
 A preserving Home Manager activation sets Home and disables tab restoration for
@@ -564,20 +568,20 @@ fresh menu/command-line launches too, backing up `dolphinrc` before the first
 change. Other saved preferences remain user-managed.
 
 Dolphin uses native KDE colors generated from the selected theme roles in
-`home/jeffreyc/desktop.nix`, plus the Qt6 KDE platform plugin, Breeze widget style,
-and Breeze icons. Package selections override Home Manager's larger KDE defaults
-so this does not add System Settings or a Plasma session. Qt environment settings
-also affect other Qt clients. `kdeglobals` and the generated color-scheme file
-are managed; apart from the startup keys, `dolphinrc`, Places bookmarks, and
-per-folder state are preserved.
-KDE's terminal settings point to Alacritty for external terminal launches.
-The embedded Konsole panel and extra indexer are not installed.
-KIO/KIO extras and icon assets already occur in Dolphin's dependency closure.
-KIO extras is also exposed in the user profile so its MTP D-Bus service and
-kiod plugin can be discovered outside Dolphin's wrapper.
-The shared desktop module registers libmtp's udev rules and hardware database
-so Dolphin can identify USB phones in file-transfer mode. The existing udev
-service handles detection; KIO accesses the phone on demand.
+`home/jeffreyc/desktop.nix`, plus the Qt6 KDE platform plugin, Breeze widget
+style, and Breeze icons. Package selections override Home Manager's larger KDE
+defaults so this does not add System Settings or a Plasma session. Qt
+environment settings also affect other Qt clients. `kdeglobals` and the
+generated color-scheme file are managed; apart from the startup keys,
+`dolphinrc`, Places bookmarks, and per-folder state are preserved. KDE's
+terminal settings point to Alacritty for external terminal launches. The
+embedded Konsole panel and extra indexer are not installed. KIO/KIO extras and
+icon assets already occur in Dolphin's dependency closure. KIO extras is also
+exposed in my user profile so its MTP D-Bus service and kiod plugin can be
+discovered outside Dolphin's wrapper. The shared desktop module registers
+libmtp's udev rules and hardware database so Dolphin can identify USB phones in
+file-transfer mode. The existing udev service handles detection; KIO accesses
+the phone on demand.
 
 Image support uses native Qt `kimageformats` readers, including HEIC/HEIF, AVIF,
 JPEG XL and RAW, plus KIO's `kdegraphics-thumbnailers` for PDF/RAW and
@@ -719,7 +723,7 @@ leaving a readable, muted “No notifications” label.
   the current desktop; the `.visible` state highlights each screen's displayed
   desktop independently of focus. Native persistent workspaces remain available
   for navigation while unused buttons are hidden.
-- The touchpad should remain usable during typing and use non-natural scrolling.
+- I keep the touchpad usable during typing and use non-natural scrolling.
   Both `disable_while_typing` and `natural_scroll` are false in the Lua source.
   The Ninjutso Sora 4K alone has a slower device-specific sensitivity override;
   ELAN touchpad/mouse settings remain at the shared defaults. The mouse override
@@ -729,7 +733,7 @@ leaving a readable, muted “No notifications” label.
   heuristics or Bitwarden-specific exceptions; the separate browser PiP rule
   below uses its known dedicated title. Unmarked extension windows may need
   separate inspection if this baseline does not catch them.
-- Monochrome is the checked-in selection. Catppuccin Latte preserves its existing
+- I use Monochrome as the checked-in selection. Catppuccin Latte preserves its existing
   colors, fonts, assets and geometry. `theme/selection.nix` selects either preset at
   rebuild time. Shared typography, icons, geometry and material settings live in
   `theme/common.nix`; preset colors and cursor assets live in their own files.
@@ -750,8 +754,7 @@ leaving a readable, muted “No notifications” label.
   Home Manager so bootstrapped hosts can retain their selection in
   `/etc/nixos/project-host.json`; bootstrap reruns preserve it. See `theme/README.md`
   for the contract and coverage limits.
-- The material direction is matte frosted glass, not liquid/glossy/refractive
-  glass. Normal application windows (including LibreWolf and Dolphin) and Rofi
+- I use matte frosted glass, without glossy or refractive effects. Normal application windows (including LibreWolf and Dolphin) and Rofi
   use Hyprland background blur. Shared opacity and blur controls
   live under `theme/common.nix.material`. Normal windows use a native
   Hyprland rule for fully opaque focus, 95% opaque unfocused state, and fully opaque

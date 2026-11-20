@@ -1,8 +1,8 @@
 # Third-party notices
 
-The root [MIT license](LICENSE) covers original source and documentation in this
-repository. It does not replace the licenses of adapted code, palette data or
-software fetched and installed through Nix.
+I license my original source and documentation under the root [MIT
+license](LICENSE). It does not replace the licenses of adapted code, palette
+data, or software fetched and installed through Nix.
 
 ## Source and data included here
 
@@ -15,8 +15,8 @@ software fetched and installed through Nix.
 | `packages/instagram-reels/Reels.kt` | Fingerprints and scrolling hook adapted from [ReVanced Instagram patches, revision 015fe10](https://gitlab.com/ReVanced/revanced-patches/-/tree/015fe10a23ea5b919a3fda6e7da2c176517ae75d/patches/src/main/kotlin/app/revanced/patches/instagram); local navigation filter and version guards | GPL-3.0-only; [complete license](packages/instagram-reels/LICENSE) |
 
 The wallpaper package also installs upstream's license notice with its compiled
-plugin. The local adaptation changes wallpaper behavior and compositor API
-integration; it does not claim ownership of the upstream implementation.
+plugin. My local adaptation changes wallpaper behavior and compositor API
+integration; I retain the upstream attribution.
 
 ## Packages and assets fetched by Nix
 

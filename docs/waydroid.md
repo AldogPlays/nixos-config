@@ -1,46 +1,45 @@
 # Waydroid and photo uploads
 
-Waydroid runs Android applications inside an LXC container on the Wayland desktop.
-The system module is `modules/nixos/waydroid.nix`; desktop launchers, the on-demand
-user session and Dolphin integration live in `home/jeffreyc/waydroid.nix`.
-The shared desktop includes them on bootstrap-generated hosts as well.
+I use Waydroid to run Android applications inside an LXC container on my Wayland
+desktop. The system module is `modules/nixos/waydroid.nix`; desktop launchers,
+the on-demand user session and Dolphin integration live in
+`home/jeffreyc/waydroid.nix`. The shared desktop includes them on
+bootstrap-generated hosts as well.
 
 ## First use
 
-After applying the NixOS configuration, open **Set Up Aurora Store** from the app
-launcher, or run:
+After applying my NixOS configuration, I initialize Aurora Store with:
 
 ```bash
 waydroid-setup
 ```
 
 An initialization oneshot prepares the pinned VANILLA Android images during
-activation or boot if Waydroid has not already been initialized, without starting
-Android. The setup command starts the user
-session, waits for Android, installs the pinned Aurora APK if absent, and opens
-Aurora. Existing installations are preserved. App downloads, permissions and
-account sign-ins remain Android user data outside the repository and Nix store.
+activation or boot if Waydroid has not already been initialized, without
+starting Android. The setup command starts my user session, waits for Android,
+installs the pinned Aurora APK if absent, and opens Aurora. Existing
+installations are preserved. App downloads, permissions and account sign-ins
+remain Android user data outside the repository and Nix store.
 
-Complete Aurora's onboarding and use its normal Session installer. Instagram is
-installed from Aurora's Google Play catalog; sign in to Instagram inside Android.
-Some Android apps only ship ARM binaries and require translation on this x86-64
-host. Compatibility must be checked against the actual downloaded app.
+I complete Aurora's onboarding and use its normal Session installer. Instagram
+is installed from Aurora's Google Play catalog; I sign in inside Android. Some
+Android apps only ship ARM binaries and require translation on this x86-64 host.
+Compatibility must be checked against the actual downloaded app.
 
 ## Instagram without Home or Reels
 
-The reference laptop uses a patched **Instagram**, a separately signed,
-version-pinned clone built from the original x86-64 APKs. It hides the Home and
-Reels navigation items and disables endless Reels swiping and pull-to-refresh.
-Direct, Search, Profile and Create are retained. This navigation restriction
-does not block every video, Reel link or alternate route into feed content.
-Messages is the first tab and the default startup destination.
-Native requests for a hidden Home/Reels tab, including Back from messages, are
-redirected to messages.
-The conversation header hides Blend's entrypoint and add/invite button through a
-separate local hook; other messaging controls remain native.
-The original package remains installed but disabled for recovery, with its account
-data retained. The patched package has its own sign-in and uses the existing
-Android media folder.
+I use a separately signed, version-pinned **Instagram** clone on my laptop,
+built from the original x86-64 APKs. It hides the Home and Reels navigation
+items and disables endless Reels swiping and pull-to-refresh. Direct, Search,
+Profile and Create are retained. This navigation restriction does not block
+every video, Reel link or alternate route into feed content. Messages is the
+first tab and the default startup destination. Native requests for a hidden
+Home/Reels tab, including Back from messages, are redirected to messages. The
+conversation header hides Blend's entrypoint and add/invite button through a
+separate local hook; other messaging controls remain native. The original
+package remains installed but disabled for recovery, with its account data
+retained. The patched package has its own sign-in and uses the existing Android
+media folder.
 
 Only the patched package is visible in the desktop launcher, named **Instagram**.
 The Home Manager activation in `home/jeffreyc/waydroid.nix` runs
@@ -63,15 +62,15 @@ On a fresh installation, bootstrap supplies Waydroid and the repository supplies
 the build command; original APKs, sign-in and Android update preferences are
 separate setup steps. No proprietary Instagram APK is distributed by this flake.
 
-Keep the existing tiling behavior. No phone-shaped aspect-ratio lock or portrait
-resolution override is configured.
+I keep normal tiling for Android windows, without a phone-shaped aspect-ratio
+lock or portrait resolution override.
 
 ## Volume and scrolling
 
 Android has its own media volume, separate from the host output and application
-mixer. On the reference laptop it was raised from 5 to 12 out of 15 on 2026-10-29;
-this is saved Android user state rather than a value reset at every launch.
-Adjust it through Android **Settings → Sound → Media volume**. For an explicitly
+mixer. On my laptop it was raised from 5 to 12 out of 15 on 2026-10-29; this is
+saved Android user state rather than a value reset at every launch. I adjust it
+through Android **Settings → Sound → Media volume**. For an explicitly
 authorized, unprivileged ADB connection, the equivalent command is:
 
 ```bash
@@ -81,11 +80,10 @@ adb shell cmd media_session volume --stream 3 --set 12 --get
 Hyprland's `waydroid-scroll-speed` rule in `dotfiles/hypr/hyprland.lua` reduces
 mouse-wheel and touchpad scroll factors to 0.35 for Waydroid windows. It leaves
 other desktop applications and direct touchscreen gestures unchanged. The
-[pinned Lua rule API](https://wiki.hypr.land/0.55.0/Configuring/Basics/Window-Rules/)
-provides these per-window overrides; no input daemon or global sensitivity change
-is needed.
-The owner confirmed that the adjusted audio and scrolling worked on the reference
-laptop on 2026-10-29.
+[pinned Lua rule
+API](https://wiki.hypr.land/0.55.0/Configuring/Basics/Window-Rules/) provides
+these per-window overrides; no input daemon or global sensitivity change is
+needed. I checked the adjusted audio and scrolling on my laptop on 2026-10-29.
 
 ## Photos
 
@@ -108,18 +106,18 @@ The file remains user-managed, rather than a Home Manager symlink.
 
 ## Start and stop
 
-Open **Waydroid** to show Android. Android does not start automatically at login.
-The root D-Bus controller starts on demand; the main launcher uses a user systemd
-service for the Android session. Native exported app launchers can also start
-Waydroid's session directly. Both use its D-Bus single-session mechanism.
+I open **Waydroid** to show Android. Android does not start automatically at
+login. The root D-Bus controller starts on demand; the main launcher uses a user
+systemd service for the Android session. Native exported app launchers can also
+start Waydroid's session directly. Both use its D-Bus single-session mechanism.
 The storage shortcut automounts on access and uses a small bindfs process to map
 Android ownership to the desktop user. New files retain Android media ownership
-underneath. A preparation oneshot creates missing directories; no file-sync daemon
-copies the photos or starts Android automatically.
-The photo-index path watcher uses systemd's filesystem notifications; its scan
-oneshot runs only after folder changes and skips scanning when Android is stopped.
+underneath. A preparation oneshot creates missing directories; no file-sync
+daemon copies the photos or starts Android automatically. The photo-index path
+watcher uses systemd's filesystem notifications; its scan oneshot runs only
+after folder changes and skips scanning when Android is stopped.
 
-To release Android's memory when finished:
+I stop the Android session when I'm finished to release its memory:
 
 ```bash
 waydroid session stop
@@ -144,16 +142,17 @@ the Lenovo. Instagram installed native x86-64 libraries but crashed on its
 RenderThread in `libhwui.so`, at `DeferredLayerUpdater::apply()`. Two Android
 tombstone reports captured this failure; one followed a launch by two seconds.
 The host kernel showed no corresponding out-of-memory kill. This matches the
-failure described in [Waydroid issue 2454](https://github.com/waydroid/waydroid/issues/2454).
-The vendor image now includes a small adapter correcting minigbm's single-plane
-description of YV12 buffers. It preserves GPU acceleration and adds no background
-service or ARM translation layer. The on-device regression check passed YV12
-allocation, three-plane layout, import and mapping at five widths, plus ordinary
-RGB allocation. The same Instagram process remained running for more than two
-minutes after launch and its feed rendered. The owner confirmed normal feed-video
-and Reels playback. The complete photo-upload flow still needs verification. See the
-[package guide](../packages/waydroid/README.md#yv12-graphics-layout) for the build,
-image packaging and rollback design.
+failure described in [Waydroid issue
+2454](https://github.com/waydroid/waydroid/issues/2454). The vendor image now
+includes a small adapter correcting minigbm's single-plane description of YV12
+buffers. It preserves GPU acceleration and adds no background service or ARM
+translation layer. The on-device regression check passed YV12 allocation,
+three-plane layout, import and mapping at five widths, plus ordinary RGB
+allocation. The same Instagram process remained running for more than two
+minutes after launch and its feed rendered. I checked normal feed-video and
+Reels playback; I have not completed the full photo-upload check. See the
+[package guide](../packages/waydroid/README.md#yv12-graphics-layout) for the
+build, image packaging and rollback design.
 
 The upstream report notes that software rendering avoids its crash but fails to
 display video, so software rendering is not enabled here.
