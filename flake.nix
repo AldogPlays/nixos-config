@@ -18,7 +18,7 @@
     };
 
     wiremix = {
-      url = "github:AldogPlays/wiremix/codex/ui-match";
+      url = "github:AldogPlays/wiremix/codex/dashboard-presentation";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };

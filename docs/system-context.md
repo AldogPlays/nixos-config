@@ -475,7 +475,8 @@ which can leave a working Wi-Fi connection displayed as linked without an IP.
 family; network configuration and the existing session service remain unchanged.
 
 Wiremix comes from the public `AldogPlays/wiremix` fork on
-`codex/ui-match`, pinned in `flake.lock` and following the system nixpkgs.
+`codex/dashboard-presentation`, pinned in `flake.lock` and following the system
+nixpkgs.
 `home/jeffreyc/packages.nix` selects the fork instead of stock Wiremix, retaining
 the `wiremix` command and desktop entry for both existing floating launchers.
 The fork's single-page audio sections and contextual controls replace its UI;
