@@ -85,16 +85,16 @@
         "systems": "systems"
       },
       "locked": {
-        "lastModified": 1795301187,
-        "narHash": "sha256-Hn4CVoNO/Bsv0TdyZRFkby5kqcjnK2Rvg0rkUOWcxVQ=",
+        "lastModified": 1795301860,
+        "narHash": "sha256-2wxrG/w0UifWvSEIlGBTx7IsPogPPfW1hcU0YGxCmKE=",
         "owner": "AldogPlays",
         "repo": "wiremix",
-        "rev": "3c2d1d738d72dbd2ec48297c545cbeb7a8a313fb",
+        "rev": "12265cd3942b8e97ef7e04209b0fd4ba99e92fca",
         "type": "github"
       },
       "original": {
         "owner": "AldogPlays",
-        "ref": "codex/dashboard-presentation",
+        "ref": "codex/ui-match",
         "repo": "wiremix",
         "type": "github"
       }
