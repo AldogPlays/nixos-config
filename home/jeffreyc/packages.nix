@@ -5,6 +5,7 @@
   pkgs,
   pkgsUnstable,
   desktopTheme,
+  packetTracerEnable,
   ...
 }:
 
@@ -143,7 +144,7 @@ let
           config.programs.vesktop.package.override { withSystemVencord = true; }
         } vesktop 'Discord chat'
         describe ${pkgsUnstable.chatgpt} chatgpt 'AI assistant'
-        describe ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-9 'Network simulator'
+        ${lib.optionalString packetTracerEnable "describe ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-9 'Network simulator'"}
         describe ${config.programs.librewolf.finalPackage} librewolf 'Web browser'
         describe ${pkgs.lutris} net.lutris.Lutris 'Game launcher'
         describe ${moonlight} com.moonlight_stream.Moonlight 'Game streaming'
@@ -157,7 +158,7 @@ let
         hide ${pkgs.kdePackages.ark} org.kde.ark
         hide ${pkgs.kdePackages.gwenview} org.kde.gwenview
         hide ${pkgs.qpdfview.override { libsForQt5 = pkgs.qt6Packages; }} qpdfview
-        hide ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-ptsa-9
+        ${lib.optionalString packetTracerEnable "hide ${pkgs.cisco-packet-tracer_9} cisco-packet-tracer-ptsa-9"}
         hide ${pkgs.cups} cups
         hide ${pkgs.rofi} rofi
         hide ${pkgs.uwsm} uuctl
@@ -186,54 +187,56 @@ in
     noDisplay = true;
   };
 
-  home.packages = with pkgs; [
-    (lib.hiPrio launcherEntries)
-    # Desktop applications
-    onlyoffice
-    kdePackages.dolphin
-    # Expose the MTP D-Bus service and kiod plugin already in Dolphin's closure.
-    kdePackages.kio-extras
-    # Dolphin's native Extract/Compress actions; 7zz backs its 7-Zip plugin.
-    kdePackages.ark
-    sevenZip
-    kdePackages.gwenview
-    # Small Qt viewer; use the existing Qt6 KDE palette/style integration.
-    (qpdfview.override { libsForQt5 = qt6Packages; })
-    # Qt image readers (including HEIC/HEIF, AVIF, JXL and RAW), plus KIO previews.
-    kdePackages.kimageformats
-    kdePackages.kdegraphics-thumbnailers
-    kdePackages.ffmpegthumbs
-    cisco-packet-tracer_9
-    pkgsUnstable.joplin-desktop
-    lutris
-    moonlight
-    modrinth-app
-    # Official desktop client, including graphical Codex, from the pinned input.
-    pkgsUnstable.chatgpt
+  home.packages =
+    with pkgs;
+    lib.optional packetTracerEnable cisco-packet-tracer_9
+    ++ [
+      (lib.hiPrio launcherEntries)
+      # Desktop applications
+      onlyoffice
+      kdePackages.dolphin
+      # Expose the MTP D-Bus service and kiod plugin already in Dolphin's closure.
+      kdePackages.kio-extras
+      # Dolphin's native Extract/Compress actions; 7zz backs its 7-Zip plugin.
+      kdePackages.ark
+      sevenZip
+      kdePackages.gwenview
+      # Small Qt viewer; use the existing Qt6 KDE palette/style integration.
+      (qpdfview.override { libsForQt5 = qt6Packages; })
+      # Qt image readers (including HEIC/HEIF, AVIF, JXL and RAW), plus KIO previews.
+      kdePackages.kimageformats
+      kdePackages.kdegraphics-thumbnailers
+      kdePackages.ffmpegthumbs
+      pkgsUnstable.joplin-desktop
+      lutris
+      moonlight
+      modrinth-app
+      # Official desktop client, including graphical Codex, from the pinned input.
+      pkgsUnstable.chatgpt
 
-    # On-demand TUI controls; NetworkManager, BlueZ, and PipeWire stay in place.
-    inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default
-    bluetui
-    inputs.wiremix.packages.${pkgs.stdenv.hostPlatform.system}.wiremix
+      # On-demand TUI controls; NetworkManager, BlueZ, and PipeWire stay in place.
+      inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default
+      bluetui
+      inputs.wiremix.packages.${pkgs.stdenv.hostPlatform.system}.wiremix
 
-    # Hyprland utilities used by the declarative keybindings/session
-    brightnessctl
-    hyprpolkitagent
-    playerctl
-    wl-clipboard
-    screenshot
-    desktopFeedback
+      # Hyprland utilities used by the declarative keybindings/session
+      brightnessctl
+      hyprpolkitagent
+      playerctl
+      wl-clipboard
+      screenshot
+      desktopFeedback
 
-    # Command-line workflow
-    dnsutils # dig and nslookup for DNS diagnostics
-    fd
-    jq
-    openssl
-    ripgrep
-    traceroute
-    tree
+      # Command-line workflow
+      dnsutils # dig and nslookup for DNS diagnostics
+      fd
+      jq
+      openssl
+      ripgrep
+      traceroute
+      tree
 
-    # Keep Codex on the fast-moving pinned nixpkgs input.
-    pkgsUnstable.codex
-  ];
+      # Keep Codex on the fast-moving pinned nixpkgs input.
+      pkgsUnstable.codex
+    ];
 }

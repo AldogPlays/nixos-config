@@ -32,6 +32,31 @@ def nix(*arguments, **kwargs):
     return run(["nix", *FEATURES, *map(str, arguments)], **kwargs)
 
 
+def prepare_packet_tracer(source, name, expected_hash, home):
+    """Enable the optional package only when its pinned installer is available."""
+    if source is not None and source.is_file():
+        return True
+    installer = home / "Downloads" / name if name else None
+    if installer is not None and installer.is_file():
+        result = nix(
+            "hash", "file", "--type", "sha256", installer,
+            capture_output=True, text=True,
+        )
+        if result.stdout.strip() == expected_hash:
+            run(
+                ["nix-store", "--add-fixed", "sha256", str(installer)],
+                stdout=subprocess.DEVNULL,
+            )
+            return True
+        print(
+            "Packet Tracer installer checksum does not match the pinned package; skipping it.",
+            file=sys.stderr,
+        )
+    else:
+        print("Packet Tracer installer unavailable; continuing without Packet Tracer.")
+    return False
+
+
 def validate_release(release):
     if not re.fullmatch(r"\d{2}\.\d{2}", release):
         raise ValueError("Cannot determine the installed NixOS release.")
@@ -187,6 +212,10 @@ def parse_arguments(argv=None):
         "--user",
         default=os.environ.get("SUDO_USER") or pwd.getpwuid(os.getuid()).pw_name,
     )
+    # Supplied by the Nix wrapper from the pinned package, without a store dependency.
+    parser.add_argument("--packet-tracer-source", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--packet-tracer-name", help=argparse.SUPPRESS)
+    parser.add_argument("--packet-tracer-hash", help=argparse.SUPPRESS)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
         "--apply",
@@ -256,6 +285,11 @@ def main(argv=None):
     )
     validate_host(host)
     preserve_theme_selection(configuration, host)
+    host["packetTracerEnable"] = prepare_packet_tracer(
+        args.packet_tracer_source, args.packet_tracer_name,
+        args.packet_tracer_hash, Path(account.pw_dir),
+    )
+    print(f"Packet Tracer: {'enabled' if host['packetTracerEnable'] else 'skipped'}")
     print(f"Target: {host['hostName']} / {host['username']} / {host['homeDirectory']}")
     print(
         f"Preserving system.stateVersion={host['stateVersion']}, existing disks/encryption and bootloader."

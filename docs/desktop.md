@@ -383,7 +383,10 @@ Cisco requires a separately obtained installer. On a fresh installation, downloa
 [Cisco's Resource Hub](https://www.netacad.com/resources/lab-downloads) into
 `~/Downloads` before running bootstrap. Bootstrap checks its SHA-256 against the
 pinned package and imports it automatically; the same single bootstrap command
-then installs it with the rest of the desktop. The binary and Cisco credentials
+then installs it with the rest of the desktop. Without a matching installer in
+the store or Downloads, bootstrap skips Packet Tracer and its launcher entries.
+It records the choice for future rebuilds; I can rerun bootstrap with the
+installer to add it later. The binary and Cisco credentials
 are never committed. When updating the pinned package, use its exact installer
 version. For an existing checkout without bootstrap, import the file once with:
 

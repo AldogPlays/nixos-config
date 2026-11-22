@@ -58,6 +58,43 @@ def host_data():
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_packet_tracer_missing_skips_without_import(self):
+        with mock.patch.object(bootstrap, "nix") as nix, mock.patch.object(bootstrap, "run") as run:
+            self.assertFalse(bootstrap.prepare_packet_tracer(
+                self.root / "store-installer", "installer.deb", "sha256-pinned", self.root))
+        nix.assert_not_called()
+        run.assert_not_called()
+
+    def test_packet_tracer_in_store_needs_no_download(self):
+        source = self.root / "store-installer"
+        source.write_text("cached")
+        with mock.patch.object(bootstrap, "nix") as nix, mock.patch.object(bootstrap, "run") as run:
+            self.assertTrue(bootstrap.prepare_packet_tracer(
+                source, "installer.deb", "sha256-pinned", self.root))
+        nix.assert_not_called()
+        run.assert_not_called()
+
+    def test_packet_tracer_download_is_verified_before_import(self):
+        installer = self.root / "Downloads/installer.deb"
+        installer.parent.mkdir()
+        installer.write_text("download")
+        for actual_hash, enabled in (("sha256-pinned", True), ("sha256-wrong", False)):
+            with (
+                self.subTest(actual_hash=actual_hash),
+                mock.patch.object(bootstrap, "nix", return_value=SimpleNamespace(stdout=actual_hash + "\n")) as nix,
+                mock.patch.object(bootstrap, "run") as run,
+                contextlib.redirect_stderr(io.StringIO()),
+            ):
+                self.assertEqual(bootstrap.prepare_packet_tracer(
+                    self.root / "store-installer", "installer.deb", "sha256-pinned", self.root), enabled)
+                nix.assert_called_once_with("hash", "file", "--type", "sha256", installer,
+                                            capture_output=True, text=True)
+                if enabled:
+                    run.assert_called_once_with(["nix-store", "--add-fixed", "sha256", str(installer)],
+                                                stdout=subprocess.DEVNULL)
+                else:
+                    run.assert_not_called()
+
     def test_generated_host_theme_selection_survives_bootstrap_rerun(self):
         with tempfile.TemporaryDirectory() as raw:
             directory = Path(raw)
@@ -210,6 +247,9 @@ class BootstrapTests(unittest.TestCase):
             mock.patch.object(bootstrap, "privileged") as privileged,
         ):
             bootstrap.main([*self.arguments(), "--output", str(output)])
+        self.assertFalse(json.loads((output / "project-host.json").read_text())["packetTracerEnable"])
+        self.assertIn("packetTracerEnable = host.packetTracerEnable or false;",
+                      (output / "flake.nix").read_text())
         install.assert_not_called()
         privileged.assert_not_called()
         self.assertIn("--dry-run", nix.call_args.args)
@@ -253,7 +293,9 @@ class BootstrapTests(unittest.TestCase):
             mock.patch.object(
                 bootstrap,
                 "install",
-                side_effect=lambda *args: actions.append("install"),
+                side_effect=lambda stage, destination, host: actions.append(
+                    "install-with-packet-tracer" if host["packetTracerEnable"] else "install"
+                ),
             ),
         ):
             bootstrap.main([*self.arguments(), "--apply"])

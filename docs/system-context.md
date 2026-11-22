@@ -59,8 +59,10 @@ and approve the computer on the device when prompted.
 
 Cisco Packet Tracer is supplied by pinned nixpkgs, launched as `packettracer9` or
 through its desktop entry. The package selects XWayland locally. Cisco's matching
-installer is a separately downloaded input: bootstrap verifies and imports it
-from `~/Downloads` when absent from the store. See the
+installer is a separately downloaded input. Bootstrap verifies and imports it
+from `~/Downloads` when absent from the store, or skips Packet Tracer when no
+matching installer is available. Generated hosts record `packetTracerEnable`
+for later rebuilds; my Lenovo target keeps it enabled. See the
 [desktop guide](desktop.md#cisco-packet-tracer) for the exact version and manual
 import command; binaries, license state and Cisco credentials stay outside the
 repository.

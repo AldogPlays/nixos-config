@@ -79,9 +79,9 @@ nix --extra-experimental-features 'nix-command flakes' run github:AldogPlays/nix
 ```
 
 I document the prerequisites and `--apply` workflow in the [installation
-guide](docs/installation.md). My package set includes proprietary software;
-Cisco Packet Tracer requires a separate installer download. The pinned base is
-NixOS 26.05. My checks evaluate Intel/UEFI, AMD/BIOS, and NVIDIA hosts, but I
+guide](docs/installation.md). My package set includes proprietary software.
+Bootstrap skips Cisco Packet Tracer unless its separate installer is available.
+The pinned base is NixOS 26.05. My checks evaluate Intel/UEFI, AMD/BIOS, and NVIDIA hosts, but I
 haven't completed a fresh VM or spare-PC bootstrap activation trial.
 
 ## Everyday shortcuts

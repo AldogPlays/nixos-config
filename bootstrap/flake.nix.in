@@ -8,6 +8,7 @@
         hardwareModule = ./project-hardware.nix;
         hostModule = ./project-host.nix;
         inherit (host) username homeDirectory homeStateVersion;
+        packetTracerEnable = host.packetTracerEnable or false;
         themeSelection = host.themeSelection or (import (project.outPath + "/theme/selection.nix"));
       };
     };

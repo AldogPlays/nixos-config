@@ -15,13 +15,18 @@ I start from a machine with:
 - A separate backup of personal data and a working way to select a previous
   NixOS generation if activation fails.
 
-My package set includes unfree software. Cisco Packet Tracer requires
-`CiscoPacketTracer_901_Ubuntu_64bit.deb` from [Cisco's Resource
-Hub](https://www.netacad.com/resources/lab-downloads). I place it in
-`~/Downloads` before applying bootstrap. The wrapper checks its hash against the
-pinned package and imports it into the Nix store; it does not commit the
-installer or any account credentials. Other application sign-ins remain
-interactive after installation.
+My package set includes unfree software. Cisco Packet Tracer is optional:
+bootstrap continues without it when its installer is unavailable. To include it,
+I download `CiscoPacketTracer_901_Ubuntu_64bit.deb` from [Cisco's Resource
+Hub](https://www.netacad.com/resources/lab-downloads) into `~/Downloads` before
+running bootstrap. Bootstrap checks its hash against the pinned package and
+imports a matching download into the Nix store. A mismatched download is skipped
+with a warning; an installer already in the store needs no download.
+
+The generated `project-host.json` records `packetTracerEnable`, so subsequent
+rebuilds keep the selected package set. To add Packet Tracer later, I supply the
+matching installer and rerun bootstrap. Installers and account credentials stay
+outside Git. Other application sign-ins remain interactive after installation.
 
 ## Preview and apply
 

@@ -43,6 +43,7 @@
           username ? "jeffreyc",
           homeDirectory ? "/home/${username}",
           homeStateVersion ? "26.05",
+          packetTracerEnable ? true,
           themeSelection ? import ./theme/selection.nix,
           themeConfiguration ? {
             kind = "checkout";
@@ -77,6 +78,7 @@
                     pkgsUnstable
                     desktopTheme
                     themeConfiguration
+                    packetTracerEnable
                     ;
                 };
                 users.${username} = {
@@ -101,6 +103,7 @@
           username,
           homeDirectory,
           homeStateVersion ? "26.05",
+          packetTracerEnable ? false,
           themeSelection ? import ./theme/selection.nix,
         }:
         mkSystem {
@@ -108,6 +111,7 @@
             username
             homeDirectory
             homeStateVersion
+            packetTracerEnable
             themeSelection
             ;
           themeConfiguration = {
@@ -371,6 +375,22 @@
             readMesa = readFixture "pkgs.mesa.opencl pkgs.intel-media-driver";
             readCustom = readFixture "pkgs.hello";
           in
+          assert
+            !(builtins.any (
+              p: (p.pname or "") == "cisco-packet-tracer"
+            ) intel.home-manager.users.alex.home.packages);
+          assert
+            !(nixpkgs.lib.hasInfix "cisco-packet-tracer" (
+              builtins.toJSON (
+                builtins.getContext
+                  (builtins.head (
+                    builtins.filter (p: p.name == "launcher-entries") intel.home-manager.users.alex.home.packages
+                  )).buildCommand
+              )
+            ));
+          assert builtins.any (
+            p: (p.pname or "") == "cisco-packet-tracer"
+          ) inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.home.packages;
           assert intel.fileSystems."/".device == "/dev/disk/by-label/new-root";
           assert intel.boot.loader.efi.efiSysMountPoint == "/efi";
           assert builtins.elem "kvm-intel" intel.boot.kernelModules;
