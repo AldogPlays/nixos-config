@@ -174,6 +174,29 @@
               python3 ${./tests/test_desktop_launches.py} bindings.tsv ${pkgs.writeText "waybar-settings.json" (builtins.toJSON home.programs.waybar.settings)}
               touch "$out"
             '';
+        waybar-reader =
+          pkgs.runCommand "waybar-reader-checks"
+            {
+              nativeBuildInputs = [
+                pkgs.stdenv.cc
+                pkgs.pkg-config
+                pkgs.python3
+                pkgs.patch
+              ];
+              buildInputs = [
+                pkgs.jsoncpp
+                pkgs.spdlog
+              ];
+            }
+            ''
+              cp -r ${pkgs.waybar.src} source
+              chmod -R u+w source
+              patch -d source -p1 < ${./packages/waybar-tray/per-output-visibility.patch}
+              python3 ${./tests/extract_waybar_handler.py} source/src/bar.cpp
+              c++ -std=c++17 -I. ${./tests/test_waybar_reader.cpp} $(pkg-config --cflags --libs jsoncpp spdlog) -o reader-test
+              ./reader-test
+              touch "$out"
+            '';
         full-edges = pkgs.callPackage ./packages/hyprland-full-edges { };
         hermes-vpn = pkgs.runCommand "hermes-vpn-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
           export PYTHONDONTWRITEBYTECODE=1
@@ -239,9 +262,7 @@
               lua tests/test_workspace_wallpapers.lua ${
                 inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
               }
-              lua tests/test_waybar_visibility.lua ${
-                inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc.xdg.configFile."hypr/hyprland.lua".source
-              }
+              lua tests/test_waybar_visibility.lua ${./dotfiles/hypr/waybar-policy.lua}
               touch "$out"
             '';
 

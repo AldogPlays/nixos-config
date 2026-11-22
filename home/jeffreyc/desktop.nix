@@ -405,6 +405,7 @@ in
         "@BLUR_VIBRANCY@"
         "@FOCUSED_OPACITY@"
         "@UNFOCUSED_OPACITY@"
+        "@WAYBAR_POLICY@"
         "@WAYBAR_SYSTEMCTL@"
         "@WORKSPACE_WALLPAPERS@"
         "@WALLPAPER_INTERVAL@"
@@ -435,6 +436,7 @@ in
         (toString theme.material.blur.vibrancy)
         (toString theme.material.focusedOpacity)
         (toString theme.material.unfocusedOpacity)
+        "${../../dotfiles/hypr/waybar-policy.lua}"
         "${pkgs.systemd}/bin/systemctl"
         "${workspaceWallpapers}"
         (toString wallpaperInterval)

@@ -665,6 +665,8 @@ leaving a readable, muted “No notifications” label.
   visible only when its own monitor has a mapped, non-hidden window on a visible
   workspace, including floating/PiP and pinned windows. A manual tray pin reveals
   the focused monitor's bar; Rofi alone does not reveal an empty screen's bar.
+  `dotfiles/hypr/waybar-policy.lua` owns tray pinning, visibility and scheduling;
+  the compositor loads it once and binds its `toggleTray` action.
   Native Lua window/workspace/layer events write an atomic per-output runtime
   manifest and signal `waybar.service` with SIGRTMIN+10. The existing local Waybar
   package applies explicit output states without globally toggling other bars.

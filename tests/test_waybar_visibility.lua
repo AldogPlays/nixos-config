@@ -1,12 +1,9 @@
 -- Exercise the real Lua policy with fake outputs and a temporary manifest.
-local input = assert(io.open(arg[1]))
-local config = input:read("*a")
-input:close()
-local policy = assert(config:match("(%-%- Each bar follows.-)\n%-%- One renderer"))
 local runtime = assert(os.getenv("TMPDIR"))
 local originalGetenv = os.getenv
 os.getenv = function(name) return name == "XDG_RUNTIME_DIR" and runtime or originalGetenv(name) end
 local monitors = { {name="laptop"}, {name="lower"}, {name="upper"} }
+local focused = monitors[1]
 local layers, windows, events, timers, commands = {}, {}, {}, {}, {}
 for index, monitor in ipairs(monitors) do
     monitor.workspace = {id=(index - 1) * 10 + 3}
@@ -19,6 +16,7 @@ local function addWindow(monitor, properties)
     return w
 end
 hl = {
+    get_active_monitor = function() return focused end,
     get_monitors = function() return monitors end,
     get_active_workspace = function(m) return m.workspace end,
     get_active_special_workspace = function(m) return m.special end,
@@ -35,7 +33,10 @@ hl = {
     dsp = {exec_cmd=function(command) return command end},
     dispatch = function(command)
         commands[#commands + 1] = command
-        assert(command:find("SIGRTMIN+10", 1, true))
+        if not command:find("SIGRTMIN+10", 1, true) then
+            assert(command:find("SIGRTMIN+8", 1, true) or command:find("SIGRTMIN+9", 1, true))
+            return
+        end
         local file = assert(io.open(runtime .. "/waybar-output-visibility.json"))
         local value = file:read("*a")
         file:close()
@@ -56,7 +57,7 @@ local function flush()
 end
 local laptop = addWindow(monitors[1])
 local upper = addWindow(monitors[3], {floating=true})
-assert(load(policy))()
+local policy = dofile(arg[1])("systemctl")
 flush()
 assert(layers[1].layer == 2 and layers[2].layer == 0 and layers[3].layer == 2,
     "bars follow their own windows, including floating windows")
@@ -114,3 +115,53 @@ events["monitor.added"]()
 flush()
 assert(layers[1].layer == 2 and layers[2].layer == 0, "new empty dock output remains hidden independently")
 print("PASS: per-output visibility, floating/pinned/special windows, focus and coalescing")
+
+-- Tray actions use the same public interface as the keyboard binding.
+focused = returning
+policy.toggleTray()
+assert(commands[#commands]:find("SIGRTMIN+8", 1, true), "drawer opens immediately, before visibility is scheduled")
+flush()
+assert(layers[2].layer == 2, "pin reveals the focused empty output")
+policy.toggleTray()
+assert(commands[#commands]:find("SIGRTMIN+9", 1, true))
+flush()
+assert(layers[2].layer == 0, "unpin restores window-based visibility")
+policy.toggleTray()
+flush()
+focused = laptopMonitor
+laptop.mapped = false
+policy.toggleTray()
+assert(commands[#commands]:find("SIGRTMIN+8", 1, true), "moving the pin keeps the process-wide drawer open")
+flush()
+assert(layers[1].layer == 2 and layers[2].layer == 0, "pin moves to the focused output")
+focused = nil
+local before = #commands
+policy.toggleTray()
+flush()
+assert(#commands == before, "no active monitor leaves the tray unchanged")
+focused = laptopMonitor
+policy.toggleTray()
+flush()
+assert(layers[1].layer == 0)
+
+-- An event arriving after publication must be reconciled when the signal settles.
+laptop.mapped = true
+events["window.open"](laptop)
+local pending = timers
+timers = {}
+for _, callback in ipairs(pending) do callback() end
+assert(layers[1].layer == 2)
+laptop.mapped = false
+events["window.close"](laptop)
+policy.toggleTray()
+focused = returning
+policy.toggleTray()
+flush()
+assert(layers[1].layer == 0 and layers[2].layer == 2,
+    "window and tray changes during a pending signal reach the final manifest")
+-- The compositor can disagree with the last requested state: always observe it.
+layers[2].layer = 0
+events["layer.opened"](layers[2])
+flush()
+assert(layers[2].layer == 2, "actual surface state is reconciled")
+print("PASS: tray pin/unpin, moving pin, absent focus and pending-signal changes")

@@ -22,8 +22,10 @@ With `visibility-signal = 10`, SIGRTMIN+10 reads the atomic
 `$XDG_RUNTIME_DIR/waybar-output-visibility.json` object, whose output-name keys
 contain boolean visibility states. Each bar applies its own explicit state via
 the native `setVisible` method. Missing or invalid states leave visibility alone;
-the regular SIGUSR2 reload behavior is preserved. The Hyprland Lua policy writes
-this manifest from visible windows per monitor, including floating and pinned
+the regular SIGUSR2 reload behavior is preserved. The
+`dotfiles/hypr/waybar-policy.lua` module owns tray pin state, event coalescing and
+pending signals. Its `toggleTray` action is used directly by the compositor
+binding. The policy writes this manifest from visible windows per monitor, including floating and pinned
 windows, then signals the existing service. No listener daemon or polling is added.
 
 `workspace-groups.patch` adds opt-in `hide-empty-groups` and
@@ -50,3 +52,10 @@ and leave the module showing its linked-without-IP icon instead of Wi-Fi details
 The patch clears only the removed address's family. It leaves network settings,
 module styling and the existing session service unchanged. On upgrades, check
 whether upstream already includes this correction before retaining the patch.
+
+`nix build .#checks.x86_64-linux.waybar-reader --no-link` compiles the actual
+patched `Bar::handleSignal` method with the pinned JSON reader and a minimal
+bar surface boundary. It checks independent output states, missing entries,
+invalid values, missing runtime files and ordinary signal forwarding without
+starting a graphical bar. The Lua policy scenarios run in the
+`workspace-wallpapers` check; neither check establishes live drawer rendering.
