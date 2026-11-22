@@ -156,6 +156,24 @@
           lua ${./tests/test_workspace_groups.lua} ${./dotfiles/hypr/workspace-groups.lua}
           touch "$out"
         '';
+        desktop-launches =
+          let
+            home = inputs.self.nixosConfigurations.nixos.config.home-manager.users.jeffreyc;
+          in
+          pkgs.runCommand "desktop-launch-checks"
+            {
+              nativeBuildInputs = [
+                pkgs.lua
+                pkgs.python3
+              ];
+            }
+            ''
+              lua ${./tests/capture_desktop_launches.lua} ${
+                home.xdg.configFile."hypr/hyprland.lua".source
+              } bindings.tsv
+              python3 ${./tests/test_desktop_launches.py} bindings.tsv ${pkgs.writeText "waybar-settings.json" (builtins.toJSON home.programs.waybar.settings)}
+              touch "$out"
+            '';
         full-edges = pkgs.callPackage ./packages/hyprland-full-edges { };
         hermes-vpn = pkgs.runCommand "hermes-vpn-checks" { nativeBuildInputs = [ pkgs.python3 ]; } ''
           export PYTHONDONTWRITEBYTECODE=1

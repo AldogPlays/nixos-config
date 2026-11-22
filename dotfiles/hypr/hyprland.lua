@@ -116,7 +116,7 @@ hl.window_rule({
 -- Both keyboard and Waybar launches use these dedicated Alacritty app IDs.
 hl.window_rule({
     name = "float-system-controls",
-    match = { class = "^(wlctl|bluetui|wiremix|system-monitor|theme-switch)$" },
+    match = { class = "^(@CONTROL_CLASSES@|theme-switch)$" },
     float = true,
 })
 
@@ -315,10 +315,10 @@ hl.bind(mainMod .. " + SHIFT + T", function()
     hl.dispatch(hl.dsp.exec_cmd("@WAYBAR_SYSTEMCTL@ --user kill --kill-whom=main --signal=" .. signal .. " waybar.service"))
 end, { description = "Toggle the app tray" })
 -- Escape quits only these control windows, including an active TUI prompt.
-hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd([[uwsm app -- alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl]]))
-hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd([[uwsm app -- alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui]]))
-hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd([[uwsm app -- alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix]]))
-hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd([[uwsm app -- alacritty --class system-monitor -o 'window.dimensions={columns=120,lines=36}' -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e btop]]),
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd([[@CONTROL_NETWORK@]]))
+hl.bind(mainMod .. " + SHIFT + B", hl.dsp.exec_cmd([[@CONTROL_BLUETOOTH@]]))
+hl.bind(mainMod .. " + SHIFT + A", hl.dsp.exec_cmd([[@CONTROL_AUDIO@]]))
+hl.bind(mainMod .. " + Escape", hl.dsp.exec_cmd([[@CONTROL_MONITOR@]]),
     { description = "Open the system monitor" })
 hl.bind("PRINT", hl.dsp.exec_cmd("screenshot"),
     { description = "Capture a window, or the monitor by selecting a gap" })

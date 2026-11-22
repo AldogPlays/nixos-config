@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   desktopTheme,
   themeConfiguration,
   monitorConfiguration ? null,
@@ -9,6 +10,50 @@
 }:
 
 let
+  # One launch policy feeds keyboard bindings, Waybar and floating-rule classes.
+  controls = {
+    network = {
+      class = "wlctl";
+      executable = "${inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/wlctl";
+    };
+    bluetooth = {
+      class = "bluetui";
+      executable = "${pkgs.bluetui}/bin/bluetui";
+    };
+    audio = {
+      class = "wiremix";
+      executable = "${inputs.wiremix.packages.${pkgs.stdenv.hostPlatform.system}.wiremix}/bin/wiremix";
+    };
+    monitor = {
+      class = "system-monitor";
+      executable = "${pkgs.btop}/bin/btop";
+      options = [ "window.dimensions={columns=120,lines=36}" ];
+    };
+  };
+  controlLaunches = lib.mapAttrs (
+    _: control:
+    lib.escapeShellArgs (
+      [
+        "${pkgs.uwsm}/bin/uwsm"
+        "app"
+        "--"
+        "${pkgs.alacritty}/bin/alacritty"
+        "--class"
+        control.class
+      ]
+      ++
+        lib.concatMap
+          (option: [
+            "-o"
+            option
+          ])
+          ((control.options or [ ]) ++ [ ''keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]'' ])
+      ++ [
+        "-e"
+        control.executable
+      ]
+    )
+  ) controls;
   theme = desktopTheme;
   inherit (theme)
     roles
@@ -340,6 +385,11 @@ in
   xdg.configFile."hypr/hyprland.lua".source = pkgs.writeText "hyprland.lua" (
     builtins.replaceStrings
       [
+        "@CONTROL_NETWORK@"
+        "@CONTROL_BLUETOOTH@"
+        "@CONTROL_AUDIO@"
+        "@CONTROL_MONITOR@"
+        "@CONTROL_CLASSES@"
         "@BORDER_WIDTH@"
         "@CORNER_RADIUS@"
         "@SHELL_SPACING@"
@@ -365,6 +415,11 @@ in
         "@FULL_EDGES_PLUGIN@"
       ]
       [
+        controlLaunches.network
+        controlLaunches.bluetooth
+        controlLaunches.audio
+        controlLaunches.monitor
+        (lib.concatStringsSep "|" (lib.mapAttrsToList (_: control: control.class) controls))
         (toString geometry.borderWidth)
         (toString geometry.radius)
         (toString geometry.spacing)
@@ -473,7 +528,7 @@ in
         tooltip-format-ethernet = "Wired connection\n{ipaddr}\nClick for network controls";
         tooltip-format-disconnected = "No network connection\nClick for network controls";
         tooltip-format-disabled = "Wi-Fi disabled\nClick for network controls";
-        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class wlctl -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wlctl'';
+        on-click = controlLaunches.network;
       };
       bluetooth = {
         format = ''<span foreground="${roles.bluetooth}"></span>'';
@@ -483,7 +538,7 @@ in
         tooltip-format = "Bluetooth: {status}\nClick for Bluetooth controls";
         tooltip-format-connected = "{device_enumerate}\nClick for Bluetooth controls";
         tooltip-format-enumerate-connected = "{device_alias}";
-        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class bluetui -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e bluetui'';
+        on-click = controlLaunches.bluetooth;
       };
       pulseaudio = {
         format = ''<span foreground="${roles.audio}">{icon}</span>'';
@@ -500,7 +555,7 @@ in
           ""
           ""
         ];
-        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class wiremix -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e wiremix'';
+        on-click = controlLaunches.audio;
       };
       "power-profiles-daemon" = {
         format = "{icon}";
@@ -522,7 +577,7 @@ in
         format-plugged = "󰂄";
         format-full = "";
         tooltip-format = "Battery: {capacity}%\n{timeTo}\nClick for system monitor";
-        on-click = ''${pkgs.uwsm}/bin/uwsm app -- alacritty --class system-monitor -o 'window.dimensions={columns=120,lines=36}' -o 'keyboard.bindings=[{key="Escape",mods="None",action="Quit"}]' -e btop'';
+        on-click = controlLaunches.monitor;
         format-icons = [
           ""
           ""

@@ -482,6 +482,12 @@ The fork's single-page audio sections and contextual controls replace its UI;
 PipeWire/WirePlumber and their startup remain unchanged. No local checkout path,
 imperative installation, or extra service is required on a new machine.
 
+The four floating controls share launch policy in `home/jeffreyc/desktop.nix`.
+It generates the keyboard and Waybar commands from the same executable paths,
+terminal options and app IDs, and supplies the matching floating-rule classes.
+The theme-switching terminal stays separate because of its rebuild and
+password-prompt lifetime.
+
 The TUI controls, including btop's CPU/memory/process/battery monitor, are launched on demand; the
 network/Bluetooth/audio backend services remain enabled. Their dedicated
 Alacritty app IDs float through `dotfiles/hypr/hyprland.lua`. Keyboard and Waybar
