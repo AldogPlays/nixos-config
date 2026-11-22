@@ -606,6 +606,9 @@ using the existing GTK file portal for open/save dialogs outside the editor
 process. This avoids the unreadable text observed in its in-process GTK picker,
 without adding a backend or changing the global font. Reopen ONLYOFFICE after
 activation to use this path.
+The wrapper also includes the shared UI font in its FHS font tree. Native GTK
+warnings resolve that font under `/usr/share/fonts`; without it, Pango reports
+the font file missing and draws boxes for the message and buttons.
 Native OOXML support does not guarantee exact Word layout or feature parity;
 see the [desktop guide](desktop.md) for usage and compatibility references.
 

@@ -19,6 +19,8 @@ let
       pkgs.buildFHSEnv (
         args
         // {
+          # Native GTK dialogs resolve the shared UI font through /usr/share/fonts.
+          targetPkgs = p: args.targetPkgs p ++ [ (lib.getAttrFromPath theme.typography.package p) ];
           runScript = "${args.runScript} --xdg-desktop-portal=default";
         }
       );

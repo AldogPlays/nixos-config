@@ -590,6 +590,8 @@ user-managed. The editor uses its built-in appearance rather than the shared
 desktop palette; qpdfview remains the default PDF viewer.
 Open/save dialogs use the existing desktop GTK portal and follow its shared
 theme. Reopen ONLYOFFICE after activation for this setting to take effect.
+Its package wrapper also exposes the shared UI font inside its FHS runtime so
+native warning and confirmation dialogs can render their message and buttons.
 
 Microsoft's core fonts, including Times New Roman in regular, bold, italic and
 bold italic, are installed system-wide through `fonts.packages` in
