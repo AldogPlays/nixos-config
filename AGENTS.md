@@ -169,3 +169,18 @@ successful flake evaluation, build, or runtime check.
 - Report possible improvements as proposals unless they are part of the current
   task. A future agent should be able to distinguish configured behavior from
   intended work and unverified ideas.
+
+## Agent skills
+
+### Issue tracker
+
+For issue and specification work, read `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Before triaging or labeling issues, read `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Before exploring domain concepts or architectural decisions, read
+`docs/agents/domain.md`.
