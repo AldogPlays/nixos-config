@@ -299,6 +299,18 @@ queries to Hermes only while active. See [homelab VPN](homelab-vpn.md) for
 import, toggling, verification, manual pause and recovery. The existing Caddy
 trust declaration is independent.
 
+My saved `Hermes-Trusted` Wi-Fi profile is pinned to the home 5 GHz access point
+to disable background roaming scans during remote play. The host-only
+`hermes-wifi-pin` oneshot service applies the BSSID in `hosts/nixos/default.nix`
+after NetworkManager starts and when its service definition changes. It updates
+the existing profile without copying credentials into Nix or reconnecting an
+active link; a changed pin takes effect on the next connection. Roaming to other
+radios or mesh nodes is disabled for this profile. If I replace the access point,
+I update the pin; to restore roaming, I remove the service and clear the profile's
+`802-11-wireless.bssid` with `nmcli connection modify Hermes-Trusted
+802-11-wireless.bssid ""`, then reconnect. Other saved networks and portable
+bootstrap hosts keep their normal roaming behavior.
+
 ## Desktop components
 
 My desk has an upside-down Acer KG251Q centered above the P2510S, with the

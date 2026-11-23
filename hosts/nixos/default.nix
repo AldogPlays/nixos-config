@@ -55,6 +55,23 @@ in
   # DNS backend changes can be reloaded without interrupting the Wi-Fi link.
   systemd.services.NetworkManager.reloadIfChanged = true;
 
+  # Pin only this laptop's saved home profile; keep its credentials outside Nix.
+  # A BSSID lock disables background roaming scans during remote play.
+  systemd.services.hermes-wifi-pin = {
+    description = "Pin home Wi-Fi to the 5 GHz access point";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "NetworkManager.service" ];
+    after = [ "NetworkManager.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      ${pkgs.networkmanager}/bin/nmcli connection modify uuid ${homeConnectionUUID} \
+        802-11-wireless.bssid 94:83:C4:E5:56:DE
+    '';
+  };
+
   # The existing dispatcher reconciles the VPN on network changes; no daemon/timer.
   networking.networkmanager.dispatcherScripts = [
     {
