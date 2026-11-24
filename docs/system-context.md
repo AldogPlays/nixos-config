@@ -67,6 +67,11 @@ for later rebuilds; my Lenovo target keeps it enabled. See the
 import command; binaries, license state and Cisco credentials stay outside the
 repository.
 
+I use TigerVNC from pinned stable nixpkgs for remote VNC connections.
+`home/jeffreyc/packages.nix` installs it through Home Manager. I launch its viewer
+from the app menu or run `vncviewer`; no VNC server service or firewall opening is
+configured. Connection details and saved preferences remain user-managed.
+
 Joplin Desktop is declared in `home/jeffreyc/packages.nix` from the pinned unstable
 input for a version newer than 3.7.0; stable nixpkgs supplies 3.5.13.
 It launches with Meta+J, from the app menu or `joplin-desktop`; no autostart service or sync

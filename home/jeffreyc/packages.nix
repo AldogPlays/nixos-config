@@ -212,6 +212,7 @@ in
       pkgsUnstable.joplin-desktop
       lutris
       moonlight
+      tigervnc
       modrinth-app
       # Official desktop client, including graphical Codex, from the pinned input.
       pkgsUnstable.chatgpt
